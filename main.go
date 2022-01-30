@@ -42,10 +42,17 @@ var fractorStart = &cobra.Command{
 	Use:   "start",
 	Short: "Start fractor device plugin",
 	Run: func(cmd *cobra.Command, args []string) {
-		f := pkg.FractionalAcceleratorDevicePlugin{}
+
+		f := pkg.NewMetaFractorDevicePlugin()
+
 		if err := f.Serve(); err != nil {
 			log.Fatal(err)
 		}
+
+		if err := f.Register(); err != nil {
+			log.Fatal(err)
+		}
+
 	},
 }
 

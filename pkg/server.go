@@ -12,10 +12,18 @@ import (
 	"time"
 )
 
-type FractionalAcceleratorDevicePlugin struct {
+var (
+	UNIX_SOCKET  = "meta-fractor.sock"
+	RESOUCE_NAME = "cnvrg.io/metagpu"
+)
+
+type MetaFractorDevicePlugin struct {
+	server       *grpc.Server
+	socket       string
+	resourceName string
 }
 
-func (f *FractionalAcceleratorDevicePlugin) dial(socket string, timeout time.Duration) (*grpc.ClientConn, error) {
+func (p *MetaFractorDevicePlugin) dial(socket string, timeout time.Duration) (*grpc.ClientConn, error) {
 	c, err := grpc.Dial(socket, grpc.WithInsecure(), grpc.WithBlock(),
 		grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
 			return net.DialTimeout("unix", socket, timeout)
@@ -30,8 +38,8 @@ func (f *FractionalAcceleratorDevicePlugin) dial(socket string, timeout time.Dur
 
 }
 
-func (f *FractionalAcceleratorDevicePlugin) Register() error {
-	conn, err := f.dial(pluginapi.KubeletSocket, 5*time.Second)
+func (p *MetaFractorDevicePlugin) Register() error {
+	conn, err := p.dial(pluginapi.KubeletSocket, 5*time.Second)
 	if err != nil {
 		return err
 	}
@@ -39,8 +47,8 @@ func (f *FractionalAcceleratorDevicePlugin) Register() error {
 	client := pluginapi.NewRegistrationClient(conn)
 	req := &pluginapi.RegisterRequest{
 		Version:      pluginapi.Version,
-		Endpoint:     path.Base("/var/lib/kubelet/device-plugins/fractor.sock"),
-		ResourceName: "cnvrg.io/metagpu",
+		Endpoint:     path.Base(p.socket),
+		ResourceName: p.resourceName,
 		Options:      &pluginapi.DevicePluginOptions{},
 	}
 	if _, err := client.Register(context.Background(), req); err != nil {
@@ -49,13 +57,13 @@ func (f *FractionalAcceleratorDevicePlugin) Register() error {
 	return nil
 }
 
-func (f *FractionalAcceleratorDevicePlugin) GetDevicePluginOptions(ctx context.Context, empty *pluginapi.Empty) (*pluginapi.DevicePluginOptions, error) {
+func (p *MetaFractorDevicePlugin) GetDevicePluginOptions(ctx context.Context, empty *pluginapi.Empty) (*pluginapi.DevicePluginOptions, error) {
 	return &pluginapi.DevicePluginOptions{}, nil
 }
 
-func (f *FractionalAcceleratorDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
+func (p *MetaFractorDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
 
-	devs := []*pluginapi.Device{{ID: "foo-bar", Health: pluginapi.Healthy}}
+	devs := []*pluginapi.Device{{ID: "cnvrg-meta-device", Health: pluginapi.Healthy}}
 	_ = s.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
 	for {
 		time.Sleep(1)
@@ -63,42 +71,58 @@ func (f *FractionalAcceleratorDevicePlugin) ListAndWatch(e *pluginapi.Empty, s p
 	}
 }
 
-func (f *FractionalAcceleratorDevicePlugin) GetPreferredAllocation(ctx context.Context, request *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
+func (p *MetaFractorDevicePlugin) GetPreferredAllocation(ctx context.Context, request *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
 	return &pluginapi.PreferredAllocationResponse{}, nil
 }
 
-func (f *FractionalAcceleratorDevicePlugin) Allocate(ctx context.Context, request *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
+func (p *MetaFractorDevicePlugin) Allocate(ctx context.Context, request *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 	return &pluginapi.AllocateResponse{}, nil
 }
 
-func (f *FractionalAcceleratorDevicePlugin) PreStartContainer(ctx context.Context, request *pluginapi.PreStartContainerRequest) (*pluginapi.PreStartContainerResponse, error) {
+func (p *MetaFractorDevicePlugin) PreStartContainer(ctx context.Context, request *pluginapi.PreStartContainerRequest) (*pluginapi.PreStartContainerResponse, error) {
 	return &pluginapi.PreStartContainerResponse{}, nil
 }
 
-func (f *FractionalAcceleratorDevicePlugin) Serve() error {
-	os.Remove("/var/lib/kubelet/device-plugins/fractor.sock")
-	server := grpc.NewServer([]grpc.ServerOption{}...)
-	socket := fmt.Sprintf("%sfractor.sock", pluginapi.DevicePluginPath)
-	sock, err := net.Listen("unix", socket)
+func (p *MetaFractorDevicePlugin) Serve() error {
+	_ = os.Remove(p.socket)
+
+	sock, err := net.Listen("unix", p.socket)
 	if err != nil {
-		return err
+		log.Error(err)
 	}
-	pluginapi.RegisterDevicePluginServer(server, f)
+	log.Infof("listening on %s", p.socket)
+	pluginapi.RegisterDevicePluginServer(p.server, p)
+
 	go func() {
-		if err := server.Serve(sock); err != nil {
-			log.Error(err)
+		if err := p.server.Serve(sock); err != nil {
+			log.Errorf("GRPC server craeshed, %s", err)
 		}
 	}()
 
-	time.Sleep(1 * time.Second)
-
-	if err := f.Register(); err != nil {
+	if conn, err := p.dial(p.socket, 3*time.Second); err != nil {
 		log.Error(err)
+		return err
+	} else {
+		_ = conn.Close()
+		log.Info("GRPC successfully started and ready accept new connections")
 	}
-
-	for {
-		time.Sleep(1 * time.Second)
-	}
-
 	return nil
+	//time.Sleep(1 * time.Second)
+	//
+	//if err := p.Register(); err != nil {
+	//	log.Error(err)
+	//}
+	//
+	//for {
+	//	time.Sleep(1 * time.Second)
+	//}
+
+}
+
+func NewMetaFractorDevicePlugin() *MetaFractorDevicePlugin {
+	return &MetaFractorDevicePlugin{
+		server:       grpc.NewServer([]grpc.ServerOption{}...),
+		socket:       fmt.Sprintf("%s%s", pluginapi.DevicePluginPath, UNIX_SOCKET),
+		resourceName: RESOUCE_NAME,
+	}
 }
