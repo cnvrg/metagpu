@@ -40,7 +40,7 @@ func (f *FractionalAcceleratorDevicePlugin) PreStartContainer(ctx context.Contex
 
 func (f *FractionalAcceleratorDevicePlugin) Serve() error {
 	server := grpc.NewServer([]grpc.ServerOption{}...)
-	socket := fmt.Sprintf("%scnvrg-fracacc.sock", pluginapi.DevicePluginPath)
+	socket := fmt.Sprintf("%sfractor.sock", pluginapi.DevicePluginPath)
 	sock, err := net.Listen("unix", socket)
 	if err != nil {
 		return err
