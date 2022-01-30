@@ -22,6 +22,8 @@ type MetaFractorDevicePlugin struct {
 	server       *grpc.Server
 	socket       string
 	resourceName string
+	DeviceManager
+	//devices      []*pluginapi.Device
 }
 
 func (p *MetaFractorDevicePlugin) dial(socket string, timeout time.Duration) (*grpc.ClientConn, error) {
