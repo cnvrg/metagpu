@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	UNIX_SOCKET  = "meta-fractor.sock"
-	RESOUCE_NAME = "cnvrg.io/metagpu"
+	UnixSocket   = "meta-fractor.sock"
+	ResourceName = "cnvrg.io/metagpu"
 )
 
 type MetaFractorDevicePlugin struct {
@@ -91,8 +91,9 @@ func (p *MetaFractorDevicePlugin) Allocate(ctx context.Context, request *plugina
 		response := pluginapi.ContainerAllocateResponse{}
 		//uuids := req.DevicesIDs
 		response.Envs = map[string]string{
-			"CNVRG_FOO":    "CNVRG_BAR",
-			"CNVRG_DEVICE": strings.Join(req.DevicesIDs, ","),
+			"CNVRG_FOO":              "CNVRG_BAR",
+			"CNVRG_DEVICE":           strings.Join(req.DevicesIDs, ","),
+			"NVIDIA_VISIBLE_DEVICES": "none",
 		}
 		allocResponse.ContainerResponses = append(allocResponse.ContainerResponses, &response)
 
@@ -134,7 +135,7 @@ func (p *MetaFractorDevicePlugin) Serve() error {
 func NewMetaFractorDevicePlugin() *MetaFractorDevicePlugin {
 	return &MetaFractorDevicePlugin{
 		server:       grpc.NewServer([]grpc.ServerOption{}...),
-		socket:       fmt.Sprintf("%s%s", pluginapi.DevicePluginPath, UNIX_SOCKET),
-		resourceName: RESOUCE_NAME,
+		socket:       fmt.Sprintf("%s%s", pluginapi.DevicePluginPath, UnixSocket),
+		resourceName: ResourceName,
 	}
 }
