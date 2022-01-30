@@ -63,10 +63,12 @@ func (p *MetaFractorDevicePlugin) GetDevicePluginOptions(ctx context.Context, em
 
 func (p *MetaFractorDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
 
+	log.Info("listAndWatch triggered...")
 	devs := []*pluginapi.Device{
 		{ID: "cnvrg-meta-device-0", Health: pluginapi.Healthy},
 		{ID: "cnvrg-meta-device-1", Health: pluginapi.Healthy},
 	}
+
 	_ = s.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
 	for {
 		time.Sleep(10)
