@@ -128,15 +128,6 @@ func (p *MetaFractorDevicePlugin) Serve() error {
 		log.Info("GRPC successfully started and ready accept new connections")
 	}
 	return nil
-	//time.Sleep(1 * time.Second)
-	//
-	//if err := p.Register(); err != nil {
-	//	log.Error(err)
-	//}
-	//
-	//for {
-	//	time.Sleep(1 * time.Second)
-	//}
 
 }
 
