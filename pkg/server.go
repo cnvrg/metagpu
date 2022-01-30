@@ -3,6 +3,7 @@ package pkg
 import (
 	"context"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"net"
@@ -83,8 +84,20 @@ func (f *FractionalAcceleratorDevicePlugin) Serve() error {
 		return err
 	}
 	pluginapi.RegisterDevicePluginServer(server, f)
-	if err := server.Serve(sock); err != nil {
-		return err
+	go func() {
+		if err := server.Serve(sock); err != nil {
+			log.Error(err)
+		}
+	}()
+
+	time.Sleep(1 * time.Second)
+
+	if err := f.Register(); err != nil {
+		log.Error(err)
+	}
+
+	for {
+		time.Sleep(1 * time.Second)
 	}
 
 	return nil
