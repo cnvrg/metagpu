@@ -71,8 +71,11 @@ func (p *MetaFractorDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.D
 
 	_ = s.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
 	for {
-		time.Sleep(10)
+		select {
+
 		//_ = s.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
+		}
+
 	}
 }
 
