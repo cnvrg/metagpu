@@ -63,10 +63,13 @@ func (p *MetaFractorDevicePlugin) GetDevicePluginOptions(ctx context.Context, em
 
 func (p *MetaFractorDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
 
-	devs := []*pluginapi.Device{{ID: "cnvrg-meta-device", Health: pluginapi.Healthy}}
+	devs := []*pluginapi.Device{
+		{ID: "cnvrg-meta-device-0", Health: pluginapi.Healthy},
+		{ID: "cnvrg-meta-device-1", Health: pluginapi.Healthy},
+	}
 	_ = s.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
 	for {
-		time.Sleep(1)
+		time.Sleep(10)
 		_ = s.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
 	}
 }
