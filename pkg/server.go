@@ -9,7 +9,6 @@ import (
 	"net"
 	"os"
 	"path"
-	"strings"
 	"time"
 )
 
@@ -85,19 +84,19 @@ func (p *MetaFractorDevicePlugin) GetPreferredAllocation(ctx context.Context, re
 }
 
 func (p *MetaFractorDevicePlugin) Allocate(ctx context.Context, request *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
-	allocResponse := &pluginapi.AllocateResponse{}
-	for _, req := range request.ContainerRequests {
-
-		response := pluginapi.ContainerAllocateResponse{}
-		//uuids := req.DevicesIDs
-		response.Envs = map[string]string{
-			"CNVRG_FOO":    "CNVRG_BAR",
-			"CNVRG_DEVICE": strings.Join(req.DevicesIDs, ","),
-		}
-		allocResponse.ContainerResponses = append(allocResponse.ContainerResponses, &response)
-
-	}
-	return allocResponse, nil
+	//allocResponse := &pluginapi.AllocateResponse{}
+	//for _, req := range request.ContainerRequests {
+	//
+	//	response := pluginapi.ContainerAllocateResponse{}
+	//	//uuids := req.DevicesIDs
+	//	response.Envs = map[string]string{
+	//		"CNVRG_FOO":    "CNVRG_BAR",
+	//		"CNVRG_DEVICE": strings.Join(req.DevicesIDs, ","),
+	//	}
+	//	allocResponse.ContainerResponses = append(allocResponse.ContainerResponses, &response)
+	//
+	//}
+	return &pluginapi.AllocateResponse{}, nil
 }
 
 func (p *MetaFractorDevicePlugin) PreStartContainer(ctx context.Context, request *pluginapi.PreStartContainerRequest) (*pluginapi.PreStartContainerResponse, error) {
