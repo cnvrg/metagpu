@@ -49,6 +49,13 @@ var fractorStart = &cobra.Command{
 			log.Error(nvml.ErrorString(ret))
 		}
 
+		count, ret := nvml.DeviceGetCount()
+		if ret != nvml.SUCCESS {
+			log.Fatalf("Unable to get device count: %v", nvml.ErrorString(ret))
+		}
+
+		log.Info(count)
+
 		f := pkg.NewMetaFractorDevicePlugin()
 
 		if err := f.Serve(); err != nil {
