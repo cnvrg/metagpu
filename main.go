@@ -10,6 +10,7 @@ import (
 	"path"
 	"runtime"
 	"strconv"
+	"time"
 )
 
 type param struct {
@@ -51,6 +52,10 @@ var fractorStart = &cobra.Command{
 
 		if err := f.Register(); err != nil {
 			log.Fatal(err)
+		}
+
+		for {
+			time.Sleep(5 * time.Second)
 		}
 
 	},
