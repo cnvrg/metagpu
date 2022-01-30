@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpu-test-with-gpu
+spec:
+  selector:
+    matchLabels:
+      app: gpu-test-with-gpu
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: gpu-test-with-gpu
+    spec:
+      containers:
+      - name: gpu-test-with-gpu
+        image: tensorflow/tensorflow:latest-gpu
+        command:
+          - /usr/local/bin/python
+          - -c
+          - |
+            import tensorflow as tf
+            import time
+            tf.get_logger().setLevel('INFO')
+            print("===============================", flush=True)
+            print(tf.config.list_physical_devices('GPU'), flush=True)
+            print("===============================", flush=True)
+            time.sleep(3600)
+        resources:
+          limits:
+            nvidia.com/gpu: 1
