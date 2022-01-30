@@ -3,6 +3,7 @@ module github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin
 go 1.17
 
 require (
+	github.com/NVIDIA/go-nvml v0.11.1-0
 	github.com/markbates/pkger v0.17.1
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/cobra v1.2.1
