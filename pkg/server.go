@@ -6,10 +6,46 @@ import (
 	"google.golang.org/grpc"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"net"
+	"os"
+	"path"
 	"time"
 )
 
 type FractionalAcceleratorDevicePlugin struct {
+}
+
+func (f *FractionalAcceleratorDevicePlugin) dial(socket string, timeout time.Duration) (*grpc.ClientConn, error) {
+	c, err := grpc.Dial(socket, grpc.WithInsecure(), grpc.WithBlock(),
+		grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
+			return net.DialTimeout("unix", socket, timeout)
+		}),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
+
+}
+
+func (f *FractionalAcceleratorDevicePlugin) Register() error {
+	conn, err := f.dial(pluginapi.KubeletSocket, 5*time.Second)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	client := pluginapi.NewRegistrationClient(conn)
+	req := &pluginapi.RegisterRequest{
+		Version:      pluginapi.Version,
+		Endpoint:     path.Base("/var/lib/kubelet/device-plugins/fractor.sock"),
+		ResourceName: "cnvrg.io/metagpu",
+		Options:      &pluginapi.DevicePluginOptions{},
+	}
+	if _, err := client.Register(context.Background(), req); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (f *FractionalAcceleratorDevicePlugin) GetDevicePluginOptions(ctx context.Context, empty *pluginapi.Empty) (*pluginapi.DevicePluginOptions, error) {
@@ -39,6 +75,7 @@ func (f *FractionalAcceleratorDevicePlugin) PreStartContainer(ctx context.Contex
 }
 
 func (f *FractionalAcceleratorDevicePlugin) Serve() error {
+	os.Remove("/var/lib/kubelet/device-plugins/fractor.sock")
 	server := grpc.NewServer([]grpc.ServerOption{}...)
 	socket := fmt.Sprintf("%sfractor.sock", pluginapi.DevicePluginPath)
 	sock, err := net.Listen("unix", socket)
