@@ -68,7 +68,7 @@ func (p *MetaFractorDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.D
 
 	log.Info("listAndWatch triggered...")
 
-	_ = s.Send(&pluginapi.ListAndWatchResponse{Devices: p.ListDevices()})
+	_ = s.Send(&pluginapi.ListAndWatchResponse{Devices: p.ListMetaDevices()})
 	for {
 		select {
 
