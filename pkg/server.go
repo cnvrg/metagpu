@@ -65,7 +65,7 @@ func (p *MetaFractorDevicePlugin) GetDevicePluginOptions(ctx context.Context, em
 }
 
 func (p *MetaFractorDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
-
+	p.ListDevices()
 	log.Info("listAndWatch triggered...")
 	devs := []*pluginapi.Device{
 		{ID: "cnvrg-meta-device-0", Health: pluginapi.Healthy},
@@ -135,9 +135,11 @@ func (p *MetaFractorDevicePlugin) Serve() error {
 }
 
 func NewMetaFractorDevicePlugin() *MetaFractorDevicePlugin {
+
 	return &MetaFractorDevicePlugin{
-		server:       grpc.NewServer([]grpc.ServerOption{}...),
-		socket:       fmt.Sprintf("%s%s", pluginapi.DevicePluginPath, UnixSocket),
-		resourceName: ResourceName,
+		server:        grpc.NewServer([]grpc.ServerOption{}...),
+		socket:        fmt.Sprintf("%s%s", pluginapi.DevicePluginPath, UnixSocket),
+		resourceName:  ResourceName,
+		DeviceManager: &NvidiaDeviceManager{},
 	}
 }
