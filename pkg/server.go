@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"net"
@@ -135,7 +136,9 @@ func (p *MetaFractorDevicePlugin) Serve() error {
 }
 
 func NewMetaFractorDevicePlugin() *MetaFractorDevicePlugin {
-
+	if viper.GetString("accelerator") != "nvidia" {
+		log.Fatal("accelerator not supported, currently only nvidia is supported")
+	}
 	return &MetaFractorDevicePlugin{
 		server:        grpc.NewServer([]grpc.ServerOption{}...),
 		socket:        fmt.Sprintf("%s%s", pluginapi.DevicePluginPath, UnixSocket),

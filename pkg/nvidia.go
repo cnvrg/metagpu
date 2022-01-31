@@ -24,10 +24,14 @@ func (m *NvidiaDeviceManager) ListDevices() []*pluginapi.Device {
 	return m.devices
 }
 
+func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
+	return nil
+}
+
 func (m *NvidiaDeviceManager) setDevices() {
 
-	log.Info("caching nvidia devices")
 	count, ret := nvml.DeviceGetCount()
+	log.Infof("refreshing nvidia devices cache (total: %d)", count)
 	nvmlErrorCheck(ret)
 	var dl []*pluginapi.Device
 	for i := 0; i < count; i++ {
@@ -42,10 +46,8 @@ func (m *NvidiaDeviceManager) setDevices() {
 }
 
 func NewNvidiaDeviceManager() *NvidiaDeviceManager {
-
-	if ret := nvml.Init(); ret != nvml.SUCCESS {
-		log.Fatalf(nvml.ErrorString(ret))
-	}
+	ret := nvml.Init()
+	nvmlErrorCheck(ret)
 	ndm := &NvidiaDeviceManager{cacheTTL: time.Second * 5}
 	ndm.CacheDevices()
 	return ndm

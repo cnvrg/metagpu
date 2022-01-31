@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg"
+	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -10,6 +11,7 @@ import (
 	"path"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -44,9 +46,7 @@ var fractorStart = &cobra.Command{
 	Short: "Start fractor device plugin",
 	Run: func(cmd *cobra.Command, args []string) {
 
-
 		f := pkg.NewMetaFractorDevicePlugin()
-
 
 		if err := f.Serve(); err != nil {
 			log.Fatal(err)
@@ -68,6 +68,33 @@ var rootCmd = &cobra.Command{
 	Short: "Fractional accelerator device plugin",
 }
 
+func init() {
+	cobra.OnInitialize(initConfig)
+	setParams(rootParams, rootCmd)
+	rootCmd.AddCommand(fractorVersion)
+	rootCmd.AddCommand(fractorStart)
+
+}
+
+func initConfig() {
+	viper.AutomaticEnv()
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("./config")
+	viper.AddConfigPath(viper.GetString("config"))
+	viper.SetEnvPrefix("FRACTOR")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	setupLogging()
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatalf("config file not found, err: %s", err)
+	}
+	viper.WatchConfig()
+	viper.OnConfigChange(func(e fsnotify.Event) {
+		log.Infof("config file changed: %s, reloading", e.Name)
+	})
+}
+
 func setParams(params []param, command *cobra.Command) {
 	for _, param := range params {
 		switch v := param.value.(type) {
@@ -82,20 +109,6 @@ func setParams(params []param, command *cobra.Command) {
 			panic(err)
 		}
 	}
-}
-
-func init() {
-	cobra.OnInitialize(initConfig)
-	setParams(rootParams, rootCmd)
-	rootCmd.AddCommand(fractorVersion)
-	rootCmd.AddCommand(fractorStart)
-
-}
-
-func initConfig() {
-	viper.AutomaticEnv()
-	viper.SetEnvPrefix("FRACTOR")
-	setupLogging()
 }
 
 func setupLogging() {
