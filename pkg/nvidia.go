@@ -32,11 +32,16 @@ func (m *NvidiaDeviceManager) ListDevices() []*pluginapi.Device {
 
 func (m *NvidiaDeviceManager) ParseRealDeviceId(metaDevicesIds []string) (realDevicesIds string) {
 
+	// each meta gpu will starts from 'cnvrg-meta-[number]-'
 	r, _ := regexp.Compile("cnvrg-meta-\\d+-")
+	// string map will eliminates doubles in real devices ids
 	realDevicesIdsMap := make(map[string]bool)
 	for _, metaDeviceId := range metaDevicesIds {
 		deviceId := r.ReplaceAllString(metaDeviceId, "")
-		//TODO: verify device exists!
+		if !m.DeviceExists(deviceId) {
+			log.Errorf("device %s doesn not exists, but was claimed", metaDeviceId)
+			continue
+		}
 		realDevicesIdsMap[deviceId] = true
 	}
 
@@ -45,8 +50,20 @@ func (m *NvidiaDeviceManager) ParseRealDeviceId(metaDevicesIds []string) (realDe
 		realDevicesIdsList = append(realDevicesIdsList, dId)
 	}
 	// TODO: verify list is not empty!
-	return strings.Join(realDevicesIdsList, ",")
+	realDevicesIds = strings.Join(realDevicesIdsList, ",")
+	if len(realDevicesIds) == 0 {
+		realDevicesIds = "none"
+	}
+	return realDevicesIds
+}
 
+func (m *NvidiaDeviceManager) DeviceExists(deviceId string) bool {
+	for _, d := range m.devices {
+		if d.ID == deviceId {
+			return true
+		}
+	}
+	return false
 }
 
 func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
