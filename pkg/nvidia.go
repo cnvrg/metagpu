@@ -34,7 +34,7 @@ func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
 	for _, d := range m.devices {
 		for j := 0; j < viper.GetInt("metaGpus"); j++ {
 			metaGpus = append(metaGpus, &pluginapi.Device{
-				ID:     fmt.Sprintf("cnvrg-meta-%s", d.ID),
+				ID:     fmt.Sprintf("cnvrg-meta-%d-%s", j, d.ID),
 				Health: pluginapi.Healthy,
 			})
 		}
