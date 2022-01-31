@@ -1,0 +1,3 @@
+metaGpus: 10
+accelerator: nvidia
+deviceCacheTTL: 3600
