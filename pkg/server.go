@@ -90,7 +90,7 @@ func (p *MetaFractorDevicePlugin) Allocate(ctx context.Context, request *plugina
 		//uuids := req.DevicesIDs
 		response.Envs = map[string]string{
 			"CNVRG_META_GPU_DEVICES":  strings.Join(req.DevicesIDs, ","),
-			"NVIDIA_VISIBLE_DEVICES": strings.Join(req.DevicesIDs, ","),
+			//"NVIDIA_VISIBLE_DEVICES": strings.Join(req.DevicesIDs, ","),
 		}
 		allocResponse.ContainerResponses = append(allocResponse.ContainerResponses, &response)
 
