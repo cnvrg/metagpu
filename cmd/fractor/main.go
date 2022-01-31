@@ -8,11 +8,12 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
+	"os/signal"
 	"path"
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
+	"syscall"
 )
 
 type param struct {
@@ -56,10 +57,19 @@ var fractorStart = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		for {
-			time.Sleep(5 * time.Second)
-		}
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
+		for {
+			select {
+			case s := <-sigCh:
+				log.Infof("signal: %s, shutting down", s)
+				f.Stop()
+				log.Info("bye bye 👋")
+				os.Exit(0)
+
+			}
+		}
 	},
 }
 

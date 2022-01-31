@@ -12,8 +12,9 @@ import (
 )
 
 type NvidiaDeviceManager struct {
-	devices  []*pluginapi.Device
-	cacheTTL time.Duration
+	devices              []*pluginapi.Device
+	cacheTTL             time.Duration
+
 }
 
 func (m *NvidiaDeviceManager) CacheDevices() {

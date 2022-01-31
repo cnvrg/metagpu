@@ -19,11 +19,12 @@ var (
 )
 
 type MetaFractorDevicePlugin struct {
-	server       *grpc.Server
-	socket       string
-	resourceName string
 	DeviceManager
-	//devices      []*pluginapi.Device
+	server               *grpc.Server
+	socket               string
+	resourceName         string
+	stop                 chan interface{}
+	metaGpuRecalculation chan bool
 }
 
 func (p *MetaFractorDevicePlugin) dial(socket string, timeout time.Duration) (*grpc.ClientConn, error) {
@@ -68,13 +69,19 @@ func (p *MetaFractorDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.D
 
 	log.Info("listAndWatch triggered...")
 
-	_ = s.Send(&pluginapi.ListAndWatchResponse{Devices: p.ListMetaDevices()})
+	if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.ListMetaDevices()}); err != nil {
+		log.Error(err)
+	}
+
 	for {
 		select {
-
-		//_ = s.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
+		case <-p.stop:
+			return nil
+		case <-p.metaGpuRecalculation:
+			if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.ListMetaDevices()}); err != nil {
+				log.Error(err)
+			}
 		}
-
 	}
 }
 
@@ -129,14 +136,28 @@ func (p *MetaFractorDevicePlugin) Serve() error {
 
 }
 
+func (p *MetaFractorDevicePlugin) Stop() {
+	log.Info("stopping GRPC server")
+	if p != nil && p.server != nil {
+		p.server.Stop()
+	}
+	log.Info("removing unix socket")
+	_ = os.Remove(p.socket)
+	log.Info("closing all channels")
+	close(p.stop)
+	close(p.metaGpuRecalculation)
+}
+
 func NewMetaFractorDevicePlugin() *MetaFractorDevicePlugin {
 	if viper.GetString("accelerator") != "nvidia" {
 		log.Fatal("accelerator not supported, currently only nvidia is supported")
 	}
 	return &MetaFractorDevicePlugin{
-		server:        grpc.NewServer([]grpc.ServerOption{}...),
-		socket:        fmt.Sprintf("%s%s", pluginapi.DevicePluginPath, UnixSocket),
-		resourceName:  viper.GetString("resourceName"),
-		DeviceManager: NewNvidiaDeviceManager(),
+		server:               grpc.NewServer([]grpc.ServerOption{}...),
+		socket:               fmt.Sprintf("%s%s", pluginapi.DevicePluginPath, UnixSocket),
+		resourceName:         viper.GetString("resourceName"),
+		DeviceManager:        NewNvidiaDeviceManager(),
+		stop:                 make(chan interface{}),
+		metaGpuRecalculation: make(chan bool),
 	}
 }
