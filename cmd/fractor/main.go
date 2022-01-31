@@ -48,14 +48,7 @@ var fractorStart = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		f := pkg.NewMetaFractorDevicePlugin()
-
-		if err := f.Serve(); err != nil {
-			log.Fatal(err)
-		}
-
-		if err := f.Register(); err != nil {
-			log.Fatal(err)
-		}
+		f.Start()
 
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)

@@ -67,8 +67,6 @@ func (p *MetaFractorDevicePlugin) GetDevicePluginOptions(ctx context.Context, em
 
 func (p *MetaFractorDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
 
-	log.Info("listAndWatch triggered...")
-
 	if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.ListMetaDevices()}); err != nil {
 		log.Error(err)
 	}
@@ -134,6 +132,16 @@ func (p *MetaFractorDevicePlugin) Serve() error {
 	}
 	return nil
 
+}
+
+func (p *MetaFractorDevicePlugin) Start() {
+	if err := p.Serve(); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := p.Register(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func (p *MetaFractorDevicePlugin) Stop() {

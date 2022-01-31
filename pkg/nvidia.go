@@ -102,7 +102,7 @@ func (m *NvidiaDeviceManager) setDevices() {
 func NewNvidiaDeviceManager() *NvidiaDeviceManager {
 	ret := nvml.Init()
 	nvmlErrorCheck(ret)
-	ndm := &NvidiaDeviceManager{cacheTTL: time.Second * 5}
+	ndm := &NvidiaDeviceManager{cacheTTL: time.Second * time.Duration(viper.GetInt("deviceCacheTTL"))}
 	ndm.CacheDevices()
 	return ndm
 }
