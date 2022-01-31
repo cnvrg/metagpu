@@ -32,6 +32,7 @@ var (
 		{name: "json-log", shorthand: "", value: false, usage: "output logs in json format"},
 		{name: "verbose", shorthand: "", value: false, usage: "enable verbose logs"},
 	}
+	metaGpuRecalc = make(chan bool)
 )
 
 var fractorVersion = &cobra.Command{
@@ -46,8 +47,7 @@ var fractorStart = &cobra.Command{
 	Use:   "start",
 	Short: "Start fractor device plugin",
 	Run: func(cmd *cobra.Command, args []string) {
-
-		f := pkg.NewMetaFractorDevicePlugin()
+		f := pkg.NewMetaFractorDevicePlugin(metaGpuRecalc)
 		f.Start()
 
 		sigCh := make(chan os.Signal, 1)
@@ -94,7 +94,8 @@ func initConfig() {
 	}
 	viper.WatchConfig()
 	viper.OnConfigChange(func(e fsnotify.Event) {
-		log.Infof("config file changed: %s, reloading", e.Name)
+		log.Infof("config file changed: %s, triggering meta gpu recalculation", e.Name)
+		metaGpuRecalc <- true
 	})
 }
 

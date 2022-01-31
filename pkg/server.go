@@ -156,7 +156,7 @@ func (p *MetaFractorDevicePlugin) Stop() {
 	close(p.metaGpuRecalculation)
 }
 
-func NewMetaFractorDevicePlugin() *MetaFractorDevicePlugin {
+func NewMetaFractorDevicePlugin(metaGpuRecalculation chan bool) *MetaFractorDevicePlugin {
 	if viper.GetString("accelerator") != "nvidia" {
 		log.Fatal("accelerator not supported, currently only nvidia is supported")
 	}
@@ -166,6 +166,6 @@ func NewMetaFractorDevicePlugin() *MetaFractorDevicePlugin {
 		resourceName:         viper.GetString("resourceName"),
 		DeviceManager:        NewNvidiaDeviceManager(),
 		stop:                 make(chan interface{}),
-		metaGpuRecalculation: make(chan bool),
+		metaGpuRecalculation: metaGpuRecalculation,
 	}
 }
