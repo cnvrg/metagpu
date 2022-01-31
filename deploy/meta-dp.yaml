@@ -21,6 +21,8 @@ spec:
           operator: Exists
           effect: NoSchedule
       priorityClassName: "system-node-critical"
+      imagePullSecrets:
+      - name: regcred
       containers:
         - name: fractor
           image: docker.io/cnvrg/fractor:latest
