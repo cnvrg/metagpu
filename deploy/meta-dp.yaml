@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fractor-device-plugin-daemonset
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: fractor-device-plugin-daemonset
+  template:
+    metadata:
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ""
+      labels:
+        name: fractor-device-plugin-daemonset
+    spec:
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      priorityClassName: "system-node-critical"
+      containers:
+        - name: fractor
+          image: docker.io/cnvrg/fractor:latest
+          command:
+            - /bin/bash
+            - -c
+            - sleep inf
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ "ALL" ]
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /var/lib/kubelet/device-plugins
+            - name: config
+              mountPath: /opt/app-root/config
+      volumes:
+        - name: device-plugin
+          hostPath:
+            path: /var/lib/kubelet/device-plugins
+        - name: config
+          configMap:
+            name: fractor-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fractor-config
+  namespace: kube-system
+data:
+  config.yaml: |
+    metaGpus: 10
+    accelerator: nvidia
+    deviceCacheTTL: 3600
+    resourceName: cnvrg.io/metagpu
