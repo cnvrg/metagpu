@@ -16,10 +16,12 @@ type NvidiaDeviceManager struct {
 
 func (m *NvidiaDeviceManager) CacheDevices() {
 	m.setDevices()
-	for {
-		<-time.After(m.cacheTTL)
-		m.setDevices()
-	}
+	go func() {
+		for {
+			<-time.After(m.cacheTTL)
+			m.setDevices()
+		}
+	}()
 }
 
 func (m *NvidiaDeviceManager) ListDevices() []*pluginapi.Device {
