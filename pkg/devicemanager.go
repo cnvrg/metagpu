@@ -6,4 +6,5 @@ type DeviceManager interface {
 	CacheDevices()
 	ListDevices() []*pluginapi.Device
 	ListMetaDevices() []*pluginapi.Device
+	ParseRealDeviceId(metaDevicesIds []string) (realDeviceId string)
 }

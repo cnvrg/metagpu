@@ -6,6 +6,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+	"regexp"
+	"strings"
 	"time"
 )
 
@@ -26,6 +28,25 @@ func (m *NvidiaDeviceManager) CacheDevices() {
 
 func (m *NvidiaDeviceManager) ListDevices() []*pluginapi.Device {
 	return m.devices
+}
+
+func (m *NvidiaDeviceManager) ParseRealDeviceId(metaDevicesIds []string) (realDevicesIds string) {
+
+	r, _ := regexp.Compile("cnvrg-meta-\\d+-")
+	realDevicesIdsMap := make(map[string]bool)
+	for _, metaDeviceId := range metaDevicesIds {
+		deviceId := r.ReplaceAllString(metaDeviceId, "")
+		//TODO: verify device exists!
+		realDevicesIdsMap[deviceId] = true
+	}
+
+	var realDevicesIdsList []string
+	for dId, _ := range realDevicesIdsMap {
+		realDevicesIdsList = append(realDevicesIdsList, dId)
+	}
+	// TODO: verify list is not empty!
+	return strings.Join(realDevicesIdsList, ",")
+
 }
 
 func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
