@@ -140,6 +140,6 @@ func NewMetaFractorDevicePlugin() *MetaFractorDevicePlugin {
 		server:        grpc.NewServer([]grpc.ServerOption{}...),
 		socket:        fmt.Sprintf("%s%s", pluginapi.DevicePluginPath, UnixSocket),
 		resourceName:  ResourceName,
-		DeviceManager: &NvidiaDeviceManager{},
+		DeviceManager: NewNvidiaDeviceManager(),
 	}
 }
