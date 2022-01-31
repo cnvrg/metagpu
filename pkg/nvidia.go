@@ -12,9 +12,8 @@ import (
 )
 
 type NvidiaDeviceManager struct {
-	devices              []*pluginapi.Device
-	cacheTTL             time.Duration
-
+	devices  []*pluginapi.Device
+	cacheTTL time.Duration
 }
 
 func (m *NvidiaDeviceManager) CacheDevices() {
@@ -69,7 +68,7 @@ func (m *NvidiaDeviceManager) DeviceExists(deviceId string) bool {
 
 func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
 	var metaGpus []*pluginapi.Device
-
+	log.Infof("generating meta gpu devices (total: %d)", len(m.devices)*viper.GetInt("metaGpus"))
 	for _, d := range m.devices {
 		for j := 0; j < viper.GetInt("metaGpus"); j++ {
 			metaGpus = append(metaGpus, &pluginapi.Device{
