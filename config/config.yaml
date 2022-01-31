@@ -1,3 +1,4 @@
 metaGpus: 10
 accelerator: nvidia
 deviceCacheTTL: 3600
+resourceName: cnvrg.io/metagpu

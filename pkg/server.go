@@ -15,8 +15,7 @@ import (
 )
 
 var (
-	UnixSocket   = "meta-fractor.sock"
-	ResourceName = "cnvrg.io/metagpu"
+	UnixSocket = "meta-fractor.sock"
 )
 
 type MetaFractorDevicePlugin struct {
@@ -66,14 +65,10 @@ func (p *MetaFractorDevicePlugin) GetDevicePluginOptions(ctx context.Context, em
 }
 
 func (p *MetaFractorDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
-	p.ListDevices()
-	log.Info("listAndWatch triggered...")
-	devs := []*pluginapi.Device{
-		{ID: "cnvrg-meta-device-0", Health: pluginapi.Healthy},
-		{ID: "cnvrg-meta-device-1", Health: pluginapi.Healthy},
-	}
 
-	_ = s.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
+	log.Info("listAndWatch triggered...")
+
+	_ = s.Send(&pluginapi.ListAndWatchResponse{Devices: p.ListDevices()})
 	for {
 		select {
 
@@ -142,7 +137,7 @@ func NewMetaFractorDevicePlugin() *MetaFractorDevicePlugin {
 	return &MetaFractorDevicePlugin{
 		server:        grpc.NewServer([]grpc.ServerOption{}...),
 		socket:        fmt.Sprintf("%s%s", pluginapi.DevicePluginPath, UnixSocket),
-		resourceName:  ResourceName,
+		resourceName:  viper.GetString("resourceName"),
 		DeviceManager: NewNvidiaDeviceManager(),
 	}
 }

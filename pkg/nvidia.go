@@ -1,8 +1,10 @@
 package pkg
 
 import (
+	"fmt"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"time"
 )
@@ -25,7 +27,19 @@ func (m *NvidiaDeviceManager) ListDevices() []*pluginapi.Device {
 }
 
 func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
-	return nil
+	var metaGpus []*pluginapi.Device
+
+	for _, d := range m.devices {
+		for j := 0; j < viper.GetInt("metaGpus"); j++ {
+			metaGpus = append(metaGpus, &pluginapi.Device{
+				ID:     fmt.Sprintf("cnvrg-meta-%s", d.ID),
+				Health: pluginapi.Healthy,
+			})
+		}
+	}
+
+	return metaGpus
+
 }
 
 func (m *NvidiaDeviceManager) setDevices() {
