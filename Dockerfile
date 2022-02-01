@@ -26,5 +26,6 @@ LABEL version=${PLUGIN_VERSION}
 LABEL release="N/A"
 LABEL summary="cnvrg.io device plugin for Kubernetes"
 LABEL description="See summary"
-
+RUN apt update -y \
+    && apt install -y vim
 COPY --from=builder /root/.go/src/fractor/fractor /usr/bin/fractor-device-plugin

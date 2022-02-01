@@ -38,7 +38,7 @@ spec:
             - name: device-plugin
               mountPath: /var/lib/kubelet/device-plugins
             - name: config
-              mountPath: /opt/app-root/config
+              mountPath: /etc/fractor/config
       volumes:
         - name: device-plugin
           hostPath:

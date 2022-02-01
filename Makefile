@@ -10,6 +10,5 @@ docker-build:
      --build-arg BUILD_VERSION=0.0.1 \
      -t docker.io/cnvrg/fractor:latest .
 
-build-linux: docker-build
-	docker run -v ${PWD}:/tmp --rm -it docker.io/cnvrg/cnvrg-sac:latest \
-	  bash -c "cp /opt/app-root/fractor /tmp/bin/fractor-linux-x86_64"
+docker-push:
+	docker push docker.io/cnvrg/fractor:latest
