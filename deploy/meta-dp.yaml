@@ -27,9 +27,9 @@ spec:
         - name: fractor
           image: docker.io/cnvrg/fractor:latest
           command:
-            - /bin/bash
-            - -c
-            - sleep inf
+            - /usr/bin/fractor-device-plugin
+            - start
+            - -c /etc/fractor/config
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
