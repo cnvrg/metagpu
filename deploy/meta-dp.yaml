@@ -29,7 +29,8 @@ spec:
           command:
             - /usr/bin/fractor-device-plugin
             - start
-            - -c /etc/fractor
+            - -c
+            - /etc/fractor
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
