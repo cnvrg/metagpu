@@ -29,7 +29,7 @@ spec:
           command:
             - /usr/bin/fractor-device-plugin
             - start
-            - -c /etc/fractor/config
+            - -c /etc/fractor
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -38,7 +38,7 @@ spec:
             - name: device-plugin
               mountPath: /var/lib/kubelet/device-plugins
             - name: config
-              mountPath: /etc/fractor/config
+              mountPath: /etc/fractor
       volumes:
         - name: device-plugin
           hostPath:
