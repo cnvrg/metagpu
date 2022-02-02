@@ -105,6 +105,8 @@ func (m *NvidiaDeviceManager) setDevices() {
 	for i := 0; i < count; i++ {
 		var nd NvidiaDevice
 		device, ret := nvml.DeviceGetHandleByIndex(i)
+		pids, ret := device.GetAccountingPids()
+		log.Infof("%v", pids)
 		nvmlErrorCheck(ret)
 		uuid, ret := device.GetUUID()
 		nvmlErrorCheck(ret)
