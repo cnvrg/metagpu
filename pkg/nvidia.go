@@ -105,8 +105,6 @@ func (m *NvidiaDeviceManager) setDevices() {
 	for i := 0; i < count; i++ {
 		var nd NvidiaDevice
 		device, ret := nvml.DeviceGetHandleByIndex(i)
-		pids, ret := device.GetAccountingPids()
-		log.Infof("%v", pids)
 		nvmlErrorCheck(ret)
 		uuid, ret := device.GetUUID()
 		nvmlErrorCheck(ret)
@@ -118,6 +116,9 @@ func (m *NvidiaDeviceManager) setDevices() {
 		nd.nDevice = &device
 		nd.utilization = &utilization
 		nd.processes = processes
+		gpuProcesses, ret := device.GetGraphicsRunningProcesses()
+		nvmlErrorCheck(ret)
+		processes = append(processes, gpuProcesses...)
 		dl = append(dl, &nd)
 		log.Infof("discovered device: %s", uuid)
 		log.Infof("device utilization: cpu: %d, memory: %d", utilization.Gpu, utilization.Memory)
