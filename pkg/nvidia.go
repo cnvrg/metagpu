@@ -11,8 +11,15 @@ import (
 	"time"
 )
 
+type NvidiaDevice struct {
+	k8sDevice   *pluginapi.Device
+	nDevice     *nvml.Device
+	utilization *nvml.Utilization
+	processes   []nvml.ProcessInfo
+}
+
 type NvidiaDeviceManager struct {
-	devices  []*pluginapi.Device
+	devices  []*NvidiaDevice
 	cacheTTL time.Duration
 }
 
@@ -27,7 +34,11 @@ func (m *NvidiaDeviceManager) CacheDevices() {
 }
 
 func (m *NvidiaDeviceManager) ListDevices() []*pluginapi.Device {
-	return m.devices
+	var d []*pluginapi.Device
+	for _, device := range m.devices {
+		d = append(d, device.k8sDevice)
+	}
+	return d
 }
 
 func (m *NvidiaDeviceManager) ParseRealDeviceId(metaDevicesIds []string) (realDevicesIds string) {
@@ -59,7 +70,7 @@ func (m *NvidiaDeviceManager) ParseRealDeviceId(metaDevicesIds []string) (realDe
 
 func (m *NvidiaDeviceManager) DeviceExists(deviceId string) bool {
 	for _, d := range m.devices {
-		if d.ID == deviceId {
+		if d.k8sDevice.ID == deviceId {
 			return true
 		}
 	}
@@ -72,8 +83,11 @@ func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
 	for _, d := range m.devices {
 		for j := 0; j < viper.GetInt("metaGpus"); j++ {
 			metaGpus = append(metaGpus, &pluginapi.Device{
-				ID:     fmt.Sprintf("cnvrg-meta-%d-%s", j, d.ID),
+				ID:     fmt.Sprintf("cnvrg-meta-%d-%s", j, d.k8sDevice.ID),
 				Health: pluginapi.Healthy,
+				//Topology: &pluginapi.TopologyInfo{
+				//	Nodes: []*pluginapi.NUMANode{&pluginapi.NUMANode{ID: 0}},
+				//},
 			})
 		}
 	}
@@ -87,13 +101,22 @@ func (m *NvidiaDeviceManager) setDevices() {
 	count, ret := nvml.DeviceGetCount()
 	log.Infof("refreshing nvidia devices cache (total: %d)", count)
 	nvmlErrorCheck(ret)
-	var dl []*pluginapi.Device
+	var dl []*NvidiaDevice
 	for i := 0; i < count; i++ {
+		var nd NvidiaDevice
 		device, ret := nvml.DeviceGetHandleByIndex(i)
 		nvmlErrorCheck(ret)
 		uuid, ret := device.GetUUID()
 		nvmlErrorCheck(ret)
-		dl = append(dl, &pluginapi.Device{ID: uuid, Health: pluginapi.Healthy})
+		utilization, ret := device.GetUtilizationRates()
+		nvmlErrorCheck(ret)
+		processes, ret := device.GetComputeRunningProcesses()
+		nvmlErrorCheck(ret)
+		nd.k8sDevice = &pluginapi.Device{ID: uuid, Health: pluginapi.Healthy}
+		nd.nDevice = &device
+		nd.utilization = &utilization
+		nd.processes = processes
+		dl = append(dl, &nd)
 		log.Infof("discovered device: %s", uuid)
 	}
 	m.devices = dl
