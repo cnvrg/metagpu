@@ -118,6 +118,8 @@ func (m *NvidiaDeviceManager) setDevices() {
 		nd.processes = processes
 		dl = append(dl, &nd)
 		log.Infof("discovered device: %s", uuid)
+		log.Infof("device utilization: cpu: %d, memory: %d", utilization.Gpu, utilization.Memory)
+		log.Infof("device processeses: %v", processes)
 	}
 	m.devices = dl
 }
