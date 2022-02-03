@@ -3,6 +3,8 @@ package pkg
 import (
 	"fmt"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
+	"github.com/prometheus/procfs"
+	"github.com/shirou/gopsutil/v3/process"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
@@ -11,11 +13,19 @@ import (
 	"time"
 )
 
+type GpuProcess struct {
+	nvmlProcessInfo *nvml.ProcessInfo
+	cmdline         string
+	user            string
+	containerId     string
+	podId           string
+}
+
 type NvidiaDevice struct {
 	k8sDevice   *pluginapi.Device
 	nDevice     *nvml.Device
 	utilization *nvml.Utilization
-	processes   []nvml.ProcessInfo
+	processes   []*GpuProcess
 }
 
 type NvidiaDeviceManager struct {
@@ -85,9 +95,6 @@ func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
 			metaGpus = append(metaGpus, &pluginapi.Device{
 				ID:     fmt.Sprintf("cnvrg-meta-%d-%s", j, d.k8sDevice.ID),
 				Health: pluginapi.Healthy,
-				//Topology: &pluginapi.TopologyInfo{
-				//	Nodes: []*pluginapi.NUMANode{&pluginapi.NUMANode{ID: 0}},
-				//},
 			})
 		}
 	}
@@ -105,31 +112,64 @@ func (m *NvidiaDeviceManager) setDevices() {
 	for i := 0; i < count; i++ {
 		var nd NvidiaDevice
 		device, ret := nvml.DeviceGetHandleByIndex(i)
-		nvmlErrorCheck(ret)
 		uuid, ret := device.GetUUID()
-		nvmlErrorCheck(ret)
-		utilization, ret := device.GetUtilizationRates()
-		nvmlErrorCheck(ret)
-		processes, ret := device.GetComputeRunningProcesses()
 		nvmlErrorCheck(ret)
 		nd.k8sDevice = &pluginapi.Device{ID: uuid, Health: pluginapi.Healthy}
 		nd.nDevice = &device
-		nd.utilization = &utilization
-		nd.processes = processes
-		gpuProcesses, ret := device.GetGraphicsRunningProcesses()
 		nvmlErrorCheck(ret)
-		processes = append(processes, gpuProcesses...)
 		dl = append(dl, &nd)
-		log.Infof("discovered device: %s", uuid)
-		log.Infof("device utilization: cpu: %d, memory: %d", utilization.Gpu, utilization.Memory)
-		for _, p := range processes {
-			log.Infof("Pid:               %d", p.Pid)
-			log.Infof("ComputeInstanceId: %d", p.ComputeInstanceId)
-			log.Infof("GpuInstanceId:     %d", p.GpuInstanceId)
-			log.Infof("UsedGpuMemory:     %d MB", p.UsedGpuMemory/(1024*1024))
-		}
+
 	}
 	m.devices = dl
+}
+
+func (m *NvidiaDeviceManager) discoverGpuProcesses() {
+	for _, device := range m.devices {
+		utilization, ret := device.nDevice.GetUtilizationRates()
+		nvmlErrorCheck(ret)
+		processes, ret := device.nDevice.GetComputeRunningProcesses()
+		nvmlErrorCheck(ret)
+		var processList []*GpuProcess
+		for _, nvmlProcessInfo := range processes {
+			gpuProcess := GpuProcess{nvmlProcessInfo: &nvmlProcessInfo}
+			gpuProcess.enrichProcessInfo()
+			processList = append(processList, &gpuProcess)
+		}
+		device.processes = processList
+		device.utilization = &utilization
+	}
+}
+
+func (p *GpuProcess) enrichProcessInfo() {
+
+	if pr, err := process.NewProcess(int32(p.nvmlProcessInfo.Pid)); err == nil {
+		var e error
+		var cmdline, user string
+		cmdline, e = pr.Cmdline()
+		checkProcessDiscoveryError(e)
+		user, e = pr.Username()
+		checkProcessDiscoveryError(e)
+		p.cmdline = cmdline
+		p.user = user
+
+	} else {
+		log.Error(err)
+	}
+
+	if proc, err := procfs.NewProc(int(p.nvmlProcessInfo.Pid)); err == nil {
+		var e error
+		var containerId string
+		var cgroups []procfs.Cgroup
+		cgroups, e = proc.Cgroups()
+		if e != nil {
+			log.Error(e)
+		}
+		if len(cgroups) == 0 {
+			log.Errorf("cgroups list for %d is empty", p.nvmlProcessInfo.Pid)
+		}
+		log.Info(containerId)
+
+	}
 }
 
 func NewNvidiaDeviceManager() *NvidiaDeviceManager {
@@ -143,5 +183,11 @@ func NewNvidiaDeviceManager() *NvidiaDeviceManager {
 func nvmlErrorCheck(ret nvml.Return) {
 	if ret != nvml.SUCCESS {
 		log.Fatalf("fatal error during nvml operation: %s", nvml.ErrorString(ret))
+	}
+}
+
+func checkProcessDiscoveryError(e error) {
+	if e != nil {
+		log.Error(e)
 	}
 }
