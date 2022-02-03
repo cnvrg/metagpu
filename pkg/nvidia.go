@@ -126,8 +126,7 @@ func (m *NvidiaDeviceManager) setDevices() {
 			log.Infof("Pid:               %d", p.Pid)
 			log.Infof("ComputeInstanceId: %d", p.ComputeInstanceId)
 			log.Infof("GpuInstanceId:     %d", p.GpuInstanceId)
-			log.Infof("UsedGpuMemory:     %d MB", p.UsedGpuMemory/1024*1024)
-			log.Infof("UsedGpuMemory:     %d B", p.UsedGpuMemory)
+			log.Infof("UsedGpuMemory:     %d MB", p.UsedGpuMemory/(1024*1024))
 		}
 	}
 	m.devices = dl
