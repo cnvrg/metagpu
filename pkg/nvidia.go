@@ -13,24 +13,17 @@ import (
 	"time"
 )
 
-type GpuProcess struct {
-	nvmlProcessInfo *nvml.ProcessInfo
-	cmdline         string
-	user            string
-	containerId     string
-	podId           string
-}
-
 type NvidiaDevice struct {
 	k8sDevice   *pluginapi.Device
 	nDevice     *nvml.Device
 	utilization *nvml.Utilization
-	processes   []*GpuProcess
+	processes   []*DeviceProcess
 }
 
 type NvidiaDeviceManager struct {
-	devices  []*NvidiaDevice
-	cacheTTL time.Duration
+	devices                  []*NvidiaDevice
+	cacheTTL                 time.Duration
+	processesDiscoveryPeriod time.Duration
 }
 
 func (m *NvidiaDeviceManager) CacheDevices() {
@@ -43,12 +36,26 @@ func (m *NvidiaDeviceManager) CacheDevices() {
 	}()
 }
 
+func (m *NvidiaDeviceManager) GpuPS() {
+
+}
+
 func (m *NvidiaDeviceManager) ListDevices() []*pluginapi.Device {
 	var d []*pluginapi.Device
 	for _, device := range m.devices {
 		d = append(d, device.k8sDevice)
 	}
 	return d
+}
+
+func (m *NvidiaDeviceManager) DiscoverDeviceProcesses() {
+	m.setDevices()
+	go func() {
+		for {
+			<-time.After(m.processesDiscoveryPeriod)
+			m.discoverGpuProcesses()
+		}
+	}()
 }
 
 func (m *NvidiaDeviceManager) ParseRealDeviceId(metaDevicesIds []string) (realDevicesIds string) {
@@ -129,9 +136,9 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 		nvmlErrorCheck(ret)
 		processes, ret := device.nDevice.GetComputeRunningProcesses()
 		nvmlErrorCheck(ret)
-		var processList []*GpuProcess
+		var processList []*DeviceProcess
 		for _, nvmlProcessInfo := range processes {
-			gpuProcess := GpuProcess{nvmlProcessInfo: &nvmlProcessInfo}
+			gpuProcess := DeviceProcess{pid: nvmlProcessInfo.Pid, memory: nvmlProcessInfo.UsedGpuMemory}
 			gpuProcess.enrichProcessInfo()
 			processList = append(processList, &gpuProcess)
 		}
@@ -140,9 +147,9 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 	}
 }
 
-func (p *GpuProcess) enrichProcessInfo() {
+func (p *DeviceProcess) enrichProcessInfo() {
 
-	if pr, err := process.NewProcess(int32(p.nvmlProcessInfo.Pid)); err == nil {
+	if pr, err := process.NewProcess(int32(p.pid)); err == nil {
 		var e error
 		var cmdline, user string
 		cmdline, e = pr.Cmdline()
@@ -156,7 +163,7 @@ func (p *GpuProcess) enrichProcessInfo() {
 		log.Error(err)
 	}
 
-	if proc, err := procfs.NewProc(int(p.nvmlProcessInfo.Pid)); err == nil {
+	if proc, err := procfs.NewProc(int(p.pid)); err == nil {
 		var e error
 		var containerId string
 		var cgroups []procfs.Cgroup
@@ -165,7 +172,7 @@ func (p *GpuProcess) enrichProcessInfo() {
 			log.Error(e)
 		}
 		if len(cgroups) == 0 {
-			log.Errorf("cgroups list for %d is empty", p.nvmlProcessInfo.Pid)
+			log.Errorf("cgroups list for %d is empty", p.pid)
 		}
 		log.Info(containerId)
 
@@ -175,7 +182,10 @@ func (p *GpuProcess) enrichProcessInfo() {
 func NewNvidiaDeviceManager() *NvidiaDeviceManager {
 	ret := nvml.Init()
 	nvmlErrorCheck(ret)
-	ndm := &NvidiaDeviceManager{cacheTTL: time.Second * time.Duration(viper.GetInt("deviceCacheTTL"))}
+	ndm := &NvidiaDeviceManager{
+		cacheTTL:                 time.Second * time.Duration(viper.GetInt("deviceCacheTTL")),
+		processesDiscoveryPeriod: time.Second * time.Duration(viper.GetInt("processesDiscoveryPeriod")),
+	}
 	ndm.CacheDevices()
 	return ndm
 }

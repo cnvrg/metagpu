@@ -1,4 +1,5 @@
 metaGpus: 10
 accelerator: nvidia
+processesDiscoveryPeriod: 5
 deviceCacheTTL: 3600
 resourceName: cnvrg.io/metagpu
