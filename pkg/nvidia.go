@@ -173,7 +173,6 @@ func (p *DeviceProcess) enrichProcessInfo() {
 
 	if proc, err := procfs.NewProc(int(p.pid)); err == nil {
 		var e error
-		var containerId string
 		var cgroups []procfs.Cgroup
 		cgroups, e = proc.Cgroups()
 		if e != nil {
@@ -183,7 +182,7 @@ func (p *DeviceProcess) enrichProcessInfo() {
 			log.Errorf("cgroups list for %d is empty", p.pid)
 		}
 		p.containerId = filepath.Base(cgroups[0].Path)
-		p.podId, p.podNamespace = inspectContainer(containerId)
+		p.podId, p.podNamespace = inspectContainer(p.containerId)
 
 	}
 }
@@ -217,10 +216,12 @@ func inspectContainer(containerId string) (podName, podNamespace string) {
 	cli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
 	if err != nil {
 		log.Error(err)
+		return
 	}
 	cd, err := cli.ContainerInspect(context.Background(), containerId)
 	if err != nil {
 		log.Error(err)
+		return
 	}
 	if pd, ok := cd.Config.Labels["io.kubernetes.pod.name"]; ok {
 		podName = pd
