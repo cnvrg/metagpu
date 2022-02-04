@@ -1,13 +1,16 @@
 package pkg
 
 import (
+	"context"
 	"fmt"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
+	dockerclient "github.com/docker/docker/client"
 	"github.com/prometheus/procfs"
 	"github.com/shirou/gopsutil/v3/process"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -163,6 +166,7 @@ func (p *DeviceProcess) enrichProcessInfo() {
 			log.Errorf("cgroups list for %d is empty", p.pid)
 		}
 		containerId = filepath.Base(cgroups[0].Path)
+		p.podId, p.podNamespace = inspectContainer(containerId)
 		log.Info(containerId)
 
 	}
@@ -190,4 +194,25 @@ func checkProcessDiscoveryError(e error) {
 	if e != nil {
 		log.Error(e)
 	}
+}
+
+func inspectContainer(containerId string) (podName, podNamespace string) {
+
+	cli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
+	if err != nil {
+		log.Error(err)
+	}
+	cd, err := cli.ContainerInspect(context.Background(), containerId)
+	if err != nil {
+		log.Error(err)
+	}
+	if pd, ok := cd.Config.Labels["io.kubernetes.pod.name"]; !ok {
+		podName = pd
+	}
+
+	if pn, ok := cd.Config.Labels["io.kubernetes.pod.namespace"]; !ok {
+		podNamespace = pn
+	}
+
+	return
 }
