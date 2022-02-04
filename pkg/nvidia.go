@@ -145,7 +145,7 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 			}
 
 			log.Infof("Pid           : %d", p.pid)
-			log.Infof("Memory        : %d", p.memory)
+			log.Infof("Memory        : %d", p.memory/(1024*1024))
 			log.Infof("Command       : %s", cmd)
 			log.Infof("ContainerID   : %s", p.containerId)
 			log.Infof("PodName       : %s", p.podId)
