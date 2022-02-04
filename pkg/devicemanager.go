@@ -13,7 +13,6 @@ type DeviceProcess struct {
 
 type DeviceManager interface {
 	CacheDevices()
-	ListDevices() []*pluginapi.Device
 	ListMetaDevices() []*pluginapi.Device
 	DiscoverDeviceProcesses()
 	ParseRealDeviceId(metaDevicesIds []string) (realDeviceId string)

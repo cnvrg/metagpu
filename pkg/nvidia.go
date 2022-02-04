@@ -36,24 +36,11 @@ func (m *NvidiaDeviceManager) CacheDevices() {
 	}()
 }
 
-func (m *NvidiaDeviceManager) GpuPS() {
-
-}
-
-func (m *NvidiaDeviceManager) ListDevices() []*pluginapi.Device {
-	var d []*pluginapi.Device
-	for _, device := range m.devices {
-		d = append(d, device.k8sDevice)
-	}
-	return d
-}
-
 func (m *NvidiaDeviceManager) DiscoverDeviceProcesses() {
-	m.setDevices()
 	go func() {
 		for {
-			<-time.After(m.processesDiscoveryPeriod)
 			m.discoverGpuProcesses()
+			<-time.After(m.processesDiscoveryPeriod)
 		}
 	}()
 }
@@ -187,6 +174,7 @@ func NewNvidiaDeviceManager() *NvidiaDeviceManager {
 		processesDiscoveryPeriod: time.Second * time.Duration(viper.GetInt("processesDiscoveryPeriod")),
 	}
 	ndm.CacheDevices()
+	ndm.DiscoverDeviceProcesses()
 	return ndm
 }
 
