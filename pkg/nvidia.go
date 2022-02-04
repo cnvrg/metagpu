@@ -206,11 +206,11 @@ func inspectContainer(containerId string) (podName, podNamespace string) {
 	if err != nil {
 		log.Error(err)
 	}
-	if pd, ok := cd.Config.Labels["io.kubernetes.pod.name"]; !ok {
+	if pd, ok := cd.Config.Labels["io.kubernetes.pod.name"]; ok {
 		podName = pd
 	}
 
-	if pn, ok := cd.Config.Labels["io.kubernetes.pod.namespace"]; !ok {
+	if pn, ok := cd.Config.Labels["io.kubernetes.pod.namespace"]; ok {
 		podNamespace = pn
 	}
 
