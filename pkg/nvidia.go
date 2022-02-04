@@ -144,12 +144,12 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 				cmd = strings.Split(p.cmdline, " ")[0]
 			}
 
-			log.Infof("Pid          	: %d", p.pid)
-			log.Infof("Memory 		: %d", p.memory)
-			log.Infof("Command		: %s", cmd)
-			log.Infof("ContainerID	: %s", p.containerId)
-			log.Infof("PodName		: %s", p.podId)
-			log.Infof("PodNamespace	: %s", p.podNamespace)
+			log.Infof("Pid           : %d", p.pid)
+			log.Infof("Memory        : %d", p.memory)
+			log.Infof("Command       : %s", cmd)
+			log.Infof("ContainerID   : %s", p.containerId)
+			log.Infof("PodName       : %s", p.podId)
+			log.Infof("PodNamespace  : %s", p.podNamespace)
 		}
 		log.Info("=========================")
 	}
