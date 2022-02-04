@@ -139,9 +139,14 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 	for _, device := range m.devices {
 		log.Infof("=========== %s ===========", device.k8sDevice.ID)
 		for _, p := range device.processes {
+			cmd := ""
+			if p.cmdline != "" {
+				cmd = strings.Split(p.cmdline, " ")[0]
+			}
+
 			log.Infof("Pid          	: %d", p.pid)
 			log.Infof("Memory 		: %d", p.memory)
-			log.Infof("Command		: %s", p.cmdline)
+			log.Infof("Command		: %s", cmd)
 			log.Infof("ContainerID	: %s", p.containerId)
 			log.Infof("PodName		: %s", p.podId)
 			log.Infof("PodNamespace	: %s", p.podNamespace)
@@ -177,7 +182,7 @@ func (p *DeviceProcess) enrichProcessInfo() {
 		if len(cgroups) == 0 {
 			log.Errorf("cgroups list for %d is empty", p.pid)
 		}
-		containerId = filepath.Base(cgroups[0].Path)
+		p.containerId = filepath.Base(cgroups[0].Path)
 		p.podId, p.podNamespace = inspectContainer(containerId)
 
 	}
