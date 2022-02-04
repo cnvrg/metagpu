@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -161,6 +162,7 @@ func (p *DeviceProcess) enrichProcessInfo() {
 		if len(cgroups) == 0 {
 			log.Errorf("cgroups list for %d is empty", p.pid)
 		}
+		containerId = filepath.Base(cgroups[0].Path)
 		log.Info(containerId)
 
 	}
