@@ -53,7 +53,7 @@ func (m *NvidiaDeviceManager) ParseRealDeviceId(metaDevicesIds []string) (realDe
 
 	// each meta gpu will starts from 'cnvrg-meta-[number]-'
 	r, _ := regexp.Compile("cnvrg-meta-\\d+-")
-	// string map will eliminates doubles in real devices ids
+	// string map will eliminate doubles in real devices ids
 	realDevicesIdsMap := make(map[string]bool)
 	for _, metaDeviceId := range metaDevicesIds {
 		deviceId := r.ReplaceAllString(metaDeviceId, "")
@@ -136,6 +136,18 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 		device.processes = processList
 		device.utilization = &utilization
 	}
+	for _, device := range m.devices {
+		log.Infof("=========== %s ===========", device.k8sDevice.ID)
+		for _, p := range device.processes {
+			log.Infof("Pid          	: %d", p.pid)
+			log.Infof("Memory 		: %d", p.memory)
+			log.Infof("Command		: %s", p.cmdline)
+			log.Infof("ContainerID	: %s", p.containerId)
+			log.Infof("PodName		: %s", p.podId)
+			log.Infof("PodNamespace	: %s", p.podNamespace)
+		}
+		log.Info("=========================")
+	}
 }
 
 func (p *DeviceProcess) enrichProcessInfo() {
@@ -167,7 +179,6 @@ func (p *DeviceProcess) enrichProcessInfo() {
 		}
 		containerId = filepath.Base(cgroups[0].Path)
 		p.podId, p.podNamespace = inspectContainer(containerId)
-		log.Info(containerId)
 
 	}
 }
