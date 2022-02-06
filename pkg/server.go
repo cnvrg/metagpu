@@ -15,10 +15,10 @@ import (
 )
 
 var (
-	UnixSocket = "meta-fractor.sock"
+	UnixSocket = "metagpu.sock"
 )
 
-type MetaFractorDevicePlugin struct {
+type MetaGpuDevicePlugin struct {
 	DeviceManager
 	server               *grpc.Server
 	socket               string
@@ -27,7 +27,7 @@ type MetaFractorDevicePlugin struct {
 	metaGpuRecalculation chan bool
 }
 
-func (p *MetaFractorDevicePlugin) dial(socket string, timeout time.Duration) (*grpc.ClientConn, error) {
+func (p *MetaGpuDevicePlugin) dial(socket string, timeout time.Duration) (*grpc.ClientConn, error) {
 	c, err := grpc.Dial(socket, grpc.WithInsecure(), grpc.WithBlock(),
 		grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
 			return net.DialTimeout("unix", socket, timeout)
@@ -42,7 +42,7 @@ func (p *MetaFractorDevicePlugin) dial(socket string, timeout time.Duration) (*g
 
 }
 
-func (p *MetaFractorDevicePlugin) Register() error {
+func (p *MetaGpuDevicePlugin) Register() error {
 	conn, err := p.dial(pluginapi.KubeletSocket, 5*time.Second)
 	if err != nil {
 		return err
@@ -61,11 +61,11 @@ func (p *MetaFractorDevicePlugin) Register() error {
 	return nil
 }
 
-func (p *MetaFractorDevicePlugin) GetDevicePluginOptions(ctx context.Context, empty *pluginapi.Empty) (*pluginapi.DevicePluginOptions, error) {
+func (p *MetaGpuDevicePlugin) GetDevicePluginOptions(ctx context.Context, empty *pluginapi.Empty) (*pluginapi.DevicePluginOptions, error) {
 	return &pluginapi.DevicePluginOptions{}, nil
 }
 
-func (p *MetaFractorDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
+func (p *MetaGpuDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
 
 	if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.ListMetaDevices()}); err != nil {
 		log.Error(err)
@@ -83,11 +83,11 @@ func (p *MetaFractorDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.D
 	}
 }
 
-func (p *MetaFractorDevicePlugin) GetPreferredAllocation(ctx context.Context, request *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
+func (p *MetaGpuDevicePlugin) GetPreferredAllocation(ctx context.Context, request *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
 	return &pluginapi.PreferredAllocationResponse{}, nil
 }
 
-func (p *MetaFractorDevicePlugin) Allocate(ctx context.Context, request *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
+func (p *MetaGpuDevicePlugin) Allocate(ctx context.Context, request *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 	allocResponse := &pluginapi.AllocateResponse{}
 	for _, req := range request.ContainerRequests {
 
@@ -103,11 +103,11 @@ func (p *MetaFractorDevicePlugin) Allocate(ctx context.Context, request *plugina
 	return allocResponse, nil
 }
 
-func (p *MetaFractorDevicePlugin) PreStartContainer(ctx context.Context, request *pluginapi.PreStartContainerRequest) (*pluginapi.PreStartContainerResponse, error) {
+func (p *MetaGpuDevicePlugin) PreStartContainer(ctx context.Context, request *pluginapi.PreStartContainerRequest) (*pluginapi.PreStartContainerResponse, error) {
 	return &pluginapi.PreStartContainerResponse{}, nil
 }
 
-func (p *MetaFractorDevicePlugin) Serve() error {
+func (p *MetaGpuDevicePlugin) Serve() error {
 	_ = os.Remove(p.socket)
 
 	sock, err := net.Listen("unix", p.socket)
@@ -134,7 +134,7 @@ func (p *MetaFractorDevicePlugin) Serve() error {
 
 }
 
-func (p *MetaFractorDevicePlugin) Start() {
+func (p *MetaGpuDevicePlugin) Start() {
 	if err := p.Serve(); err != nil {
 		log.Fatal(err)
 	}
@@ -144,7 +144,7 @@ func (p *MetaFractorDevicePlugin) Start() {
 	}
 }
 
-func (p *MetaFractorDevicePlugin) Stop() {
+func (p *MetaGpuDevicePlugin) Stop() {
 	log.Info("stopping GRPC server")
 	if p != nil && p.server != nil {
 		p.server.Stop()
@@ -156,11 +156,11 @@ func (p *MetaFractorDevicePlugin) Stop() {
 	close(p.metaGpuRecalculation)
 }
 
-func NewMetaFractorDevicePlugin(metaGpuRecalculation chan bool) *MetaFractorDevicePlugin {
+func NewMetaGpuDevicePlugin(metaGpuRecalculation chan bool) *MetaGpuDevicePlugin {
 	if viper.GetString("accelerator") != "nvidia" {
 		log.Fatal("accelerator not supported, currently only nvidia is supported")
 	}
-	return &MetaFractorDevicePlugin{
+	return &MetaGpuDevicePlugin{
 		server:               grpc.NewServer([]grpc.ServerOption{}...),
 		socket:               fmt.Sprintf("%s%s", pluginapi.DevicePluginPath, UnixSocket),
 		resourceName:         viper.GetString("resourceName"),

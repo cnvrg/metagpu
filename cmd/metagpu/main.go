@@ -35,7 +35,7 @@ var (
 	metaGpuRecalc = make(chan bool)
 )
 
-var fractorVersion = &cobra.Command{
+var metaGpuVersion = &cobra.Command{
 	Use:   "version",
 	Short: "Print factor version and build sha",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -43,11 +43,11 @@ var fractorVersion = &cobra.Command{
 	},
 }
 
-var fractorStart = &cobra.Command{
+var metaGpuStart = &cobra.Command{
 	Use:   "start",
-	Short: "Start fractor device plugin",
+	Short: "Start metagpu device plugin",
 	Run: func(cmd *cobra.Command, args []string) {
-		f := pkg.NewMetaFractorDevicePlugin(metaGpuRecalc)
+		f := pkg.NewMetaGpuDevicePlugin(metaGpuRecalc)
 		f.Start()
 
 		sigCh := make(chan os.Signal, 1)
@@ -67,15 +67,15 @@ var fractorStart = &cobra.Command{
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "fractor",
-	Short: "Fractional accelerator device plugin",
+	Use:   "metagpu",
+	Short: "Metagpu - fractional accelerator device plugin",
 }
 
 func init() {
 	cobra.OnInitialize(initConfig)
 	setParams(rootParams, rootCmd)
-	rootCmd.AddCommand(fractorVersion)
-	rootCmd.AddCommand(fractorStart)
+	rootCmd.AddCommand(metaGpuVersion)
+	rootCmd.AddCommand(metaGpuStart)
 
 }
 
@@ -85,7 +85,7 @@ func initConfig() {
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("./config")
 	viper.AddConfigPath(viper.GetString("config"))
-	viper.SetEnvPrefix("FRACTOR")
+	viper.SetEnvPrefix("METAGPU")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	setupLogging()
 	err := viper.ReadInConfig()
