@@ -1,0 +1,15 @@
+version: v1
+managed:
+  enabled: true
+  optimize_for: CODE_SIZE
+  go_package_prefix:
+    default: github.com/AccessibleAI/metagpu-device-plugin/gen/proto/go
+    except:
+      - buf.build/googleapis/googleapis
+plugins:
+  - name: go
+    opt: paths=source_relative
+    out: gen/proto/go
+  - name: go-grpc
+    opt: paths=source_relative
+    out: gen/proto/go

@@ -1,4 +1,4 @@
-package pkg
+package deviceplugin
 
 import pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 

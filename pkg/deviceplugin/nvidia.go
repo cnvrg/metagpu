@@ -1,4 +1,4 @@
-package pkg
+package deviceplugin
 
 import (
 	"context"

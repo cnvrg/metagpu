@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/deviceplugin"
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -47,7 +47,7 @@ var metaGpuStart = &cobra.Command{
 	Use:   "start",
 	Short: "Start metagpu device plugin",
 	Run: func(cmd *cobra.Command, args []string) {
-		f := pkg.NewMetaGpuDevicePlugin(metaGpuRecalc)
+		f := deviceplugin.NewMetaGpuDevicePlugin(metaGpuRecalc)
 		f.Start()
 
 		sigCh := make(chan os.Signal, 1)
