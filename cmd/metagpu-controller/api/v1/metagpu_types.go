@@ -14,6 +14,7 @@ type MetaGpuStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Foo",type=string,JSONPath=`.spec.foo`
 
 type MetaGpu struct {
 	metav1.TypeMeta   `json:",inline"`

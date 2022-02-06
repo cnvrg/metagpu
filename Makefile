@@ -15,3 +15,7 @@ docker-push:
 
 controller-generate:
 	 controller-gen-v0.8.0 object paths=./cmd/metagpu-controller/...
+
+controller-manifests:
+	controller-gen-v0.8.0 crd paths=./cmd/metagpu-controller/... output:artifacts:config=./config/crd/bases
+

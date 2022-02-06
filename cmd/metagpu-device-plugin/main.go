@@ -85,7 +85,7 @@ func initConfig() {
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("./config")
 	viper.AddConfigPath(viper.GetString("config"))
-	viper.SetEnvPrefix("METAGPU")
+	viper.SetEnvPrefix("METAGPU_DEVICE_PLUGIN")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	setupLogging()
 	err := viper.ReadInConfig()
