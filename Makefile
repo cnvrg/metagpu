@@ -14,8 +14,8 @@ docker-push:
 	docker push docker.io/cnvrg/metagpu-device-plugin:latest
 
 controller-generate:
-	 controller-gen-v0.8.0 object paths=./cmd/metagpu-controller/...
+	 controller-gen-v0.8.0 object paths=./cmd/metagpu-controller/api/...
 
 controller-manifests:
-	controller-gen-v0.8.0 crd paths=./cmd/metagpu-controller/... output:artifacts:config=./config/crd/bases
+	controller-gen-v0.8.0 crd paths=./cmd/metagpu-controller/api/... output:artifacts:config=./config/crd/bases
 

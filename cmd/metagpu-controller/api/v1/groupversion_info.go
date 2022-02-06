@@ -16,7 +16,7 @@ limitations under the License.
 
 // Package v1 contains API Schema definitions for the mlops v1 API group
 // +kubebuilder:object:generate=true
-// +groupName=metagpu.mlops.cnvrg.io
+// +groupName=mlops.cnvrg.io
 package v1
 
 import (
@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	SchemeGroupVersion = schema.GroupVersion{Group: "metagpu.mlops.cnvrg.io", Version: "v1"}
+	SchemeGroupVersion = schema.GroupVersion{Group: "mlops.cnvrg.io", Version: "v1"}
 
 	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
 

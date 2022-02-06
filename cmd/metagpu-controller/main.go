@@ -41,7 +41,7 @@ var metaGpuControllerStart = &cobra.Command{
 	Use:   "start",
 	Short: "Start metagpu controller",
 	Run: func(cmd *cobra.Command, args []string) {
-
+		startController()
 	},
 }
 
