@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: fractor-device-plugin-daemonset
+  name: metagpu-device-plugin
   namespace: kube-system
 spec:
   selector:
     matchLabels:
-      name: fractor-device-plugin-daemonset
+      name: metagpu-device-plugin
   template:
     metadata:
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ""
       labels:
-        name: fractor-device-plugin-daemonset
+        name: metagpu-device-plugin
     spec:
       tolerations:
         - key: CriticalAddonsOnly
@@ -25,7 +25,7 @@ spec:
       - name: regcred
       containers:
         - name: fractor
-          image: docker.io/cnvrg/fractor:latest
+          image: docker.io/cnvrg/metagpu-device-plugin:latest
           command:
             - /usr/bin/fractor-device-plugin
             - start
