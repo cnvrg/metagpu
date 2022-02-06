@@ -17,15 +17,15 @@ import (
 	"time"
 )
 
-type NvidiaDevice struct {
-	K8sDevice   *pluginapi.Device
-	NDevice     *nvml.Device
-	Utilization *nvml.Utilization
-	Processes   []*DeviceProcess
-}
+//type MetaDevice struct {
+//	K8sDevice   *pluginapi.Device
+//	NDevice     *nvml.Device
+//	Utilization *nvml.Utilization
+//	Processes   []*DeviceProcess
+//}
 
 type NvidiaDeviceManager struct {
-	Devices                  []*NvidiaDevice
+	Devices                  []*MetaDevice
 	cacheTTL                 time.Duration
 	processesDiscoveryPeriod time.Duration
 }
@@ -107,26 +107,42 @@ func (m *NvidiaDeviceManager) setDevices() {
 	count, ret := nvml.DeviceGetCount()
 	log.Infof("refreshing nvidia Devices cache (total: %d)", count)
 	nvmlErrorCheck(ret)
-	var dl []*NvidiaDevice
+	var dl []*MetaDevice
 	for i := 0; i < count; i++ {
-		var nd NvidiaDevice
+		var md MetaDevice
 		device, ret := nvml.DeviceGetHandleByIndex(i)
 		uuid, ret := device.GetUUID()
 		nvmlErrorCheck(ret)
-		nd.K8sDevice = &pluginapi.Device{ID: uuid, Health: pluginapi.Healthy}
-		nd.NDevice = &device
+		md.K8sDevice = &pluginapi.Device{ID: uuid, Health: pluginapi.Healthy}
+		md.UUID = uuid
+		md.Index = i
 		nvmlErrorCheck(ret)
-		dl = append(dl, &nd)
-
+		dl = append(dl, &md)
 	}
 	m.Devices = dl
 }
 
+func (m *NvidiaDeviceManager) ListCachedDeviceProcesses() []*MetaDevice {
+	var metaDeviceList []*MetaDevice
+	for _, d := range m.Devices {
+		metaDeviceList = append(metaDeviceList, &MetaDevice{
+			UUID:        d.UUID,
+			Index:       d.Index,
+			Utilization: d.Utilization,
+			Processes:   d.Processes,
+			K8sDevice:   d.K8sDevice,
+		})
+	}
+	return metaDeviceList
+}
+
 func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 	for _, device := range m.Devices {
-		utilization, ret := device.NDevice.GetUtilizationRates()
+		nvidiaDevice, ret := nvml.DeviceGetHandleByIndex(device.Index)
 		nvmlErrorCheck(ret)
-		processes, ret := device.NDevice.GetComputeRunningProcesses()
+		utilization, ret := nvidiaDevice.GetUtilizationRates()
+		nvmlErrorCheck(ret)
+		processes, ret := nvidiaDevice.GetComputeRunningProcesses()
 		nvmlErrorCheck(ret)
 		var processList []*DeviceProcess
 		for _, nvmlProcessInfo := range processes {
@@ -135,7 +151,10 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 			processList = append(processList, &gpuProcess)
 		}
 		device.Processes = processList
-		device.Utilization = &utilization
+		device.Utilization = &MetaDeviceUtilization{
+			Gpu:    utilization.Gpu,
+			Memory: utilization.Memory,
+		}
 	}
 	for _, device := range m.Devices {
 		log.Infof("=========== %s ===========", device.K8sDevice.ID)
