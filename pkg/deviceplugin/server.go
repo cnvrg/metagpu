@@ -3,7 +3,6 @@ package deviceplugin
 import (
 	"context"
 	"fmt"
-	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/metagpusrv"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -144,7 +143,7 @@ func (p *MetaGpuDevicePlugin) Start() {
 		log.Fatal(err)
 	}
 
-	go metagpusrv.StartMetaGpuServer()
+	//go metagpusrv.StartMetaGpuServer()
 }
 
 func (p *MetaGpuDevicePlugin) Stop() {
