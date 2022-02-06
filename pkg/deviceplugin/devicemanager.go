@@ -3,11 +3,11 @@ package deviceplugin
 import pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 
 type DeviceProcess struct {
-	pid          uint32
-	memory       uint64
-	cmdline      string
-	user         string
-	containerId  string
+	Pid          uint32
+	Memory       uint64
+	Cmdline      string
+	User         string
+	ContainerId  string
 	podId        string
 	podNamespace string
 }

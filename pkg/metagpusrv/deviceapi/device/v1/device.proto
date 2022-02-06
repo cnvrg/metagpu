@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package device.v1;
+
+service DeviceService{
+  rpc ListDeviceProcesses (ListDeviceProcessesRequest) returns (ListDeviceProcessesResponse){}
+}
+
+
+
+message DeviceProcess{
+  uint32 pid = 1;
+  uint64 memory = 2;
+  string cmdline = 3;
+  string user = 4;
+  string container_id = 5;
+}
+
+message DeviceProcesses{
+  repeated DeviceProcess device_process = 1;
+}
+
+message ListDeviceProcessesRequest{}
+message ListDeviceProcessesResponse{
+  map <string, DeviceProcesses> processes = 1;
+}

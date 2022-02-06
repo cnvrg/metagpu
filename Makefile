@@ -19,3 +19,8 @@ controller-generate:
 controller-manifests:
 	controller-gen-v0.8.0 crd paths=./cmd/metagpu-controller/api/... output:artifacts:config=./config/crd/bases
 
+build-proto:
+	buf mod update pkg/metagpusrv/deviceapi
+	buf lint
+	buf build
+	buf generate
