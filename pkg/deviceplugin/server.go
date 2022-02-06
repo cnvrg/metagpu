@@ -143,7 +143,6 @@ func (p *MetaGpuDevicePlugin) Start() {
 		log.Fatal(err)
 	}
 
-	//go metagpusrv.StartMetaGpuServer()
 }
 
 func (p *MetaGpuDevicePlugin) Stop() {
