@@ -1,0 +1,155 @@
+name: Docker Image CI
+
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      msg:
+        description: "Msg instead of commit log"
+        required: true
+        default: 'false'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Bump version and push tag
+      uses: AccessibleAI/github-tag-action@1.0.0
+      id: tag_bump
+      env:
+        MSG: ${{ github.event.inputs.msg }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PRERELEASE_AUTOMATIC_BUMP: true
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+        architecture: x64
+      if: ${{ steps.tag_bump.outputs.bumped == 'true' && steps.tag_bump.outputs.prerelease == 'false' }}
+
+    - name: Generate Cnvrg Changelog
+      uses: AccessibleAI/github-changelog-action@1.0.0
+      id: cnvrg_changelog
+      with:
+        from_version: ${{ steps.tag_bump.outputs.tag }}
+        to_version:  ${{ steps.tag_bump.outputs.new_tag }}
+        jira_token: ${{ secrets.JIRA_TOKEN }}
+        slack_webhook_url: false
+      if: ${{ steps.tag_bump.outputs.bumped == 'true' && steps.tag_bump.outputs.prerelease == 'false' }}
+
+    - name: Generate Non Cnvrg Changelog
+      id: changelog
+      uses: metcalfc/changelog-generator@v3.0.0
+      with:
+        myToken: ${{ secrets.GITHUB_TOKEN }}
+        head-ref: ${{ steps.tag_bump.outputs.tag }}
+        base-ref: ${{ steps.tag_bump.outputs.new_tag }}
+      if: ${{ steps.cnvrg_changelog.outputs.empty == 'true' && steps.tag_bump.outputs.bumped == 'true' && steps.tag_bump.outputs.prerelease == 'false' }}
+
+    - name: Generate changelog
+      id: changelog_final
+      if: ${{ steps.tag_bump.outputs.bumped == 'true' && steps.tag_bump.outputs.prerelease == 'false' }}
+      run: |
+        set -o noglob
+        if ${{ steps.cnvrg_changelog.outputs.empty }}; then
+          log=$(cat << "EOF"
+        ${{ steps.changelog.outputs.changelog }}
+        EOF
+        )
+        else
+          log=$(cat << "EOF"
+        ${{ steps.cnvrg_changelog.outputs.changelog }}
+        EOF
+        )
+        fi
+        log="${log//'%'/'%25'}"
+        log="${log//$'\n'/'%0A'}"
+        log="${log//$'\r'/'%0D'}"
+        echo "::set-output name=changelog::$log"
+
+    - name: Print the final changelog
+      if: ${{ steps.tag_bump.outputs.bumped == 'true' && steps.tag_bump.outputs.prerelease == 'false' }}
+      run: |
+        cat << "EOF"
+        ${{ steps.changelog_final.outputs.changelog }}
+        EOF
+
+    - name: Changelog Release
+      uses: softprops/action-gh-release@v1
+      with:
+        body: ${{steps.changelog_final.outputs.changelog}}
+        tag_name: ${{ steps.tag_bump.outputs.new_tag }}
+        prerelease: ${{ steps.tag_bump.outputs.prerelease }}
+        generate_release_notes: true
+      if: ${{ steps.tag_bump.outputs.bumped == 'true' && steps.tag_bump.outputs.prerelease == 'false' }}
+
+    - name: Extract repo/branch name
+      shell: bash
+      if: ${{ steps.tag_bump.outputs.bumped == 'true' }}
+      run: |
+          echo "##[set-output name=repo;]$(echo ${{github.event.repository.name}} | sed 's/cnvrg-//')"
+          echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/*/})"
+          echo "##[set-output name=head;]$(git rev-parse --short HEAD)"
+          echo "##[set-output name=repo_url;]$(echo $GITHUB_SERVER_URL/$GITHUB_REPOSITORY)"
+      id: extract_info
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v1
+      if: ${{ steps.tag_bump.outputs.bumped == 'true' }}
+      with:
+        username: ${{ secrets.DOCKER_USER}}
+        password: ${{ secrets.DOCKER_PASSWORD}}
+
+    - name: Set up Docker Buildx
+      id: buildx
+      uses: docker/setup-buildx-action@v1
+      if: ${{ steps.tag_bump.outputs.bumped == 'true' }}
+
+    - name: Build and push main latest
+      id: docker_build_main
+      uses: docker/build-push-action@v2
+      if: ${{ steps.tag_bump.outputs.bumped == 'true' && (github.ref == 'refs/heads/main'  ||  github.ref == 'refs/heads/master') }}
+      with:
+        context: ./
+        file: ./Dockerfile
+        push: true
+        tags: cnvrg/${{ steps.extract_info.outputs.repo }}:latest
+        build-args: |
+          BUILD_SHA=${{ steps.extract_info.outputs.head }}
+          BUILD_VERSION=latest
+
+    - name: Build and push tagged image
+      id: docker_build_tag
+      uses: docker/build-push-action@v2
+      if: ${{ steps.tag_bump.outputs.bumped == 'true' }}
+      with:
+        context: ./
+        file: ./Dockerfile
+        push: true
+        tags: cnvrg/${{ steps.extract_info.outputs.repo }}:${{ steps.tag_bump.outputs.new_tag }}
+        build-args: |
+          BUILD_SHA=${{ steps.extract_info.outputs.head }}
+          BUILD_VERSION=${{ steps.tag_bump.outputs.new_tag }}
+
+    - name: Slack Notification
+      uses: rtCamp/action-slack-notify@v2
+      if: ${{ steps.tag_bump.outputs.bumped == 'true' && steps.tag_bump.outputs.prerelease == 'false' }}
+      env:
+        SLACK_USERNAME: Github Actions
+        SLACK_WEBHOOK: ${{ secrets.SLACK_GITHUB_APP_TOKEN  }}
+        SLACK_CHANNEL: "#release-notes-metacloud"
+        SLACK_ICON: https://avatars.githubusercontent.com/u/44036562?s=48&v=4
+        SLACK_COLOR: ${{ job.status }}
+        SLACK_FOOTER: ""
+        MSG_MINIMAL: true
+        SLACK_TITLE: "Repo Name"
+        SLACK_MESSAGE: |
+          <${{ steps.extract_info.outputs.repo_url }}|${{github.event.repository.name}}>
+          *Docker Image: cnvrg/${{ steps.extract_info.outputs.repo }}:${{ steps.tag_bump.outputs.new_tag }}*
+          *Version: ${{ steps.tag_bump.outputs.new_tag }}*
+          <${{ steps.extract_info.outputs.repo_url }}/releases|Release Notes:>
+          ${{steps.changelog_final.outputs.changelog}}
