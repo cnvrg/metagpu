@@ -35,9 +35,9 @@ var (
 	metaGpuRecalc = make(chan bool)
 )
 
-var metaGpuVersion = &cobra.Command{
+var metaGpuDevicePluginVersion = &cobra.Command{
 	Use:   "version",
-	Short: "Print factor version and build sha",
+	Short: "Print metagpu-device-plugin version and build sha",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("🐾 version: %s build: %s \n", Version, Build)
 	},
@@ -74,7 +74,7 @@ var rootCmd = &cobra.Command{
 func init() {
 	cobra.OnInitialize(initConfig)
 	setParams(rootParams, rootCmd)
-	rootCmd.AddCommand(metaGpuVersion)
+	rootCmd.AddCommand(metaGpuDevicePluginVersion)
 	rootCmd.AddCommand(metaGpuStart)
 
 }
