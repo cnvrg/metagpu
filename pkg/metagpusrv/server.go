@@ -11,11 +11,11 @@ import (
 )
 
 func StartMetaGpuServer() {
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%s", viper.GetString("api.grpc.address"), viper.GetString("metagpu-server-addr")))
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s", viper.GetString("metagpu-server-addr")))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
-	log.Infof("grpc server listening on %s:%s", viper.GetString("api.grpc.address"), viper.GetString("metagpu-server-addr"))
+	log.Infof("grpc server listening on %s", viper.GetString("metagpu-server-addr"))
 
 	grpcServer := grpc.NewServer()
 
