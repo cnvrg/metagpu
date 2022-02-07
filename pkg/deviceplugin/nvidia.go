@@ -24,17 +24,15 @@ type NvidiaDeviceManager struct {
 }
 
 func (m *NvidiaDeviceManager) CacheDevices() {
-	m.setDevices()
 	go func() {
 		for {
-			<-time.After(m.cacheTTL)
 			m.setDevices()
+			<-time.After(m.cacheTTL)
 		}
 	}()
 }
 
 func (m *NvidiaDeviceManager) DiscoverDeviceProcesses() {
-	m.CacheDevices()
 	go func() {
 		for {
 			m.discoverGpuProcesses()
@@ -149,21 +147,8 @@ func (m *NvidiaDeviceManager) cleanUpNonExistingDeviceProcesses(deviceUuid strin
 	}
 }
 
-func (m *NvidiaDeviceManager) ListCachedDeviceProcesses() []*MetaDevice {
-	var metaDeviceList []*MetaDevice
-	for _, d := range m.Devices {
-		metaDeviceList = append(metaDeviceList, &MetaDevice{
-			UUID:        d.UUID,
-			Index:       d.Index,
-			Utilization: d.Utilization,
-			Processes:   d.Processes,
-			K8sDevice:   d.K8sDevice,
-		})
-	}
-	return metaDeviceList
-}
-
 func (m *NvidiaDeviceManager) discoverGpuProcesses() {
+	log.Info("refreshing nvidia devices processes")
 	for _, device := range m.Devices {
 		nvidiaDevice, ret := nvml.DeviceGetHandleByIndex(device.Index)
 		nvmlErrorCheck(ret)
