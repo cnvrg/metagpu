@@ -4,6 +4,7 @@ import (
 	"context"
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
 	log "github.com/sirupsen/logrus"
+	"strings"
 )
 
 func listDevicesProcesses() {
@@ -19,9 +20,16 @@ func listDevicesProcesses() {
 		return
 	}
 	for deviceName, processesList := range resp.Processes {
-		log.Infof("Device UUID: %s", deviceName)
-		for _, process := range processesList.DeviceProcess {
-			log.Info(process)
+		log.Infof("Device UUID   : %s", deviceName)
+		for _, p := range processesList.DeviceProcess {
+			cmd := ""
+			if p.Cmdline != "" {
+				cmd = strings.Split(p.Cmdline, " ")[0]
+			}
+			log.Infof("Pid           : %d", p.Pid)
+			log.Infof("GpuMemory        : %d", p.Memory/(1024*1024))
+			log.Infof("Command       : %s", cmd)
+			log.Infof("ContainerID   : %s", p.ContainerId)
 		}
 	}
 }
