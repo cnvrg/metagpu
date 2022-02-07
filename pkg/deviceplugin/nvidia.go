@@ -241,7 +241,13 @@ func NewNvidiaDeviceManager() *NvidiaDeviceManager {
 		cacheTTL:                 time.Second * time.Duration(viper.GetInt("deviceCacheTTL")),
 		processesDiscoveryPeriod: time.Second * time.Duration(viper.GetInt("processesDiscoveryPeriod")),
 	}
+	// enforce device discovery
+	// to make sure all the devices will be set
+	// before kubelet api server will be started
+	ndm.setDevices()
+	// start cache devices loop
 	ndm.CacheDevices()
+	// start process discovery loop
 	ndm.DiscoverDeviceProcesses()
 	return ndm
 }
