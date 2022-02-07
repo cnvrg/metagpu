@@ -17,6 +17,15 @@ type DeviceProcess struct {
 	PodNamespace string
 }
 
+func NewDeviceProcess(pid uint32, gpuMem uint64) *DeviceProcess {
+	dp := &DeviceProcess{
+		Pid:       pid,
+		GpuMemory: gpuMem,
+	}
+	dp.enrichProcessInfo()
+	return dp
+}
+
 func (p *DeviceProcess) enrichProcessInfo() {
 
 	if pr, err := process.NewProcess(int32(p.Pid)); err == nil {

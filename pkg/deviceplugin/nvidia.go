@@ -120,10 +120,8 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 		nvmlErrorCheck(ret)
 		var discoveredDevicesProcesses []*DeviceProcess
 		for _, nvmlProcessInfo := range processes {
-			discoveredDevicesProcesses = append(discoveredDevicesProcesses, &DeviceProcess{
-				Pid:       nvmlProcessInfo.Pid,
-				GpuMemory: nvmlProcessInfo.UsedGpuMemory,
-			})
+			discoveredDevicesProcesses = append(discoveredDevicesProcesses,
+				NewDeviceProcess(nvmlProcessInfo.Pid, nvmlProcessInfo.UsedGpuMemory))
 		}
 		// override device utilization
 		device.Processes = discoveredDevicesProcesses
