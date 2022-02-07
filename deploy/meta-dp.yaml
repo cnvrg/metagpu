@@ -23,6 +23,7 @@ spec:
       priorityClassName: "system-node-critical"
       imagePullSecrets:
       - name: regcred
+      hostPID: true
       containers:
         - name: fractor
           image: docker.io/cnvrg/metagpu-device-plugin:latest
@@ -40,6 +41,10 @@ spec:
               mountPath: /var/lib/kubelet/device-plugins
             - name: config
               mountPath: /etc/metagpu-device-plugin
+            - mountPath: /host/proc
+              mountPropagation: HostToContainer
+              name: proc
+              readOnly: true
       volumes:
         - name: device-plugin
           hostPath:
@@ -47,6 +52,9 @@ spec:
         - name: config
           configMap:
             name: metagpu-device-plugin-config
+        - hostPath:
+            path: /proc
+          name: proc
 ---
 apiVersion: v1
 kind: ConfigMap
