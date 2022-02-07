@@ -18,19 +18,24 @@ func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDevic
 		log.Fatalf("plugin instance not set in context")
 	}
 
-	for _, device := range plugin.ListCachedDeviceProcesses() {
-		var deviceProcesses []*pb.DeviceProcess
-		response.Processes = map[string]*pb.DeviceProcesses{device.K8sDevice.ID: nil}
-		for _, process := range device.Processes {
-			deviceProcesses = append(deviceProcesses, &pb.DeviceProcess{
+	for deviceUuid, deviceProcesses := range plugin.ListDeviceProcesses() {
+		var pbDeviceProcesses []*pb.DeviceProcess
+		response.Processes = map[string]*pb.DeviceProcesses{}
+
+		for _, process := range deviceProcesses {
+			pbd := &pb.DeviceProcess{
 				Pid:         process.Pid,
-				Memory:      process.Memory,
-				Cmdline:     process.Cmdline,
+				Memory:      process.GpuMemory,
 				User:        process.User,
 				ContainerId: process.ContainerId,
-			})
+			}
+			if len(process.Cmdline) > 0 {
+				pbd.Cmdline = process.Cmdline[0]
+			}
+			pbDeviceProcesses = append(pbDeviceProcesses, pbd)
 		}
-		response.Processes[device.K8sDevice.ID] = &pb.DeviceProcesses{DeviceProcess: deviceProcesses}
+
+		response.Processes[deviceUuid] = &pb.DeviceProcesses{DeviceProcess: pbDeviceProcesses}
 	}
 	return response, nil
 }

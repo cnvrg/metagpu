@@ -17,15 +17,8 @@ import (
 	"time"
 )
 
-//type MetaDevice struct {
-//	K8sDevice   *pluginapi.Device
-//	NDevice     *nvml.Device
-//	Utilization *nvml.Utilization
-//	Processes   []*DeviceProcess
-//}
-
 type NvidiaDeviceManager struct {
-	Devices                  []*MetaDevice
+	Devices                  map[string]*MetaDevice
 	cacheTTL                 time.Duration
 	processesDiscoveryPeriod time.Duration
 }
@@ -107,19 +100,53 @@ func (m *NvidiaDeviceManager) setDevices() {
 	count, ret := nvml.DeviceGetCount()
 	log.Infof("refreshing nvidia Devices cache (total: %d)", count)
 	nvmlErrorCheck(ret)
-	var dl []*MetaDevice
+	var discoveredDevices []string
 	for i := 0; i < count; i++ {
-		var md MetaDevice
 		device, ret := nvml.DeviceGetHandleByIndex(i)
 		uuid, ret := device.GetUUID()
 		nvmlErrorCheck(ret)
-		md.K8sDevice = &pluginapi.Device{ID: uuid, Health: pluginapi.Healthy}
-		md.UUID = uuid
-		md.Index = i
-		nvmlErrorCheck(ret)
-		dl = append(dl, &md)
+		discoveredDevices = append(discoveredDevices, uuid)
+		if _, ok := m.Devices[uuid]; !ok {
+			m.Devices[uuid] = &MetaDevice{
+				UUID:      uuid,
+				Index:     i,
+				Processes: make(map[uint32]*DeviceProcess),
+				K8sDevice: &pluginapi.Device{ID: uuid, Health: pluginapi.Healthy},
+			}
+		}
 	}
-	m.Devices = dl
+	// cleanup non-existing devices
+	m.cleanUpNonExistingDevices(discoveredDevices)
+}
+
+func (m *NvidiaDeviceManager) cleanUpNonExistingDevices(discoveredDevices []string) {
+	for deviceUuid, _ := range m.Devices {
+		shouldDelete := true
+		for _, uuid := range discoveredDevices {
+			if deviceUuid == uuid {
+				shouldDelete = false
+			}
+		}
+		if shouldDelete {
+			delete(m.Devices, deviceUuid)
+		}
+	}
+}
+
+func (m *NvidiaDeviceManager) cleanUpNonExistingDeviceProcesses(deviceUuid string, discoveredProcesses []uint32) {
+	var pidToDelete uint32
+	shouldDelete := true
+	for deviceProcessPid, _ := range m.Devices[deviceUuid].Processes {
+		for _, pid := range discoveredProcesses {
+			if pid == deviceProcessPid {
+				shouldDelete = false
+				pidToDelete = pid
+			}
+		}
+	}
+	if shouldDelete {
+		delete(m.Devices[deviceUuid].Processes, pidToDelete)
+	}
 }
 
 func (m *NvidiaDeviceManager) ListCachedDeviceProcesses() []*MetaDevice {
@@ -144,67 +171,61 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 		nvmlErrorCheck(ret)
 		processes, ret := nvidiaDevice.GetComputeRunningProcesses()
 		nvmlErrorCheck(ret)
-		var processList []*DeviceProcess
+		var discoveredDevicesProcesses []uint32
 		for _, nvmlProcessInfo := range processes {
-			gpuProcess := DeviceProcess{Pid: nvmlProcessInfo.Pid, Memory: nvmlProcessInfo.UsedGpuMemory}
-			gpuProcess.enrichProcessInfo()
-			processList = append(processList, &gpuProcess)
-		}
-		device.Processes = processList
-		device.Utilization = &MetaDeviceUtilization{
-			Gpu:    utilization.Gpu,
-			Memory: utilization.Memory,
-		}
-	}
-	for _, device := range m.Devices {
-		log.Infof("=========== %s ===========", device.K8sDevice.ID)
-		for _, p := range device.Processes {
-			cmd := ""
-			if p.Cmdline != "" {
-				cmd = strings.Split(p.Cmdline, " ")[0]
+			// check if the discovered pid already exists in device
+			if _, ok := device.Processes[nvmlProcessInfo.Pid]; !ok {
+				// process does not exist on device, create it
+				if dp, err := NewDeviceProcess(nvmlProcessInfo.Pid); err == nil {
+					dp.GpuMemory = nvmlProcessInfo.UsedGpuMemory
+					device.Processes[nvmlProcessInfo.Pid] = dp
+				} else {
+					log.Errorf("error creating device process, err: %s", err)
+				}
+			} else {
+				// if process already set, only update the gpu memory
+				device.Processes[nvmlProcessInfo.Pid].GpuMemory = nvmlProcessInfo.UsedGpuMemory
 			}
-
-			log.Infof("Pid           : %d", p.Pid)
-			log.Infof("Memory        : %d", p.Memory/(1024*1024))
-			log.Infof("Command       : %s", cmd)
-			log.Infof("ContainerID   : %s", p.ContainerId)
-			log.Infof("PodName       : %s", p.podId)
-			log.Infof("PodNamespace  : %s", p.podNamespace)
+			//compose currently running device processes
+			discoveredDevicesProcesses = append(discoveredDevicesProcesses, nvmlProcessInfo.Pid)
 		}
-		log.Info("=========================")
+		// update device utilization
+		device.Utilization = &MetaDeviceUtilization{Gpu: utilization.Gpu, Memory: utilization.Memory}
+		// cleanup non-existing device processes
+		m.cleanUpNonExistingDeviceProcesses(device.UUID, discoveredDevicesProcesses)
 	}
 }
 
-func (p *DeviceProcess) enrichProcessInfo() {
+func (m *NvidiaDeviceManager) ListDeviceProcesses() map[string][]*DeviceProcessInfo {
 
-	if pr, err := process.NewProcess(int32(p.Pid)); err == nil {
-		var e error
-		var cmdline, user string
-		cmdline, e = pr.Cmdline()
-		checkProcessDiscoveryError(e)
-		user, e = pr.Username()
-		checkProcessDiscoveryError(e)
-		p.Cmdline = cmdline
-		p.User = user
-
-	} else {
-		log.Error(err)
-	}
-
-	if proc, err := procfs.NewProc(int(p.Pid)); err == nil {
-		var e error
-		var cgroups []procfs.Cgroup
-		cgroups, e = proc.Cgroups()
-		if e != nil {
-			log.Error(e)
+	deviceProcessInfoMap := make(map[string][]*DeviceProcessInfo)
+	for uuid, device := range m.Devices {
+		var deviceProcesses []*DeviceProcessInfo
+		for pid, deviceProcess := range device.Processes {
+			var e error
+			// set pid and gpu memory
+			pInfo := &DeviceProcessInfo{Pid: pid, GpuMemory: deviceProcess.GpuMemory}
+			// discover cmdline
+			pInfo.Cmdline, e = deviceProcess.Process.CmdlineSlice()
+			checkProcessDiscoveryError(e)
+			// discover username
+			pInfo.User, e = deviceProcess.Process.Username()
+			checkProcessDiscoveryError(e)
+			// getting cgroups for discovering containerId
+			var cgroups []procfs.Cgroup
+			cgroups, e = deviceProcess.ProcFs.Cgroups()
+			if len(cgroups) == 0 {
+				log.Errorf("cgroups list for %d is empty", pid)
+			} else {
+				// extract pod name and pod namespace from container labels
+				pInfo.ContainerId = filepath.Base(cgroups[0].Path)
+				pInfo.PodId, pInfo.PodNamespace = inspectContainer(pInfo.ContainerId)
+			}
+			deviceProcesses = append(deviceProcesses, pInfo)
 		}
-		if len(cgroups) == 0 {
-			log.Errorf("cgroups list for %d is empty", p.Pid)
-		}
-		p.ContainerId = filepath.Base(cgroups[0].Path)
-		p.podId, p.podNamespace = inspectContainer(p.ContainerId)
-
+		deviceProcessInfoMap[uuid] = deviceProcesses
 	}
+	return deviceProcessInfoMap
 }
 
 func NewNvidiaDeviceManager() *NvidiaDeviceManager {
@@ -217,6 +238,22 @@ func NewNvidiaDeviceManager() *NvidiaDeviceManager {
 	ndm.CacheDevices()
 	ndm.DiscoverDeviceProcesses()
 	return ndm
+}
+
+func NewDeviceProcess(pid uint32) (*DeviceProcess, error) {
+	proc, err := process.NewProcess(int32(pid))
+	if err != nil {
+		return nil, err
+	}
+	procFs, err := procfs.NewProc(int(pid))
+	if err != nil {
+		return nil, err
+	}
+	return &DeviceProcess{
+		Pid:     pid,
+		Process: proc,
+		ProcFs:  &procFs,
+	}, nil
 }
 
 func nvmlErrorCheck(ret nvml.Return) {
@@ -234,6 +271,7 @@ func checkProcessDiscoveryError(e error) {
 func inspectContainer(containerId string) (podName, podNamespace string) {
 
 	cli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
+	defer cli.Close()
 	if err != nil {
 		log.Error(err)
 		return
