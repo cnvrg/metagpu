@@ -27,10 +27,10 @@ spec:
         - name: fractor
           image: docker.io/cnvrg/metagpu-device-plugin:latest
           command:
-            - /usr/bin/fractor-device-plugin
+            - /usr/bin/metagpu-device-plugin
             - start
             - -c
-            - /etc/fractor
+            - /etc/metagpu-device-plugin
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -39,23 +39,24 @@ spec:
             - name: device-plugin
               mountPath: /var/lib/kubelet/device-plugins
             - name: config
-              mountPath: /etc/fractor
+              mountPath: /etc/metagpu-device-plugin
       volumes:
         - name: device-plugin
           hostPath:
             path: /var/lib/kubelet/device-plugins
         - name: config
           configMap:
-            name: fractor-config
+            name: metagpu-device-plugin-config
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: fractor-config
+  name: metagpu-device-plugin-config
   namespace: kube-system
 data:
   config.yaml: |
     metaGpus: 10
     accelerator: nvidia
+    processesDiscoveryPeriod: 5
     deviceCacheTTL: 3600
     resourceName: cnvrg.io/metagpu
