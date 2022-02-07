@@ -132,19 +132,19 @@ func (m *NvidiaDeviceManager) cleanUpNonExistingDevices(discoveredDevices []stri
 }
 
 func (m *NvidiaDeviceManager) cleanUpNonExistingDeviceProcesses(deviceUuid string, discoveredProcesses []uint32) {
-	var pidToDelete uint32
-	shouldDelete := true
+
 	for deviceProcessPid, _ := range m.Devices[deviceUuid].Processes {
+		shouldDelete := true
 		for _, pid := range discoveredProcesses {
 			if pid == deviceProcessPid {
 				shouldDelete = false
-				pidToDelete = pid
 			}
 		}
+		if shouldDelete {
+			delete(m.Devices[deviceUuid].Processes, deviceProcessPid)
+		}
 	}
-	if shouldDelete {
-		delete(m.Devices[deviceUuid].Processes, pidToDelete)
-	}
+
 }
 
 func (m *NvidiaDeviceManager) discoverGpuProcesses() {
