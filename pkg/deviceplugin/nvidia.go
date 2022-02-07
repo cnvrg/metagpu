@@ -190,6 +190,7 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 			log.Infof("PodName       : %s", deviceProcess.PodId)
 			log.Infof("PodNamespace  : %s", deviceProcess.PodNamespace)
 		}
+		log.Info("--------")
 
 	}
 }
