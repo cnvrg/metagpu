@@ -232,6 +232,7 @@ func NewNvidiaDeviceManager() *NvidiaDeviceManager {
 	ret := nvml.Init()
 	nvmlErrorCheck(ret)
 	ndm := &NvidiaDeviceManager{
+		Devices:                  make(map[string]*MetaDevice),
 		cacheTTL:                 time.Second * time.Duration(viper.GetInt("deviceCacheTTL")),
 		processesDiscoveryPeriod: time.Second * time.Duration(viper.GetInt("processesDiscoveryPeriod")),
 	}
