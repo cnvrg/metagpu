@@ -185,7 +185,7 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 		for _, deviceProcess := range deviceProcesses {
 			log.Infof("Pid           : %d", deviceProcess.Pid)
 			log.Infof("Memory        : %d", deviceProcess.GpuMemory/(1024*1024))
-			log.Infof("Command       : %s", deviceProcess.Cmdline)
+			log.Infof("Command       : %s", deviceProcess.GetShortCmdLine())
 			log.Infof("ContainerID   : %s", deviceProcess.ContainerId)
 			log.Infof("PodName       : %s", deviceProcess.PodId)
 			log.Infof("PodNamespace  : %s", deviceProcess.PodNamespace)
@@ -224,6 +224,13 @@ func (m *NvidiaDeviceManager) ListDeviceProcesses() map[string][]*DeviceProcessI
 		deviceProcessInfoMap[uuid] = deviceProcesses
 	}
 	return deviceProcessInfoMap
+}
+
+func (i *DeviceProcessInfo) GetShortCmdLine() string {
+	if len(i.Cmdline) == 0 {
+		return "error discovering process cmdline"
+	}
+	return i.Cmdline[0]
 }
 
 func NewNvidiaDeviceManager() *NvidiaDeviceManager {
