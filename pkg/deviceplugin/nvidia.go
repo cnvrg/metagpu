@@ -96,7 +96,7 @@ func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
 func (m *NvidiaDeviceManager) setDevices() {
 
 	count, ret := nvml.DeviceGetCount()
-	log.Infof("refreshing nvidia Devices cache (total: %d)", count)
+	log.Infof("refreshing nvidia devices cache (total: %d)", count)
 	nvmlErrorCheck(ret)
 	var discoveredDevices []string
 	for i := 0; i < count; i++ {
@@ -178,6 +178,19 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 		device.Utilization = &MetaDeviceUtilization{Gpu: utilization.Gpu, Memory: utilization.Memory}
 		// cleanup non-existing device processes
 		m.cleanUpNonExistingDeviceProcesses(device.UUID, discoveredDevicesProcesses)
+	}
+
+	for deviceUuid, deviceProcesses := range m.ListDeviceProcesses() {
+		log.Infof("=========== %s ===========", deviceUuid)
+		for _, deviceProcess := range deviceProcesses {
+			log.Infof("Pid           : %d", deviceProcess.Pid)
+			log.Infof("Memory        : %d", deviceProcess.GpuMemory/(1024*1024))
+			log.Infof("Command       : %s", deviceProcess.Cmdline)
+			log.Infof("ContainerID   : %s", deviceProcess.ContainerId)
+			log.Infof("PodName       : %s", deviceProcess.PodId)
+			log.Infof("PodNamespace  : %s", deviceProcess.PodNamespace)
+		}
+
 	}
 }
 
