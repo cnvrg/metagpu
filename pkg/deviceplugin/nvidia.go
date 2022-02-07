@@ -79,7 +79,7 @@ func (m *NvidiaDeviceManager) DeviceExists(deviceId string) bool {
 
 func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
 	var metaGpus []*pluginapi.Device
-	log.Infof("generating meta gpu Devices (total: %d)", len(m.Devices)*viper.GetInt("metaGpus"))
+	log.Infof("generating meta gpu devices (total: %d)", len(m.Devices)*viper.GetInt("metaGpus"))
 	for _, d := range m.Devices {
 		for j := 0; j < viper.GetInt("metaGpus"); j++ {
 			metaGpus = append(metaGpus, &pluginapi.Device{

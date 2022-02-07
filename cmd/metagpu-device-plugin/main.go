@@ -51,6 +51,7 @@ var metaGpuStart = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		f := deviceplugin.NewMetaGpuDevicePlugin(metaGpuRecalc)
 		f.Start()
+
 		metagpusrv.NewMetaGpuServer(f).Start()
 
 		sigCh := make(chan os.Signal, 1)
