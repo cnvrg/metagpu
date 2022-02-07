@@ -23,16 +23,13 @@ func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDevic
 		response.Processes = map[string]*pb.DeviceProcesses{}
 
 		for _, process := range deviceProcesses {
-			pbd := &pb.DeviceProcess{
+			pbDeviceProcesses = append(pbDeviceProcesses, &pb.DeviceProcess{
 				Pid:         process.Pid,
 				Memory:      process.GpuMemory,
+				Cmdline:     process.GetShortCmdLine(),
 				User:        process.User,
 				ContainerId: process.ContainerId,
-			}
-			if len(process.Cmdline) > 0 {
-				pbd.Cmdline = process.Cmdline[0]
-			}
-			pbDeviceProcesses = append(pbDeviceProcesses, pbd)
+			})
 		}
 
 		response.Processes[deviceUuid] = &pb.DeviceProcesses{DeviceProcess: pbDeviceProcesses}
