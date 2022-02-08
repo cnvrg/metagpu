@@ -140,7 +140,7 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 			log.Infof("ContainerID     : %s", deviceProcess.ContainerId)
 			log.Infof("PodName         : %s", deviceProcess.PodId)
 			log.Infof("PodNamespace    : %s", deviceProcess.PodNamespace)
-			log.Infof("MetagpuRequest  : %s", deviceProcess.PodMetagpuRequest)
+			log.Infof("MetagpuRequest  : %d", deviceProcess.PodMetagpuRequest)
 			log.Info("--------")
 		}
 	}
