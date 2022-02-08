@@ -12,6 +12,7 @@ spec:
       labels:
         app: gpu-test-with-gpu
     spec:
+      hostPID: true
       containers:
       - name: gpu-test-with-gpu
         image: tensorflow/tensorflow:latest-gpu
@@ -20,12 +21,20 @@ spec:
           - -c
           - |
             import tensorflow as tf
-            import time
             tf.get_logger().setLevel('INFO')
-            print("===============================", flush=True)
-            print(tf.config.list_physical_devices('GPU'), flush=True)
-            print("===============================", flush=True)
-            time.sleep(3600)
+            gpus = tf.config.list_physical_devices('GPU')
+            if gpus:
+              # Restrict TensorFlow to only allocate 1GB of memory on the first GPU
+              try:
+                tf.config.set_logical_device_configuration(gpus[0],[tf.config.LogicalDeviceConfiguration(memory_limit=1024)])
+                logical_gpus = tf.config.list_logical_devices('GPU')
+                print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+              except RuntimeError as e:
+                # Virtual devices must be set before GPUs have been initialized
+                print(e)
+            print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+            while True:
+              print(tf.reduce_sum(tf.random.normal([1000, 1000])))
         resources:
           limits:
-            nvidia.com/gpu: 1
+            cnvrg.io/metagpu: "1"

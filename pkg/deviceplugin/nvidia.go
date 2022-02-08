@@ -1,10 +1,9 @@
 package deviceplugin
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
-	dockerclient "github.com/docker/docker/client"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
@@ -155,34 +154,49 @@ func (m *NvidiaDeviceManager) ListDeviceProcesses() map[string][]*DeviceProcess 
 	return deviceProcessInfoMap
 }
 
+func (m *NvidiaDeviceManager) MetagpuAllocation(metagpuRequest int) (string, error) {
+	totalSharesPerGPU := viper.GetInt("metaGpus")
+	m.discoverGpuProcesses()
+
+	// Init device load map of device uuid -> available allocation slices
+	var devicesLoad = make(map[string]int)
+	for devUuid, deviceProcesses := range m.ListDeviceProcesses() {
+		devicesLoad[devUuid] = totalSharesPerGPU - len(deviceProcesses)
+	}
+
+	//if metagpuRequest <= totalSharesPerGPU {
+	//	for devUuid, freeAllocation := range devicesLoad {
+	//		if freeAllocation < metagpuRequest {
+	//			return devUuid, nil
+	//		}
+	//	}
+	//}
+	//
+	//if metagpuRequest > totalSharesPerGPU {
+	//	// first try to allocate
+	//	var devicesUuids []string
+	//	for devUuid, deviceProcesses := range m.ListDeviceProcesses() {
+	//		if len(deviceProcesses) == 0 {
+	//			devi
+	//			return devUuid, nil
+	//		}
+	//	}
+	//}
+
+	//if metagpuRequest == 1 && totalSharesPerGPU > 1 {
+	//	for devUuid, deviceProcesses := range m.ListDeviceProcesses() {
+	//		if len(deviceProcesses) < totalSharesPerGPU {
+	//			return devUuid
+	//		}
+	//	}
+	//}
+	return "", errors.New("unable to allocate GPU... ")
+}
+
 func nvmlErrorCheck(ret nvml.Return) {
 	if ret != nvml.SUCCESS {
 		log.Fatalf("fatal error during nvml operation: %s", nvml.ErrorString(ret))
 	}
-}
-
-func inspectContainer(containerId string) (podName, podNamespace string) {
-
-	cli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
-	defer cli.Close()
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	cd, err := cli.ContainerInspect(context.Background(), containerId)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	if pd, ok := cd.Config.Labels["io.kubernetes.pod.name"]; ok {
-		podName = pd
-	}
-
-	if pn, ok := cd.Config.Labels["io.kubernetes.pod.namespace"]; ok {
-		podNamespace = pn
-	}
-
-	return
 }
 
 func NewNvidiaDeviceManager() *NvidiaDeviceManager {
