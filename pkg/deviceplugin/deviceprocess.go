@@ -6,6 +6,7 @@ import (
 	"github.com/prometheus/procfs"
 	"github.com/shirou/gopsutil/v3/process"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	v1core "k8s.io/api/core/v1"
 	"path/filepath"
 	"strings"
@@ -19,7 +20,7 @@ type DeviceProcess struct {
 	ContainerId       string
 	PodId             string
 	PodNamespace      string
-	PodMetagpuRequest int
+	PodMetagpuRequest int64
 }
 
 func NewDeviceProcess(pid uint32, gpuMem uint64) *DeviceProcess {
@@ -89,7 +90,14 @@ func (p *DeviceProcess) EnrichProcessK8sInfo() {
 				return
 			}
 			if cId[1] == p.ContainerId {
-				log.Info("found")
+				p.PodId = pod.Name
+				p.PodNamespace = pod.Namespace
+				for _, container := range pod.Spec.Containers {
+					resourceName := v1core.ResourceName(viper.GetString("resourceName"))
+					if quantity, ok := container.Resources.Limits[resourceName]; ok {
+						p.PodMetagpuRequest = quantity.Value()
+					}
+				}
 			}
 		}
 	}
