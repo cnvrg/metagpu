@@ -134,12 +134,13 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 	for deviceUuid, deviceProcesses := range m.ListDeviceProcesses() {
 		log.Infof("=========== %s ===========", deviceUuid)
 		for _, deviceProcess := range deviceProcesses {
-			log.Infof("Pid           : %d", deviceProcess.Pid)
-			log.Infof("Memory        : %d", deviceProcess.GpuMemory/(1024*1024))
-			log.Infof("Command       : %s", deviceProcess.GetShortCmdLine())
-			log.Infof("ContainerID   : %s", deviceProcess.ContainerId)
-			log.Infof("PodName       : %s", deviceProcess.PodId)
-			log.Infof("PodNamespace  : %s", deviceProcess.PodNamespace)
+			log.Infof("Pid             : %d", deviceProcess.Pid)
+			log.Infof("Memory          : %d", deviceProcess.GpuMemory/(1024*1024))
+			log.Infof("Command         : %s", deviceProcess.GetShortCmdLine())
+			log.Infof("ContainerID     : %s", deviceProcess.ContainerId)
+			log.Infof("PodName         : %s", deviceProcess.PodId)
+			log.Infof("PodNamespace    : %s", deviceProcess.PodNamespace)
+			log.Infof("MetagpuRequest  : %s", deviceProcess.PodMetagpuRequest)
 			log.Info("--------")
 		}
 	}
