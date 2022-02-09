@@ -44,7 +44,7 @@ func (m *NvidiaDeviceManager) DiscoverDeviceProcesses() {
 func (m *NvidiaDeviceManager) ParseRealDeviceId(metaDevicesIds []string) (realDevicesIds []string) {
 
 	// each meta gpu will starts from 'cnvrg-meta-[number]-'
-	r, _ := regexp.Compile("cnvrg-meta-\\d+-")
+	r, _ := regexp.Compile("cnvrg-meta-\\d+-\\d+-")
 	// string map will eliminate doubles in real Devices ids
 	realDevicesIdsMap := make(map[string]bool)
 	for _, metaDeviceId := range metaDevicesIds {
