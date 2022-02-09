@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"path"
+	"sort"
 	"strings"
 	"time"
 )
@@ -86,20 +87,21 @@ func (p *MetaGpuDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.Devic
 }
 
 func (p *MetaGpuDevicePlugin) GetPreferredAllocation(ctx context.Context, request *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
-	//if len(request.ContainerRequests) > 0 {
-	//	var devs = make(map[string][]string)
-	//	availableDevIds := request.ContainerRequests[0].GetAvailableDeviceIDs()
-	//	realDeviceIds := p.ParseRealDeviceId(availableDevIds)
-	//	for _, deviceId := range realDeviceIds {
-	//		for _, availableDevId := range availableDevIds {
-	//			if strings.Contains(availableDevId, deviceId) {
-	//				devs[deviceId] = append(devs[deviceId], availableDevId)
-	//			}
-	//		}
-	//
-	//	}
-	//
-	//}
+	if len(request.ContainerRequests) > 0 {
+		//var devs = make(map[string][]string)
+		availableDevIds := request.ContainerRequests[0].GetAvailableDeviceIDs()
+		sort.Strings(availableDevIds)
+		//realDeviceIds := p.ParseRealDeviceId(availableDevIds)
+		//for _, deviceId := range realDeviceIds {
+		//	for _, availableDevId := range availableDevIds {
+		//		if strings.Contains(availableDevId, deviceId) {
+		//			devs[deviceId] = append(devs[deviceId], availableDevId)
+		//		}
+		//	}
+		//
+		//}
+
+	}
 	return &pluginapi.PreferredAllocationResponse{}, nil
 
 }
