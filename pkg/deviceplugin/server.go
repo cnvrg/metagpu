@@ -94,8 +94,10 @@ func (p *MetaGpuDevicePlugin) Allocate(ctx context.Context, request *pluginapi.A
 
 		response := pluginapi.ContainerAllocateResponse{}
 		uuids, err := p.MetagpuAllocation(len(req.DevicesIDs))
+		// in case of error, the uuids list will be empty,
+		// the container will be scheduled, but it won't have any GPUs
 		if err != nil {
-			return nil, err
+			log.Error(err)
 		}
 		response.Envs = map[string]string{
 			"CNVRG_META_GPU_DEVICES": strings.Join(req.DevicesIDs, ","),
