@@ -53,9 +53,9 @@ func (p *MetaGpuDevicePlugin) Register() error {
 		Version:      pluginapi.Version,
 		Endpoint:     path.Base(p.socket),
 		ResourceName: p.resourceName,
-		//Options: &pluginapi.DevicePluginOptions{
-		//	GetPreferredAllocationAvailable: true,
-		//},
+		Options: &pluginapi.DevicePluginOptions{
+			GetPreferredAllocationAvailable: true,
+		},
 	}
 	if _, err := client.Register(context.Background(), req); err != nil {
 		return err
