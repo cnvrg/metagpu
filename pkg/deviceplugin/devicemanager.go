@@ -22,6 +22,6 @@ type DeviceManager interface {
 	ListMetaDevices() []*pluginapi.Device
 	DiscoverDeviceProcesses()
 	ListDeviceProcesses() map[string][]*DeviceProcess
-	ParseRealDeviceId(metaDevicesIds []string) (realDeviceId string)
+	ParseRealDeviceId(metaDevicesIds []string) (realDeviceId []string)
 	MetagpuAllocation(metagpuRequest int) (string, error)
 }

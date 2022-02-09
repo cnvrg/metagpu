@@ -41,7 +41,7 @@ func (m *NvidiaDeviceManager) DiscoverDeviceProcesses() {
 	}()
 }
 
-func (m *NvidiaDeviceManager) ParseRealDeviceId(metaDevicesIds []string) (realDevicesIds string) {
+func (m *NvidiaDeviceManager) ParseRealDeviceId(metaDevicesIds []string) (realDevicesIds []string) {
 
 	// each meta gpu will starts from 'cnvrg-meta-[number]-'
 	r, _ := regexp.Compile("cnvrg-meta-\\d+-")
@@ -60,12 +60,7 @@ func (m *NvidiaDeviceManager) ParseRealDeviceId(metaDevicesIds []string) (realDe
 	for dId, _ := range realDevicesIdsMap {
 		realDevicesIdsList = append(realDevicesIdsList, dId)
 	}
-	// TODO: verify list is not empty!
-	realDevicesIds = strings.Join(realDevicesIdsList, ",")
-	if len(realDevicesIds) == 0 {
-		realDevicesIds = "none"
-	}
-	return realDevicesIds
+	return realDevicesIdsList
 }
 
 func (m *NvidiaDeviceManager) DeviceExists(deviceId string) bool {
@@ -83,11 +78,8 @@ func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
 	for _, d := range m.Devices {
 		for j := 0; j < viper.GetInt("metaGpus"); j++ {
 			metaGpus = append(metaGpus, &pluginapi.Device{
-				ID:     fmt.Sprintf("cnvrg-meta-%d-%s", j, d.K8sDevice.ID),
+				ID:     fmt.Sprintf("cnvrg-meta-%d-%d-%s", d.Index, j, d.K8sDevice.ID),
 				Health: pluginapi.Healthy,
-				//Topology: &pluginapi.TopologyInfo{
-				//	Nodes: []*pluginapi.NUMANode{&pluginapi.NUMANode{ID: int64(numaNodes)}},
-				//},
 			})
 		}
 
@@ -245,6 +237,12 @@ func findFractionalAllocatableGPUs(quantity int, devicesLoad map[string]int, ent
 		return nil, errors.New("can't allocate requested gpu shares ")
 	}
 	return
+}
+
+func buildDevicesLoadMap(availableDeviceIds []string) {
+	//for _, devId := range availableDeviceIds {
+	//
+	//}
 }
 
 func composeDevUuidsString(uuids []string) string {
