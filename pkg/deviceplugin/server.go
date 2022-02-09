@@ -91,6 +91,7 @@ func (p *MetaGpuDevicePlugin) GetPreferredAllocation(ctx context.Context, reques
 		//var devs = make(map[string][]string)
 		availableDevIds := request.ContainerRequests[0].GetAvailableDeviceIDs()
 		sort.Strings(availableDevIds)
+		log.Info("asd")
 		//realDeviceIds := p.ParseRealDeviceId(availableDevIds)
 		//for _, deviceId := range realDeviceIds {
 		//	for _, availableDevId := range availableDevIds {
