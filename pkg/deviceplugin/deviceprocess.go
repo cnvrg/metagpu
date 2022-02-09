@@ -22,6 +22,10 @@ type DeviceProcess struct {
 	PodMetagpuRequest int64
 }
 
+func NewGpuWorkloadsDiscovery() {
+
+}
+
 func NewDeviceProcess(pid uint32, gpuMem uint64) *DeviceProcess {
 	dp := &DeviceProcess{
 		Pid:       pid,
@@ -101,6 +105,31 @@ func (p *DeviceProcess) EnrichProcessK8sInfo() {
 			}
 		}
 	}
+}
+
+func getMetagpuEnabledPods() (metaGpuPods []*v1core.Pod) {
+	c, err := GetK8sClient()
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	pl := &v1core.PodList{}
+	if err := c.List(context.Background(), pl); err != nil {
+		log.Error(err)
+		return
+	}
+	for _, pod := range pl.Items {
+		if pod.Status.Phase == v1core.PodPending || pod.Status.Phase == v1core.PodRunning {
+			for _, container := range pod.Spec.Containers {
+				resourceName := v1core.ResourceName(viper.GetString("resourceName"))
+				if _, ok := container.Resources.Limits[resourceName]; ok {
+					metaGpuPods = append(metaGpuPods, &pod)
+				}
+			}
+		}
+	}
+	return
 }
 
 func (p *DeviceProcess) GetShortCmdLine() string {

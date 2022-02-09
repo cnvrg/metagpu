@@ -85,6 +85,9 @@ func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
 			metaGpus = append(metaGpus, &pluginapi.Device{
 				ID:     fmt.Sprintf("cnvrg-meta-%d-%s", j, d.K8sDevice.ID),
 				Health: pluginapi.Healthy,
+				Topology: &pluginapi.TopologyInfo{
+					Nodes: []*pluginapi.NUMANode{&pluginapi.NUMANode{ID: int64(j)}},
+				},
 			})
 		}
 	}

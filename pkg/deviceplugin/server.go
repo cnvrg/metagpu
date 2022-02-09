@@ -93,6 +93,10 @@ func (p *MetaGpuDevicePlugin) Allocate(ctx context.Context, request *pluginapi.A
 	for _, req := range request.ContainerRequests {
 
 		response := pluginapi.ContainerAllocateResponse{}
+		log.Info("requested devices IDs:")
+		for _, dev := range req.DevicesIDs {
+			log.Info(dev)
+		}
 		uuids, err := p.MetagpuAllocation(len(req.DevicesIDs))
 		// in case of error, the uuids list will be empty,
 		// the container will be scheduled, but it won't have any GPUs
