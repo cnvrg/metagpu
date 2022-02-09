@@ -144,6 +144,7 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 			log.Info("--------")
 		}
 	}
+	log.Info("************************************")
 }
 
 func (m *NvidiaDeviceManager) ListDeviceProcesses() map[string][]*DeviceProcess {
