@@ -80,18 +80,17 @@ func (m *NvidiaDeviceManager) DeviceExists(deviceId string) bool {
 func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
 	var metaGpus []*pluginapi.Device
 	log.Infof("generating meta gpu devices (total: %d)", len(m.Devices)*viper.GetInt("metaGpus"))
-	numaNodes := len(m.Devices)
 	for _, d := range m.Devices {
 		for j := 0; j < viper.GetInt("metaGpus"); j++ {
 			metaGpus = append(metaGpus, &pluginapi.Device{
 				ID:     fmt.Sprintf("cnvrg-meta-%d-%s", j, d.K8sDevice.ID),
 				Health: pluginapi.Healthy,
-				Topology: &pluginapi.TopologyInfo{
-					Nodes: []*pluginapi.NUMANode{&pluginapi.NUMANode{ID: int64(numaNodes)}},
-				},
+				//Topology: &pluginapi.TopologyInfo{
+				//	Nodes: []*pluginapi.NUMANode{&pluginapi.NUMANode{ID: int64(numaNodes)}},
+				//},
 			})
 		}
-		numaNodes--
+
 	}
 
 	return metaGpus
@@ -136,6 +135,18 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 		device.Utilization = &DeviceUtilization{Gpu: utilization.Gpu, Memory: utilization.Memory}
 	}
 
+	_ = getMetagpuEnabledPods()
+	//for _, device := range m.Devices {
+	//	for _, deviceProcess := range device.Processes {
+	//		podFound := false
+	//		for _, metaGpuPod := range gpuEnabledPods {
+	//			for _, container := range pod.Spec.Containers {
+	//
+	//			}
+	//		}
+	//	}
+	//}
+
 	for deviceUuid, deviceProcesses := range m.ListDeviceProcesses() {
 		log.Infof("=========== %s ===========", deviceUuid)
 		for _, deviceProcess := range deviceProcesses {
@@ -158,6 +169,7 @@ func (m *NvidiaDeviceManager) ListDeviceProcesses() map[string][]*DeviceProcess 
 	for uuid, device := range m.Devices {
 		deviceProcessInfoMap[uuid] = device.Processes
 	}
+
 	return deviceProcessInfoMap
 }
 
