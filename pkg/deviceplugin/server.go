@@ -53,7 +53,9 @@ func (p *MetaGpuDevicePlugin) Register() error {
 		Version:      pluginapi.Version,
 		Endpoint:     path.Base(p.socket),
 		ResourceName: p.resourceName,
-		Options:      &pluginapi.DevicePluginOptions{},
+		//Options: &pluginapi.DevicePluginOptions{
+		//	GetPreferredAllocationAvailable: true,
+		//},
 	}
 	if _, err := client.Register(context.Background(), req); err != nil {
 		return err
@@ -62,7 +64,7 @@ func (p *MetaGpuDevicePlugin) Register() error {
 }
 
 func (p *MetaGpuDevicePlugin) GetDevicePluginOptions(ctx context.Context, empty *pluginapi.Empty) (*pluginapi.DevicePluginOptions, error) {
-	return &pluginapi.DevicePluginOptions{}, nil
+	return &pluginapi.DevicePluginOptions{GetPreferredAllocationAvailable: true}, nil
 }
 
 func (p *MetaGpuDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
