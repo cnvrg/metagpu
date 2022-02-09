@@ -170,15 +170,17 @@ func (m *NvidiaDeviceManager) MetagpuAllocation(metagpuRequest int) (string, err
 		}
 		devicesLoad[devUuid] = int(totalMetagpuRequest)
 	}
-
+	entireGpusRequest := metagpuRequest / totalSharesPerGPU
+	gpuFractionsRequest := metagpuRequest % totalSharesPerGPU
+	log.Infof("metagpu allocation request: %d.%d", entireGpusRequest, gpuFractionsRequest)
 	// if requested find entirely allocatable gpus
-	entirelyAllocatableGPUs, err := findEntirelyAllocatableGPUs(metagpuRequest/totalSharesPerGPU, devicesLoad)
+	entirelyAllocatableGPUs, err := findEntirelyAllocatableGPUs(entireGpusRequest, devicesLoad)
 	if err != nil {
 		return "", err
 	}
 
 	// if requested find fractional allocatable gpus
-	partialAllocatableGPUs, err := findFractionalAllocatableGPUs(metagpuRequest%totalSharesPerGPU, devicesLoad, entirelyAllocatableGPUs)
+	partialAllocatableGPUs, err := findFractionalAllocatableGPUs(gpuFractionsRequest, devicesLoad, entirelyAllocatableGPUs)
 	if err != nil {
 		return "", err
 	}
@@ -197,7 +199,6 @@ func findEntirelyAllocatableGPUs(quantity int, devicesLoad map[string]int) (allo
 	if quantity == 0 {
 		return
 	}
-	log.Infof("entirely allocatable GPU request for %d gpus", quantity)
 	for devUuid, totalAllocated := range devicesLoad {
 		if totalAllocated == 0 { // meaning gpu is entirely free
 			allocatedDevices = append(allocatedDevices, devUuid)
