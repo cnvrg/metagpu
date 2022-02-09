@@ -178,7 +178,7 @@ func (m *NvidiaDeviceManager) MetagpuAllocation(metagpuRequest int) (string, err
 	}
 
 	// if requested find fractional allocatable gpus
-	partialAllocatableGPUs, err := findFractionalAllocatableGPUs(metagpuRequest%totalSharesPerGPU, devicesLoad)
+	partialAllocatableGPUs, err := findFractionalAllocatableGPUs(metagpuRequest%totalSharesPerGPU, devicesLoad, entirelyAllocatableGPUs)
 	if err != nil {
 		return "", err
 	}
@@ -213,12 +213,12 @@ func findEntirelyAllocatableGPUs(quantity int, devicesLoad map[string]int) (allo
 	return
 }
 
-func findFractionalAllocatableGPUs(quantity int, devicesLoad map[string]int) (allocatedDevices []string, e error) {
+func findFractionalAllocatableGPUs(quantity int, devicesLoad map[string]int, entirelyAllocatableGPUs []string) (allocatedDevices []string, e error) {
 
 	totalSharesPerGPU := viper.GetInt("metaGpus")
 	// find free gpu fraction and allocate them
 	for devUuid, totalAllocated := range devicesLoad {
-		if (totalSharesPerGPU - totalAllocated) >= quantity {
+		if (totalSharesPerGPU-totalAllocated) >= quantity && !containsString(entirelyAllocatableGPUs, devUuid) {
 			allocatedDevices = append(allocatedDevices, devUuid)
 			break
 		}
@@ -243,6 +243,15 @@ func composeDevUuidsString(uuids []string) string {
 	}
 	// convert to string and return
 	return strings.Join(devUuidSet, ",")
+}
+
+func containsString(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
 }
 
 func NewNvidiaDeviceManager() *NvidiaDeviceManager {
