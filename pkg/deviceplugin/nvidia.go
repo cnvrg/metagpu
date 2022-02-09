@@ -7,7 +7,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
-
 	"regexp"
 	"strings"
 	"time"
@@ -165,35 +164,26 @@ func (m *NvidiaDeviceManager) ListDeviceProcesses() map[string][]*DeviceProcess 
 	return deviceProcessInfoMap
 }
 
-func (m *NvidiaDeviceManager) MetagpuAllocation(metagpuRequest int) (string, error) {
+func (m *NvidiaDeviceManager) MetagpuAllocation(allocationSize int, availableDevIds []string) ([]string, error) {
 
-	m.discoverGpuProcesses()
+	// get total shares per gpu
 	totalSharesPerGPU := viper.GetInt("metaGpus")
-	var devicesLoad = make(map[string]int)
-
-	// Init device load map of device uuid -> available allocation slices
-	for devUuid, deviceProcesses := range m.ListDeviceProcesses() {
-		var totalMetagpuRequest int64
-		for _, dp := range deviceProcesses {
-			totalMetagpuRequest += dp.PodMetagpuRequest
-		}
-		devicesLoad[devUuid] = int(totalMetagpuRequest)
-	}
-	entireGpusRequest := metagpuRequest / totalSharesPerGPU
-	gpuFractionsRequest := metagpuRequest % totalSharesPerGPU
+	// detect device load
+	deviceLoad := NewDeviceLoadMap(m.ParseRealDeviceId(availableDevIds), availableDevIds)
+	// calculate how entire and how shares are required
+	entireGpusRequest := allocationSize / totalSharesPerGPU
+	gpuFractionsRequest := allocationSize % totalSharesPerGPU
 	log.Infof("metagpu allocation request: %d.%d", entireGpusRequest, gpuFractionsRequest)
-	// if requested find entirely allocatable gpus
-	entirelyAllocatableGPUs, err := findEntirelyAllocatableGPUs(entireGpusRequest, devicesLoad)
+	// detect entirely allocatable gpus
+	allocatableGPUs, err := findEntirelyAllocatableGPUs(entireGpusRequest, deviceLoad)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
-	// if requested find fractional allocatable gpus
-	partialAllocatableGPUs, err := findFractionalAllocatableGPUs(gpuFractionsRequest, devicesLoad, entirelyAllocatableGPUs)
+	// detect fractional allocatable gpus
+	allocatableGPUs, err = findFractionalAllocatableGPUs(gpuFractionsRequest, deviceLoad, allocatableGPUs)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
 	// compose the device comma seperated string and return to K8s Allocation
 	return composeDevUuidsString(append(entirelyAllocatableGPUs, partialAllocatableGPUs...)), nil
 }
@@ -204,13 +194,15 @@ func nvmlErrorCheck(ret nvml.Return) {
 	}
 }
 
-func findEntirelyAllocatableGPUs(quantity int, devicesLoad map[string]int) (allocatedDevices []string, e error) {
+func findEntirelyAllocatableGPUs(quantity int, deviceLoad *DeviceAllocationMap) (allocatedDevices map[string]int, e error) {
+	allocatedDevices = make(map[string]int)
+	totalSharesPerGPU := viper.GetInt("metaGpus")
 	if quantity == 0 {
 		return
 	}
-	for devUuid, totalAllocated := range devicesLoad {
-		if totalAllocated == 0 { // meaning gpu is entirely free
-			allocatedDevices = append(allocatedDevices, devUuid)
+	for devUuid, load := range deviceLoad.LoadMap {
+		if load.FreeShares == totalSharesPerGPU { // meaning gpu is entirely free
+			allocatedDevices[devUuid] = totalSharesPerGPU // allocate all gpu shares to single gpu
 		}
 		// once we got enough entirely free gpus, break the loop
 		if len(allocatedDevices) == quantity {
@@ -220,55 +212,76 @@ func findEntirelyAllocatableGPUs(quantity int, devicesLoad map[string]int) (allo
 	if len(allocatedDevices) < quantity {
 		return nil, errors.New("can't allocate entirely requested gpus quantity")
 	}
+
+	for devUuid, _ := range allocatedDevices {
+		deviceLoad.MetagpusAllocations = append(deviceLoad.MetagpusAllocations, deviceLoad.LoadMap[devUuid].Metagpus...)
+	}
 	return
 }
 
-func findFractionalAllocatableGPUs(quantity int, devicesLoad map[string]int, entirelyAllocatableGPUs []string) (allocatedDevices []string, e error) {
+func findFractionalAllocatableGPUs(quantity int, deviceLoad *DeviceAllocationMap, allocatableGPUs map[string]int) (allocatedDevices map[string]int, e error) {
 
-	totalSharesPerGPU := viper.GetInt("metaGpus")
 	// find free gpu fraction and allocate them
-	for devUuid, totalAllocated := range devicesLoad {
-		if (totalSharesPerGPU-totalAllocated) >= quantity && !containsString(entirelyAllocatableGPUs, devUuid) {
-			allocatedDevices = append(allocatedDevices, devUuid)
+	for devUuid, load := range deviceLoad.LoadMap {
+		if _, ok := allocatableGPUs[devUuid]; !ok && load.FreeShares >= quantity {
+			allocatableGPUs[devUuid] = quantity
 			break
 		}
 	}
 	if len(allocatedDevices) == 0 {
-		return nil, errors.New("can't allocate requested gpu shares ")
+		return nil, errors.New("can't allocate requested gpu shares")
 	}
 	return
 }
 
-func buildDevicesLoadMap(availableDeviceIds []string) {
-	//for _, devId := range availableDeviceIds {
-	//
-	//}
-}
-
-func composeDevUuidsString(uuids []string) string {
-	var devUuidSet []string
-	devUuids := map[string]bool{}
-
-	// eliminates duplicates
-	for _, devUuid := range uuids {
-		devUuids[devUuid] = true
-	}
-	// compose list without duplicates
-	for devUuid, _ := range devUuids {
-		devUuidSet = append(devUuidSet, devUuid)
-	}
-	// convert to string and return
-	return strings.Join(devUuidSet, ",")
-}
-
-func containsString(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
+func buildDevicesLoadMap(realDeviceIds []string, availableDevIds []string) map[string]int {
+	var deviceLoad = make(map[string]int)
+	var deviceToMetagpus = make(map[string][]string)
+	for _, deviceId := range realDeviceIds {
+		for _, availableDevId := range availableDevIds {
+			if strings.Contains(availableDevId, deviceId) {
+				deviceToMetagpus[deviceId] = append(deviceToMetagpus[deviceId], availableDevId)
+			}
 		}
 	}
-	return false
+	for devId, metagpus := range deviceToMetagpus {
+		deviceLoad[devId] = len(metagpus)
+	}
+	return deviceLoad
 }
+
+//func gpuToMetagpu(allocatedDevices map[string]int) []string {
+//	var devUuidSet []string
+//	devUuids := map[string]bool{}
+//
+//	// eliminates duplicates
+//	for _, devUuid := range uuids {
+//		devUuids[devUuid] = true
+//	}
+//	// compose list without duplicates
+//	for devUuid, _ := range devUuids {
+//		devUuidSet = append(devUuidSet, devUuid)
+//	}
+//	// convert to string and return
+//	return strings.Join(devUuidSet, ",")
+//}
+
+//func containsString(slice []string, s string) bool {
+//	for _, item := range slice {
+//		if item == s {
+//			return true
+//		}
+//	}
+//	return false
+//}
+//func containsStringInMapKey(slice map[string]int, s string) bool {
+//	for _, item := range slice {
+//		if item == s {
+//			return true
+//		}
+//	}
+//	return false
+//}
 
 func NewNvidiaDeviceManager() *NvidiaDeviceManager {
 	ret := nvml.Init()
