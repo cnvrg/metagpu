@@ -103,8 +103,8 @@ func (p *DeviceProcess) EnrichProcessK8sInfo() {
 	}
 }
 
-func getMetagpuEnabledPods() (metaGpuPods []*v1core.Pod) {
-	var anonymouseDeviceProcesses = make(map[string][]*DeviceProcess)
+func getMetagpuAnonymouseWorkloads() (metaGpuPods []*v1core.Pod) {
+	var anonymouseMetagpuWorkloads []*DeviceProcess
 	c, err := GetK8sClient()
 	if err != nil {
 		log.Error(err)
@@ -121,18 +121,12 @@ func getMetagpuEnabledPods() (metaGpuPods []*v1core.Pod) {
 			for _, container := range pod.Spec.Containers {
 				resourceName := v1core.ResourceName(viper.GetString("resourceName"))
 				if quantity, ok := container.Resources.Limits[resourceName]; ok {
-					// if CNVRG_META_GPU_DEVICES not exist,
-					// meaning not metagpu device skip it
-					if getPodEnvVar(&container, "CNVRG_META_GPU_DEVICES") == "" {
-						continue
-					}
-					deviceUuid := getPodEnvVar(&container, "NVIDIA_VISIBLE_DEVICES")
-					anonymouseDeviceProcesses[deviceUuid] = append(anonymouseDeviceProcesses[deviceUuid], &DeviceProcess{
+					anonymouseMetagpuWorkloads = append(anonymouseMetagpuWorkloads, &DeviceProcess{
 						Pid:               0,
 						GpuMemory:         0,
 						Cmdline:           nil,
 						User:              "",
-						ContainerId:       getContainerIdByName(&pod, container.Name),
+						ContainerId:       "",
 						PodId:             pod.Name,
 						PodNamespace:      pod.Namespace,
 						PodMetagpuRequest: quantity.Value(),
@@ -149,33 +143,6 @@ func (p *DeviceProcess) GetShortCmdLine() string {
 		return "error discovering process cmdline"
 	}
 	return p.Cmdline[0]
-}
-
-func getContainerIdByName(pod *v1core.Pod, containerName string) string {
-	containerId := ""
-	for _, status := range pod.Status.ContainerStatuses {
-		if status.Name == containerName {
-			cId := strings.Split(status.ContainerID, "//")
-			if len(cId) == 2 {
-				containerId = cId[1]
-			}
-			break
-		}
-	}
-	if len(containerId) == 0 {
-		log.Errorf("can't detect container id by container name: %s", containerName)
-	}
-	return containerId
-}
-
-func getPodEnvVar(container *v1core.Container, envName string) (envVal string) {
-	for _, env := range container.Env {
-		if env.Name == envName {
-			envName = env.Value
-			break
-		}
-	}
-	return
 }
 
 func checkProcessDiscoveryError(e error) {
