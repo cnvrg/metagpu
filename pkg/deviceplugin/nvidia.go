@@ -217,7 +217,7 @@ func findFractionalAllocatableGPUs(quantity int, devicesLoad map[string]int) (al
 	totalSharesPerGPU := viper.GetInt("metaGpus")
 	// find free gpu fraction and allocate them
 	for devUuid, totalAllocated := range devicesLoad {
-		if (totalSharesPerGPU - totalAllocated) <= quantity {
+		if (totalSharesPerGPU - totalAllocated) >= quantity {
 			allocatedDevices = append(allocatedDevices, devUuid)
 			break
 		}
