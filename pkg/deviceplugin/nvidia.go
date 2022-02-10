@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/viper"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"regexp"
-	"strings"
 	"time"
 )
 
@@ -141,40 +140,17 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 	log.Info("************************************")
 }
 
-func (m *NvidiaDeviceManager) ListDeviceProcesses() map[string][]*DeviceProcess {
+func (m *NvidiaDeviceManager) ListDeviceProcesses() map[DeviceUuid][]*DeviceProcess {
 
-	deviceProcessInfoMap := make(map[string][]*DeviceProcess)
+	deviceProcessInfoMap := make(map[DeviceUuid][]*DeviceProcess)
 	for uuid, device := range m.Devices {
-		deviceProcessInfoMap[uuid] = device.Processes
+		deviceProcessInfoMap[DeviceUuid(uuid)] = device.Processes
 	}
-
 	return deviceProcessInfoMap
 }
 
 func (m *NvidiaDeviceManager) MetagpuAllocation(allocationSize int, availableDevIds []string) ([]string, error) {
-
-	// get total shares per gpu
-	//totalSharesPerGPU := viper.GetInt("metaGpus")
-	// detect device load
 	return NewDeviceAllocation(allocationSize, availableDevIds).MetagpusAllocations, nil
-
-	//// calculate how entire and how shares are required
-	//entireGpusRequest := allocationSize / totalSharesPerGPU
-	//gpuFractionsRequest := allocationSize % totalSharesPerGPU
-	//log.Infof("metagpu allocation request: %d.%d", entireGpusRequest, gpuFractionsRequest)
-	//// detect entirely allocatable gpus
-	//allocatableGPUs, err := findEntirelyAllocatableGPUs(entireGpusRequest, deviceLoad)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//// detect fractional allocatable gpus
-	//allocatableGPUs, err = findFractionalAllocatableGPUs(gpuFractionsRequest, deviceLoad, allocatableGPUs)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//// compose the device comma seperated string and return to K8s Allocation
-	////return composeDevUuidsString(append(entirelyAllocatableGPUs, partialAllocatableGPUs...)), nil
-	//return nil, nil
 }
 
 func nvmlErrorCheck(ret nvml.Return) {
@@ -182,95 +158,6 @@ func nvmlErrorCheck(ret nvml.Return) {
 		log.Fatalf("fatal error during nvml operation: %s", nvml.ErrorString(ret))
 	}
 }
-
-func findEntirelyAllocatableGPUs(quantity int, deviceLoad *DeviceAllocation) (allocatedDevices map[DeviceUuid]int, e error) {
-	//allocatedDevices = make(map[DeviceUuid]int)
-	//totalSharesPerGPU := viper.GetInt("metaGpus")
-	//if quantity == 0 {
-	//	return
-	//}
-	//for devUuid, load := range deviceLoad.LoadMap {
-	//	if load.FreeShares == totalSharesPerGPU { // meaning gpu is entirely free
-	//		allocatedDevices[devUuid] = totalSharesPerGPU // allocate all gpu shares to single gpu
-	//	}
-	//	// once we got enough entirely free gpus, break the loop
-	//	if len(allocatedDevices) == quantity {
-	//		break
-	//	}
-	//}
-	//if len(allocatedDevices) < quantity {
-	//	return nil, errors.New("can't allocate entirely requested gpus quantity")
-	//}
-	//
-	//for devUuid, _ := range allocatedDevices {
-	//	deviceLoad.MetagpusAllocations = append(deviceLoad.MetagpusAllocations, deviceLoad.LoadMap[devUuid].Metagpus...)
-	//}
-	return
-}
-
-func findFractionalAllocatableGPUs(quantity int, deviceLoad *DeviceAllocation, allocatableGPUs map[DeviceUuid]int) (allocatedDevices map[DeviceUuid]int, e error) {
-
-	// find free gpu fraction and allocate them
-	//for devUuid, load := range deviceLoad.LoadMap {
-	//	if _, ok := allocatableGPUs[devUuid]; !ok && load.FreeShares >= quantity {
-	//		allocatableGPUs[devUuid] = quantity
-	//		break
-	//	}
-	//}
-	//if len(allocatedDevices) == 0 {
-	//	return nil, errors.New("can't allocate requested gpu shares")
-	//}
-	return
-}
-
-func buildDevicesLoadMap(realDeviceIds []string, availableDevIds []string) map[string]int {
-	var deviceLoad = make(map[string]int)
-	var deviceToMetagpus = make(map[string][]string)
-	for _, deviceId := range realDeviceIds {
-		for _, availableDevId := range availableDevIds {
-			if strings.Contains(availableDevId, deviceId) {
-				deviceToMetagpus[deviceId] = append(deviceToMetagpus[deviceId], availableDevId)
-			}
-		}
-	}
-	for devId, metagpus := range deviceToMetagpus {
-		deviceLoad[devId] = len(metagpus)
-	}
-	return deviceLoad
-}
-
-//func gpuToMetagpu(allocatedDevices map[string]int) []string {
-//	var devUuidSet []string
-//	devUuids := map[string]bool{}
-//
-//	// eliminates duplicates
-//	for _, devUuid := range uuids {
-//		devUuids[devUuid] = true
-//	}
-//	// compose list without duplicates
-//	for devUuid, _ := range devUuids {
-//		devUuidSet = append(devUuidSet, devUuid)
-//	}
-//	// convert to string and return
-//	return strings.Join(devUuidSet, ",")
-//}
-
-//func containsString(slice []string, s string) bool {
-//	for _, item := range slice {
-//		if item == s {
-//			return true
-//		}
-//	}
-//	return false
-//}
-//func containsStringInMapKey(slice map[string]int, s string) bool {
-//	for _, item := range slice {
-//		if item == s {
-//			return true
-//		}
-//	}
-//	return false
-//}
 
 func NewNvidiaDeviceManager() *NvidiaDeviceManager {
 	ret := nvml.Init()

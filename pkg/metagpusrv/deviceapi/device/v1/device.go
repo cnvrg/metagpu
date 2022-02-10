@@ -19,20 +19,20 @@ func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDevic
 	}
 
 	for deviceUuid, deviceProcesses := range plugin.ListDeviceProcesses() {
-		var pbDeviceProcesses []*pb.DeviceProcess
-		response.Processes = map[string]*pb.DeviceProcesses{}
-
 		for _, process := range deviceProcesses {
-			pbDeviceProcesses = append(pbDeviceProcesses, &pb.DeviceProcess{
-				Pid:         process.Pid,
-				Memory:      process.GpuMemory,
-				Cmdline:     process.GetShortCmdLine(),
-				User:        process.User,
-				ContainerId: process.ContainerId,
+
+			response.DevicesProcesses = append(response.DevicesProcesses, &pb.DeviceProcess{
+				Uuid:            string(deviceUuid),
+				Pid:             process.Pid,
+				Memory:          process.GpuMemory,
+				Cmdline:         process.GetShortCmdLine(),
+				User:            process.User,
+				ContainerId:     process.ContainerId,
+				PodName:         process.PodId,
+				PodNamespace:    process.PodNamespace,
+				MetagpuRequests: process.PodMetagpuRequest,
 			})
 		}
-
-		response.Processes[deviceUuid] = &pb.DeviceProcesses{DeviceProcess: pbDeviceProcesses}
 	}
 	return response, nil
 }

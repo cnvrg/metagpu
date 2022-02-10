@@ -4,7 +4,6 @@ import (
 	"context"
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
 	log "github.com/sirupsen/logrus"
-	"strings"
 )
 
 func listDevicesProcesses() {
@@ -19,17 +18,15 @@ func listDevicesProcesses() {
 		log.Errorf("falid to list device processes, err: %s ", err)
 		return
 	}
-	for deviceName, processesList := range resp.Processes {
-		log.Infof("Device UUID   : %s", deviceName)
-		for _, p := range processesList.DeviceProcess {
-			cmd := ""
-			if p.Cmdline != "" {
-				cmd = strings.Split(p.Cmdline, " ")[0]
-			}
-			log.Infof("Pid           : %d", p.Pid)
-			log.Infof("GpuMemory        : %d", p.Memory/(1024*1024))
-			log.Infof("Command       : %s", cmd)
-			log.Infof("ContainerID   : %s", p.ContainerId)
-		}
+	for _, deviceProcess := range resp.DevicesProcesses {
+		log.Infof("Device UUID      : %s", deviceProcess.Uuid)
+		log.Infof("Pid              : %d", deviceProcess.Pid)
+		log.Infof("GpuMemory        : %d", deviceProcess.Memory/(1024*1024))
+		log.Infof("Command          : %s", deviceProcess.Cmdline)
+		log.Infof("ContainerID      : %s", deviceProcess.ContainerId)
+		log.Infof("PodName          : %s", deviceProcess.ContainerId)
+		log.Infof("PodNamespace     : %s", deviceProcess.ContainerId)
+		log.Infof("MetagpuRequests  : %s", deviceProcess.ContainerId)
+
 	}
 }

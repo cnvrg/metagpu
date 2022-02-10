@@ -9,18 +9,18 @@ service DeviceService{
 
 
 message DeviceProcess{
-  uint32 pid = 1;
-  uint64 memory = 2;
-  string cmdline = 3;
-  string user = 4;
-  string container_id = 5;
-}
-
-message DeviceProcesses{
-  repeated DeviceProcess device_process = 1;
+  string uuid = 1;
+  uint32 pid = 2;
+  uint64 memory = 3;
+  string cmdline = 4;
+  string user = 5;
+  string container_id = 6;
+  string pod_name = 7;
+  string pod_namespace = 8;
+  int64 metagpu_requests = 9;
 }
 
 message ListDeviceProcessesRequest{}
 message ListDeviceProcessesResponse{
-  map <string, DeviceProcesses> processes = 1;
+  repeated DeviceProcess devices_processes = 1;
 }
