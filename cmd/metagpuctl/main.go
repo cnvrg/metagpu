@@ -57,7 +57,6 @@ func init() {
 	// root commands
 	rootCmd.AddCommand(ProcessCmd)
 	rootCmd.AddCommand(metaGpuCtlVersion)
-	rootCmd.AddCommand(listDeviceProcesses)
 
 }
 
