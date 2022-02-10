@@ -57,6 +57,7 @@ spec:
       imagePullSecrets:
       - name: regcred
       hostPID: true
+      serviceAccountName: metagpu-device-plugin
       containers:
         - name: fractor
           image: docker.io/cnvrg/metagpu-device-plugin:latest
