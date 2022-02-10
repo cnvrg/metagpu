@@ -105,6 +105,9 @@ func (a *DeviceAllocation) SetAllocations() {
 				for _, device := range devLoad.Metagpus {
 					a.MetagpusAllocations = append(a.MetagpusAllocations, device)
 					allocationsLeft--
+					if allocationsLeft == 0 {
+						break
+					}
 				}
 				if allocationsLeft == 0 {
 					break
