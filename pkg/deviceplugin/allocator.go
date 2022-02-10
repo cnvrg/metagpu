@@ -27,7 +27,7 @@ func NewDeviceAllocation(allocationSize int, availableDevIds []string) *DeviceAl
 }
 
 func (a *DeviceAllocation) InitLoadMap() {
-
+	a.LoadMap = make(map[DeviceUuid]*DeviceLoad)
 	// build a map of real device id to meta device id
 	for _, deviceId := range a.MetaDeviceIdsToRealDeviceIds() {
 		for _, availableDevId := range a.AvailableDevIds {
