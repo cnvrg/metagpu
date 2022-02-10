@@ -1,7 +1,6 @@
 package deviceplugin
 
 import (
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"regexp"
@@ -72,6 +71,7 @@ func (a *DeviceAllocation) SetAllocations() {
 	gpuFractionsRequest := a.AllocationSize % a.TotalSharesPerGPU
 	log.Infof("metagpu allocation request: %d.%d", entireGpusRequest, gpuFractionsRequest)
 
+	// first try to allocate entire gpus if requested
 	for i := 0; i < entireGpusRequest; i++ {
 		for _, devLoad := range a.LoadMap {
 			if devLoad.getFreeShares() == a.TotalSharesPerGPU {
@@ -90,19 +90,30 @@ func (a *DeviceAllocation) SetAllocations() {
 						break
 					}
 					devicesToAdd = append(devicesToAdd, device)
-
 				}
 				a.MetagpusAllocations = append(a.MetagpusAllocations, devicesToAdd...)
 				devLoad.removeDevices(devicesToAdd)
 				break
 			}
 		}
+		// if still missing allocations,
+		// meaning wasn't able to allocate required fractions from the same GPU
+		// will try to allocate a fractions from different GPUs
+		if len(a.MetagpusAllocations) != a.AllocationSize {
+			allocationsLeft := a.AllocationSize
+			for _, devLoad := range a.LoadMap {
+				for _, device := range devLoad.Metagpus {
+					a.MetagpusAllocations = append(a.MetagpusAllocations, device)
+					allocationsLeft--
+				}
+				if allocationsLeft == 0 {
+					break
+				}
+			}
+		}
 	}
 	if len(a.MetagpusAllocations) != a.AllocationSize {
 		log.Errorf("error during allocation, the allocationSize: %d doesn't match total allocated devices: %d", a.AllocationSize, len(a.MetagpusAllocations))
-		for i := 0; i < a.AllocationSize; i++ {
-			a.MetagpusAllocations = append(a.MetagpusAllocations, fmt.Sprintf("%d-error-during-allocation", i))
-		}
 	}
 }
 
