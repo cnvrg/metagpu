@@ -99,6 +99,7 @@ func (a *DeviceAllocation) SetAllocations() {
 	}
 	if len(a.MetagpusAllocations) != a.AllocationSize {
 		log.Errorf("error during allocation, the allocationSize: %d doesn't match total allocated devices: %d", a.AllocationSize, len(a.MetagpusAllocations))
+		a.MetagpusAllocations = []string{"error-during-allocation"}
 	}
 }
 
