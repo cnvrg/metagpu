@@ -102,7 +102,6 @@ func (a *DeviceAllocation) SetAllocations() {
 		if len(a.MetagpusAllocations) != a.AllocationSize {
 			allocationsLeft := a.AllocationSize
 		ExitMultiGpuFractionAlloc:
-
 			if allocationsLeft > 0 {
 				for _, devLoad := range a.LoadMap {
 					for _, device := range devLoad.Metagpus {
