@@ -104,27 +104,18 @@ func (p *MetaGpuDevicePlugin) GetPreferredAllocation(ctx context.Context, reques
 
 func (p *MetaGpuDevicePlugin) Allocate(ctx context.Context, request *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 	allocResponse := &pluginapi.AllocateResponse{}
-
 	for _, req := range request.ContainerRequests {
-
 		response := pluginapi.ContainerAllocateResponse{}
 		sort.Strings(req.DevicesIDs)
-		log.Info("requested devices IDs:")
+		log.Info("requested devices ids:")
 		for _, dev := range req.DevicesIDs {
 			log.Info(dev)
 		}
-		//uuids, err := p.MetagpuAllocation(len(req.DevicesIDs))
-		// in case of error, the uuids list will be empty,
-		// the container will be scheduled, but it won't have any GPUs
-		//if err != nil {
-		//	log.Error(err)
-		//}
 		response.Envs = map[string]string{
 			"CNVRG_META_GPU_DEVICES": strings.Join(req.DevicesIDs, ","),
-			"NVIDIA_VISIBLE_DEVICES": "",
+			"NVIDIA_VISIBLE_DEVICES": strings.Join(p.ParseRealDeviceId(req.DevicesIDs), ","),
 		}
 		allocResponse.ContainerResponses = append(allocResponse.ContainerResponses, &response)
-
 	}
 	return allocResponse, nil
 }
