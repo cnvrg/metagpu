@@ -27,7 +27,7 @@ var (
 		{name: "config", shorthand: "c", value: ".", usage: "path to configuration file"},
 		{name: "json-log", shorthand: "", value: false, usage: "output logs in json format"},
 		{name: "verbose", shorthand: "", value: false, usage: "enable verbose logs"},
-		{name: "metagpu-server-addr", shorthand: "", value: "20.120.94.51:50052", usage: "address to access the metagpu server"},
+		{name: "metagpu-server-addr", shorthand: "", value: "localhost:50052", usage: "address to access the metagpu server"},
 	}
 )
 

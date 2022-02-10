@@ -66,7 +66,6 @@ func (p *DeviceProcess) SetProcessContainerId() {
 			log.Errorf("cgroups list for %d is empty", p.Pid)
 		}
 		p.ContainerId = filepath.Base(cgroups[0].Path)
-		//p.PodId, p.PodNamespace = inspectContainer(p.ContainerId)
 	}
 }
 

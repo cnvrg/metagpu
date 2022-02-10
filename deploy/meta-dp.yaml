@@ -58,15 +58,18 @@ spec:
       imagePullSecrets:
       - name: regcred
       hostPID: true
+      hostNetwork: true
       serviceAccountName: metagpu-device-plugin
       containers:
-        - name: fractor
+        - name: metagpu-device-plugin
           image: docker.io/cnvrg/metagpu-device-plugin:latest
           command:
             - /usr/bin/metagpu-device-plugin
             - start
             - -c
             - /etc/metagpu-device-plugin
+          ports:
+            - containerPort: 50052
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
