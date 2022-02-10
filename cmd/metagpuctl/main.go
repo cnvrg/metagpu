@@ -6,9 +6,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
-	"path"
-	"runtime"
-	"strconv"
 	"strings"
 )
 
@@ -96,13 +93,7 @@ func setupLogging() {
 		log.SetFormatter(&log.JSONFormatter{})
 	} else {
 		log.SetReportCaller(true)
-		log.SetFormatter(&log.TextFormatter{
-			FullTimestamp: true,
-			CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
-				fileName := fmt.Sprintf(" [%s]", path.Base(frame.Function)+":"+strconv.Itoa(frame.Line))
-				return "", fileName
-			},
-		})
+		log.SetFormatter(&log.TextFormatter{FullTimestamp: true})
 	}
 
 	// Logs are always goes to STDOUT
