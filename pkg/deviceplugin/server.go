@@ -87,22 +87,33 @@ func (p *MetaGpuDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.Devic
 }
 
 func (p *MetaGpuDevicePlugin) GetPreferredAllocation(ctx context.Context, request *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
-	if len(request.ContainerRequests) > 0 {
-		var devs = make(map[string][]string)
-		availableDevIds := request.ContainerRequests[0].GetAvailableDeviceIDs()
-		sort.Strings(availableDevIds)
-		realDeviceIds := p.ParseRealDeviceId(availableDevIds)
-		for _, deviceId := range realDeviceIds {
-			for _, availableDevId := range availableDevIds {
-				if strings.Contains(availableDevId, deviceId) {
-					devs[deviceId] = append(devs[deviceId], availableDevId)
-				}
-			}
-		}
-		log.Info("asd")
+	//if len(request.ContainerRequests) > 0 {
+	//	var devs = make(map[string][]string)
+	//	availableDevIds := request.ContainerRequests[0].GetAvailableDeviceIDs()
+	//	sort.Strings(availableDevIds)
+	//	realDeviceIds := p.ParseRealDeviceId(availableDevIds)
+	//	for _, deviceId := range realDeviceIds {
+	//		for _, availableDevId := range availableDevIds {
+	//			if strings.Contains(availableDevId, deviceId) {
+	//				devs[deviceId] = append(devs[deviceId], availableDevId)
+	//			}
+	//		}
+	//	}
+	//	log.Info("asd")
+	//}
 
+	allocResponse := &pluginapi.PreferredAllocationResponse{}
+	for _, req := range request.ContainerRequests {
+		allocContainerResponse := &pluginapi.ContainerPreferredAllocationResponse{}
+		availableDevIds := req.GetAvailableDeviceIDs()
+		sort.Strings(availableDevIds)
+
+		for i := 0; i < int(req.AllocationSize); i++ {
+			allocContainerResponse.DeviceIDs = append(allocContainerResponse.DeviceIDs, availableDevIds[i])
+		}
+		allocResponse.ContainerResponses = append(allocResponse.ContainerResponses, allocContainerResponse)
 	}
-	return &pluginapi.PreferredAllocationResponse{}, nil
+	return allocResponse, nil
 
 }
 
@@ -116,15 +127,15 @@ func (p *MetaGpuDevicePlugin) Allocate(ctx context.Context, request *pluginapi.A
 		for _, dev := range req.DevicesIDs {
 			log.Info(dev)
 		}
-		uuids, err := p.MetagpuAllocation(len(req.DevicesIDs))
+		//uuids, err := p.MetagpuAllocation(len(req.DevicesIDs))
 		// in case of error, the uuids list will be empty,
 		// the container will be scheduled, but it won't have any GPUs
-		if err != nil {
-			log.Error(err)
-		}
+		//if err != nil {
+		//	log.Error(err)
+		//}
 		response.Envs = map[string]string{
 			"CNVRG_META_GPU_DEVICES": strings.Join(req.DevicesIDs, ","),
-			"NVIDIA_VISIBLE_DEVICES": uuids,
+			"NVIDIA_VISIBLE_DEVICES": "",
 		}
 		allocResponse.ContainerResponses = append(allocResponse.ContainerResponses, &response)
 

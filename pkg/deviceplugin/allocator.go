@@ -5,24 +5,26 @@ import (
 	"strings"
 )
 
+type DeviceUuid string
+
 type DeviceLoad struct {
 	FreeShares int
 	Metagpus   []string
 }
 
 type DeviceAllocationMap struct {
-	LoadMap             map[string]*DeviceLoad
+	LoadMap             map[DeviceUuid]*DeviceLoad
 	MetagpusAllocations []string
 }
 
 func NewDeviceLoadMap(realDeviceIds []string, availableMetagpus []string) *DeviceAllocationMap {
 	sort.Strings(availableMetagpus)
-	var deviceLoad = make(map[string]*DeviceLoad)
-	var deviceToMetagpus = make(map[string][]string)
+	var deviceLoad = make(map[DeviceUuid]*DeviceLoad)
+	var deviceToMetagpus = make(map[DeviceUuid][]string)
 	for _, deviceId := range realDeviceIds {
 		for _, availableDevId := range availableMetagpus {
 			if strings.Contains(availableDevId, deviceId) {
-				deviceToMetagpus[deviceId] = append(deviceToMetagpus[deviceId], availableDevId)
+				deviceToMetagpus[DeviceUuid(deviceId)] = append(deviceToMetagpus[DeviceUuid(deviceId)], availableDevId)
 			}
 		}
 	}

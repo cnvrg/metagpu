@@ -185,7 +185,8 @@ func (m *NvidiaDeviceManager) MetagpuAllocation(allocationSize int, availableDev
 		return nil, err
 	}
 	// compose the device comma seperated string and return to K8s Allocation
-	return composeDevUuidsString(append(entirelyAllocatableGPUs, partialAllocatableGPUs...)), nil
+	//return composeDevUuidsString(append(entirelyAllocatableGPUs, partialAllocatableGPUs...)), nil
+	return nil, nil
 }
 
 func nvmlErrorCheck(ret nvml.Return) {
@@ -194,8 +195,8 @@ func nvmlErrorCheck(ret nvml.Return) {
 	}
 }
 
-func findEntirelyAllocatableGPUs(quantity int, deviceLoad *DeviceAllocationMap) (allocatedDevices map[string]int, e error) {
-	allocatedDevices = make(map[string]int)
+func findEntirelyAllocatableGPUs(quantity int, deviceLoad *DeviceAllocationMap) (allocatedDevices map[DeviceUuid]int, e error) {
+	allocatedDevices = make(map[DeviceUuid]int)
 	totalSharesPerGPU := viper.GetInt("metaGpus")
 	if quantity == 0 {
 		return
@@ -219,7 +220,7 @@ func findEntirelyAllocatableGPUs(quantity int, deviceLoad *DeviceAllocationMap) 
 	return
 }
 
-func findFractionalAllocatableGPUs(quantity int, deviceLoad *DeviceAllocationMap, allocatableGPUs map[string]int) (allocatedDevices map[string]int, e error) {
+func findFractionalAllocatableGPUs(quantity int, deviceLoad *DeviceAllocationMap, allocatableGPUs map[DeviceUuid]int) (allocatedDevices map[DeviceUuid]int, e error) {
 
 	// find free gpu fraction and allocate them
 	for devUuid, load := range deviceLoad.LoadMap {

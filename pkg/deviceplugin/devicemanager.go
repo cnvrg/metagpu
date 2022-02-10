@@ -23,5 +23,5 @@ type DeviceManager interface {
 	DiscoverDeviceProcesses()
 	ListDeviceProcesses() map[string][]*DeviceProcess
 	ParseRealDeviceId(metaDevicesIds []string) (realDeviceId []string)
-	MetagpuAllocation(metagpuRequest int) (string, error)
+	//MetagpuAllocation(metagpuRequest int) (string, error)
 }
