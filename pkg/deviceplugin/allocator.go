@@ -85,10 +85,10 @@ func (a *DeviceAllocation) SetAllocations() {
 			if devLoad.getFreeShares() >= gpuFractionsRequest {
 				var devicesToAdd []string
 				for i, device := range devLoad.Metagpus {
-					devicesToAdd = append(devicesToAdd, device)
 					if i == gpuFractionsRequest {
 						break
 					}
+					devicesToAdd = append(devicesToAdd, device)
 
 				}
 				a.MetagpusAllocations = append(a.MetagpusAllocations, devicesToAdd...)
