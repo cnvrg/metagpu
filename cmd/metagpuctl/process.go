@@ -4,7 +4,21 @@ import (
 	"context"
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
+
+var ProcessCmd = &cobra.Command{
+	Use:   "process",
+	Short: "manage gpu processes",
+}
+
+var ProcessListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "list gpu processes, and process metadata",
+	Run: func(cmd *cobra.Command, args []string) {
+		listDevicesProcesses()
+	},
+}
 
 func listDevicesProcesses() {
 	conn, err := GetGrpcMetaGpuSrvClientConn()

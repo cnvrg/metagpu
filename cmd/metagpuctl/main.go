@@ -45,13 +45,17 @@ var listDeviceProcesses = &cobra.Command{
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "metagpuctl",
-	Short: "metagpuctl - cli client for mate gpu monitoring and management",
+	Use:   "mgctl",
+	Short: "mgctl - cli client for metagpu management and monitoring",
 }
 
 func init() {
 	cobra.OnInitialize(initConfig)
 	setParams(rootParams, rootCmd)
+	// processes
+	ProcessCmd.AddCommand(ProcessListCmd)
+	// root commands
+	rootCmd.AddCommand(ProcessCmd)
 	rootCmd.AddCommand(metaGpuCtlVersion)
 	rootCmd.AddCommand(listDeviceProcesses)
 
@@ -59,7 +63,7 @@ func init() {
 
 func initConfig() {
 	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	setupLogging()
 }
 

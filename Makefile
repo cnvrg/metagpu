@@ -6,6 +6,7 @@ debug-remote:
 
 docker-build: build-proto
 	docker build \
+	 --platform linux/x86_64 \
      --build-arg BUILD_SHA=$(shell git rev-parse --short HEAD) \
      --build-arg BUILD_VERSION=0.0.1 \
      -t docker.io/cnvrg/metagpu-device-plugin:latest .
