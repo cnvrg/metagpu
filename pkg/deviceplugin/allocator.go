@@ -101,16 +101,16 @@ func (a *DeviceAllocation) SetAllocations() {
 		// will try to allocate a fractions from different GPUs
 		if len(a.MetagpusAllocations) != a.AllocationSize {
 			allocationsLeft := a.AllocationSize
-			for _, devLoad := range a.LoadMap {
-				for _, device := range devLoad.Metagpus {
-					a.MetagpusAllocations = append(a.MetagpusAllocations, device)
-					allocationsLeft--
-					if allocationsLeft == 0 {
-						break
+		ExitMultiGpuFractionAlloc:
+			if allocationsLeft > 0 {
+				for _, devLoad := range a.LoadMap {
+					for _, device := range devLoad.Metagpus {
+						a.MetagpusAllocations = append(a.MetagpusAllocations, device)
+						allocationsLeft--
+						if allocationsLeft == 0 {
+							continue ExitMultiGpuFractionAlloc
+						}
 					}
-				}
-				if allocationsLeft == 0 {
-					break
 				}
 			}
 		}
