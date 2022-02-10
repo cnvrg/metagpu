@@ -1,6 +1,8 @@
 package deviceplugin
 
 import (
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"regexp"
 	"sort"
 	"strings"
@@ -16,13 +18,19 @@ type DeviceAllocation struct {
 	LoadMap             map[DeviceUuid]*DeviceLoad
 	AvailableDevIds     []string
 	AllocationSize      int
+	TotalSharesPerGPU   int
 	MetagpusAllocations []string
 }
 
 func NewDeviceAllocation(allocationSize int, availableDevIds []string) *DeviceAllocation {
 	sort.Strings(availableDevIds)
-	devAlloc := &DeviceAllocation{AllocationSize: allocationSize, AvailableDevIds: availableDevIds}
+	devAlloc := &DeviceAllocation{
+		AvailableDevIds:   availableDevIds,
+		AllocationSize:    allocationSize,
+		TotalSharesPerGPU: viper.GetInt("metaGpus"),
+	}
 	devAlloc.InitLoadMap()
+	devAlloc.SetAllocations()
 	return devAlloc
 }
 
@@ -56,6 +64,52 @@ func (a *DeviceAllocation) MetaDeviceIdsToRealDeviceIds() (realDeviceIds []strin
 	}
 
 	return
+}
+
+func (a *DeviceAllocation) SetAllocations() {
+	entireGpusRequest := a.AllocationSize / a.TotalSharesPerGPU
+	gpuFractionsRequest := a.AllocationSize % a.TotalSharesPerGPU
+	log.Infof("metagpu allocation request: %d.%d", entireGpusRequest, gpuFractionsRequest)
+
+	for i := 0; i < entireGpusRequest; i++ {
+		for _, devLoad := range a.LoadMap {
+			if devLoad.getFreeShares() == a.TotalSharesPerGPU {
+				a.MetagpusAllocations = append(a.MetagpusAllocations, devLoad.Metagpus...)
+				devLoad.Metagpus = nil
+			}
+		}
+	}
+
+	if gpuFractionsRequest > 0 {
+		for _, devLoad := range a.LoadMap {
+			if devLoad.getFreeShares() <= gpuFractionsRequest {
+				var devicesToAdd []string
+				for _, device := range devLoad.Metagpus {
+					devicesToAdd = append(devicesToAdd, device)
+				}
+				a.MetagpusAllocations = append(a.MetagpusAllocations, devicesToAdd...)
+				devLoad.removeDevices(devicesToAdd)
+				break
+			}
+		}
+	}
+	if len(a.MetagpusAllocations) != a.AllocationSize {
+		log.Errorf("error during allocation, the allocationSize: %d doesn't match total allocated devices: %d", a.AllocationSize, len(a.MetagpusAllocations))
+	}
+}
+
+func (l *DeviceLoad) getFreeShares() int {
+	return len(l.Metagpus)
+}
+
+func (l *DeviceLoad) removeDevices(devIds []string) {
+	for _, devId := range devIds {
+		for i, v := range l.Metagpus {
+			if v == devId {
+				l.Metagpus = append(l.Metagpus[:i], l.Metagpus[i+1:]...)
+			}
+		}
+	}
 }
 
 //func (m *DeviceAllocation) AllocateMetagpus(allocatableGPUs map[string]int) []string {

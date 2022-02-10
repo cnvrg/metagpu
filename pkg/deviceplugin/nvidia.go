@@ -168,7 +168,8 @@ func (m *NvidiaDeviceManager) MetagpuAllocation(allocationSize int, availableDev
 	// get total shares per gpu
 	//totalSharesPerGPU := viper.GetInt("metaGpus")
 	// detect device load
-	_ = NewDeviceAllocation(allocationSize, availableDevIds)
+	return NewDeviceAllocation(allocationSize, availableDevIds).MetagpusAllocations, nil
+
 	//// calculate how entire and how shares are required
 	//entireGpusRequest := allocationSize / totalSharesPerGPU
 	//gpuFractionsRequest := allocationSize % totalSharesPerGPU
@@ -185,7 +186,7 @@ func (m *NvidiaDeviceManager) MetagpuAllocation(allocationSize int, availableDev
 	//}
 	//// compose the device comma seperated string and return to K8s Allocation
 	////return composeDevUuidsString(append(entirelyAllocatableGPUs, partialAllocatableGPUs...)), nil
-	return nil, nil
+	//return nil, nil
 }
 
 func nvmlErrorCheck(ret nvml.Return) {
