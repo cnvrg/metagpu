@@ -27,6 +27,5 @@ func listDevicesProcesses() {
 		log.Infof("PodName          : %s", deviceProcess.PodName)
 		log.Infof("PodNamespace     : %s", deviceProcess.PodNamespace)
 		log.Infof("MetagpuRequests  : %d", deviceProcess.MetagpuRequests)
-
 	}
 }

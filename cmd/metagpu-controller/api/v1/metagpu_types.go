@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/deviceplugin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -17,7 +16,6 @@ type MetaGpuSpec struct {
 }
 
 type MetaGpuStatus struct {
-	Devices []*deviceplugin.NvidiaDevice
 }
 
 // +kubebuilder:object:root=true

@@ -70,6 +70,7 @@ spec:
             - /etc/metagpu-device-plugin
           ports:
             - containerPort: 50052
+              hostPort: 50052
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
