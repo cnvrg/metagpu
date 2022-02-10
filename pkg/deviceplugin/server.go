@@ -87,32 +87,15 @@ func (p *MetaGpuDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.Devic
 }
 
 func (p *MetaGpuDevicePlugin) GetPreferredAllocation(ctx context.Context, request *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
-	//if len(request.ContainerRequests) > 0 {
-	//	var devs = make(map[string][]string)
-	//	availableDevIds := request.ContainerRequests[0].GetAvailableDeviceIDs()
-	//	sort.Strings(availableDevIds)
-	//	realDeviceIds := p.ParseRealDeviceId(availableDevIds)
-	//	for _, deviceId := range realDeviceIds {
-	//		for _, availableDevId := range availableDevIds {
-	//			if strings.Contains(availableDevId, deviceId) {
-	//				devs[deviceId] = append(devs[deviceId], availableDevId)
-	//			}
-	//		}
-	//	}
-	//	log.Info("asd")
-	//}
 
 	allocResponse := &pluginapi.PreferredAllocationResponse{}
 	for _, req := range request.ContainerRequests {
 		allocContainerResponse := &pluginapi.ContainerPreferredAllocationResponse{}
 		allocContainerResponse.DeviceIDs, _ = p.MetagpuAllocation(int(req.AllocationSize), req.GetAvailableDeviceIDs())
-
-		//for i := 20; i < len(availableDevIds); i++ {
-		//	allocContainerResponse.DeviceIDs = append(allocContainerResponse.DeviceIDs, availableDevIds[i])
-		//	if len(allocContainerResponse.DeviceIDs) == int(req.AllocationSize) {
-		//		break
-		//	}
-		//}
+		log.Info("preferred devices ids:")
+		for _, devId := range allocContainerResponse.DeviceIDs {
+			log.Info(devId)
+		}
 		allocResponse.ContainerResponses = append(allocResponse.ContainerResponses, allocContainerResponse)
 	}
 	return allocResponse, nil
