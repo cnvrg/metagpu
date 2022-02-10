@@ -105,16 +105,14 @@ func (p *MetaGpuDevicePlugin) GetPreferredAllocation(ctx context.Context, reques
 	allocResponse := &pluginapi.PreferredAllocationResponse{}
 	for _, req := range request.ContainerRequests {
 		allocContainerResponse := &pluginapi.ContainerPreferredAllocationResponse{}
-		availableDevIds := req.GetAvailableDeviceIDs()
-		_, _ = p.MetagpuAllocation(int(req.AllocationSize), availableDevIds)
-		sort.Strings(availableDevIds)
+		allocContainerResponse.DeviceIDs, _ = p.MetagpuAllocation(int(req.AllocationSize), req.GetAvailableDeviceIDs())
 
-		for i := 20; i < len(availableDevIds); i++ {
-			allocContainerResponse.DeviceIDs = append(allocContainerResponse.DeviceIDs, availableDevIds[i])
-			if len(allocContainerResponse.DeviceIDs) == int(req.AllocationSize) {
-				break
-			}
-		}
+		//for i := 20; i < len(availableDevIds); i++ {
+		//	allocContainerResponse.DeviceIDs = append(allocContainerResponse.DeviceIDs, availableDevIds[i])
+		//	if len(allocContainerResponse.DeviceIDs) == int(req.AllocationSize) {
+		//		break
+		//	}
+		//}
 		allocResponse.ContainerResponses = append(allocResponse.ContainerResponses, allocContainerResponse)
 	}
 	return allocResponse, nil
