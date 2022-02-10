@@ -97,45 +97,9 @@ func (p *DeviceProcess) EnrichProcessK8sInfo() {
 						p.PodMetagpuRequest = quantity.Value()
 					}
 				}
-				log.Info("found")
 			}
 		}
 	}
-}
-
-func getMetagpuAnonymouseWorkloads() (metaGpuPods []*v1core.Pod) {
-	var anonymouseMetagpuWorkloads []*DeviceProcess
-	c, err := GetK8sClient()
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	pl := &v1core.PodList{}
-	if err := c.List(context.Background(), pl); err != nil {
-		log.Error(err)
-		return
-	}
-	for _, pod := range pl.Items {
-		if pod.Status.Phase == v1core.PodPending || pod.Status.Phase == v1core.PodRunning {
-			for _, container := range pod.Spec.Containers {
-				resourceName := v1core.ResourceName(viper.GetString("resourceName"))
-				if quantity, ok := container.Resources.Limits[resourceName]; ok {
-					anonymouseMetagpuWorkloads = append(anonymouseMetagpuWorkloads, &DeviceProcess{
-						Pid:               0,
-						GpuMemory:         0,
-						Cmdline:           nil,
-						User:              "",
-						ContainerId:       "",
-						PodId:             pod.Name,
-						PodNamespace:      pod.Namespace,
-						PodMetagpuRequest: quantity.Value(),
-					})
-				}
-			}
-		}
-	}
-	return
 }
 
 func (p *DeviceProcess) GetShortCmdLine() string {

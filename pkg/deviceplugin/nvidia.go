@@ -125,18 +125,6 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 		device.Utilization = &DeviceUtilization{Gpu: utilization.Gpu, Memory: utilization.Memory}
 	}
 
-	_ = getMetagpuAnonymouseWorkloads()
-	//for _, device := range m.Devices {
-	//	for _, deviceProcess := range device.Processes {
-	//		podFound := false
-	//		for _, metaGpuPod := range gpuEnabledPods {
-	//			for _, container := range pod.Spec.Containers {
-	//
-	//			}
-	//		}
-	//	}
-	//}
-
 	for deviceUuid, deviceProcesses := range m.ListDeviceProcesses() {
 		log.Infof("=========== %s ===========", deviceUuid)
 		for _, deviceProcess := range deviceProcesses {
