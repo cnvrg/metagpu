@@ -1,6 +1,7 @@
 package deviceplugin
 
 import (
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"regexp"
@@ -99,7 +100,9 @@ func (a *DeviceAllocation) SetAllocations() {
 	}
 	if len(a.MetagpusAllocations) != a.AllocationSize {
 		log.Errorf("error during allocation, the allocationSize: %d doesn't match total allocated devices: %d", a.AllocationSize, len(a.MetagpusAllocations))
-		a.MetagpusAllocations = []string{"error-during-allocation"}
+		for i := 0; i < a.AllocationSize; i++ {
+			a.MetagpusAllocations = append(a.MetagpusAllocations, fmt.Sprintf("%d-error-during-allocation", i))
+		}
 	}
 }
 
