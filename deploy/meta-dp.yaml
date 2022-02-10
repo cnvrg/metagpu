@@ -19,7 +19,7 @@ metadata:
   namespace: kube-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
   name: metagpu-device-plugin
   namespace: kube-system
@@ -30,6 +30,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: metagpu-device-plugin
+    namespace: kube-system
 ---
 apiVersion: apps/v1
 kind: DaemonSet
