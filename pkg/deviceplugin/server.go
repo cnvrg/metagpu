@@ -108,7 +108,7 @@ func (p *MetaGpuDevicePlugin) GetPreferredAllocation(ctx context.Context, reques
 		availableDevIds := req.GetAvailableDeviceIDs()
 		sort.Strings(availableDevIds)
 
-		for i := 10; i < len(availableDevIds); i++ {
+		for i := 20; i < len(availableDevIds); i++ {
 			allocContainerResponse.DeviceIDs = append(allocContainerResponse.DeviceIDs, availableDevIds[i])
 			if len(allocContainerResponse.DeviceIDs) == int(req.AllocationSize) {
 				break
