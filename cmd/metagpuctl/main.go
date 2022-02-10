@@ -92,7 +92,6 @@ func setupLogging() {
 	if viper.GetBool("json-log") {
 		log.SetFormatter(&log.JSONFormatter{})
 	} else {
-		log.SetReportCaller(true)
 		log.SetFormatter(&log.TextFormatter{FullTimestamp: true})
 	}
 

@@ -24,9 +24,9 @@ func listDevicesProcesses() {
 		log.Infof("GpuMemory        : %d", deviceProcess.Memory/(1024*1024))
 		log.Infof("Command          : %s", deviceProcess.Cmdline)
 		log.Infof("ContainerID      : %s", deviceProcess.ContainerId)
-		log.Infof("PodName          : %s", deviceProcess.ContainerId)
-		log.Infof("PodNamespace     : %s", deviceProcess.ContainerId)
-		log.Infof("MetagpuRequests  : %s", deviceProcess.ContainerId)
+		log.Infof("PodName          : %s", deviceProcess.PodName)
+		log.Infof("PodNamespace     : %s", deviceProcess.PodNamespace)
+		log.Infof("MetagpuRequests  : %d", deviceProcess.MetagpuRequests)
 
 	}
 }
