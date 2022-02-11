@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
+	"github.com/jedib0t/go-pretty/v6/table"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -21,6 +22,7 @@ var ProcessListCmd = &cobra.Command{
 }
 
 func listDevicesProcesses() {
+
 	conn, err := GetGrpcMetaGpuSrvClientConn()
 	if err != nil {
 		log.Fatalf("can't initiate connection to metagpu server, %s", err)
@@ -32,14 +34,31 @@ func listDevicesProcesses() {
 		log.Errorf("falid to list device processes, err: %s ", err)
 		return
 	}
-	for _, deviceProcess := range resp.DevicesProcesses {
-		log.Infof("Device UUID      : %s", deviceProcess.Uuid)
-		log.Infof("Pid              : %d", deviceProcess.Pid)
-		log.Infof("GpuMemory        : %d", deviceProcess.Memory/(1024*1024))
-		log.Infof("Command          : %s", deviceProcess.Cmdline)
-		log.Infof("ContainerID      : %s", deviceProcess.ContainerId)
-		log.Infof("PodName          : %s", deviceProcess.PodName)
-		log.Infof("PodNamespace     : %s", deviceProcess.PodNamespace)
-		log.Infof("MetagpuRequests  : %d", deviceProcess.MetagpuRequests)
+
+	t := table.NewWriter()
+	header := table.Row{
+		"#",
+		"Device UUID",
+		"Pid",
+		"GpuMemory",
+		"Command",
+		"Pod",
+		"Namespace",
+		"Metagpus",
 	}
+	t.AppendHeader(header)
+	var rows []table.Row
+	for _, deviceProcess := range resp.DevicesProcesses {
+		rows = append(rows, table.Row{
+			deviceProcess.Uuid,
+			deviceProcess.Pid,
+			deviceProcess.Memory / (1024 * 1024),
+			deviceProcess.Cmdline,
+			deviceProcess.PodName,
+			deviceProcess.PodNamespace,
+			deviceProcess.MetagpuRequests,
+		})
+	}
+	t.AppendRows(rows)
+	t.Render()
 }

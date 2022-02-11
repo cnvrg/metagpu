@@ -21,10 +21,10 @@ var (
 	Version    string
 	Build      string
 	rootParams = []param{
-		{name: "config", shorthand: "c", value: ".", usage: "path to configuration file"},
 		{name: "json-log", shorthand: "", value: false, usage: "output logs in json format"},
 		{name: "verbose", shorthand: "", value: false, usage: "enable verbose logs"},
 		{name: "metagpu-server-addr", shorthand: "", value: "localhost:50052", usage: "address to access the metagpu server"},
+		{name: "output", shorthand: "o", value: "table", usage: "output format, one of: table|json|raw"},
 	}
 )
 
@@ -33,14 +33,6 @@ var metaGpuCtlVersion = &cobra.Command{
 	Short: "Print metagpuctl version and build sha",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("🐾 version: %s build: %s \n", Version, Build)
-	},
-}
-
-var listDeviceProcesses = &cobra.Command{
-	Use:   "list",
-	Short: "list",
-	Run: func(cmd *cobra.Command, args []string) {
-		listDevicesProcesses()
 	},
 }
 
