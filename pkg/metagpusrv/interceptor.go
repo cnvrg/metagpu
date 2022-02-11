@@ -2,6 +2,7 @@ package metagpusrv
 
 import (
 	"context"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/deviceplugin"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"time"
@@ -9,6 +10,7 @@ import (
 
 type MetaGpuServerStream struct {
 	grpc.ServerStream
+	plugin          *deviceplugin.MetaGpuDevicePlugin
 	VisibilityToken string
 	DeviceVl        string
 	ContainerVl     string
@@ -17,12 +19,13 @@ type MetaGpuServerStream struct {
 func (s *MetaGpuServerStream) Context() context.Context {
 	ctx := context.WithValue(s.ServerStream.Context(), TokenVisibilityClaimName, s.VisibilityToken)
 	context.WithValue(ctx, "containerVl", string(ContainerVisibility))
+	context.WithValue(ctx, "plugin", s.plugin)
 	return context.WithValue(ctx, "deviceVl", string(DeviceVisibility))
 }
 
 func (s *MetaGpuServer) streamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		wrapper := &MetaGpuServerStream{ServerStream: ss}
+		wrapper := &MetaGpuServerStream{ServerStream: ss, plugin: s.plugin}
 		if !s.IsMethodPublic(info.FullMethod) {
 			visibility, err := authorize(ss.Context())
 			if err != nil {
