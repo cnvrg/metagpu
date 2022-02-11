@@ -28,8 +28,9 @@ type MetaGpuServer struct {
 }
 
 var (
-	ContainerVisibility VisibilityLevel = "containerVisibilityToken"
-	DeviceVisibility    VisibilityLevel = "deviceVisibilityToken"
+	ContainerVisibility      VisibilityLevel = "containerVisibilityToken"
+	DeviceVisibility         VisibilityLevel = "deviceVisibilityToken"
+	TokenVisibilityClaimName                 = "visibilityLevel"
 )
 
 func NewMetaGpuServer(plugin *deviceplugin.MetaGpuDevicePlugin) *MetaGpuServer {
@@ -72,7 +73,7 @@ func (s *MetaGpuServer) unaryServerInterceptor() grpc.UnaryServerInterceptor {
 		if err != nil {
 			return nil, err
 		}
-		ctx = context.WithValue(ctx, "visibilityLevel", visibility)
+		ctx = context.WithValue(ctx, TokenVisibilityClaimName, visibility)
 		ctx = context.WithValue(ctx, "plugin", s.plugin)
 		h, err := handler(ctx, req)
 		log.Infof("[method: %s duration: %s]", info.FullMethod, time.Since(start))
@@ -107,7 +108,7 @@ func authorize(ctx context.Context) (*string, error) {
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		if visibility, ok := claims["visibility"]; ok {
+		if visibility, ok := claims[TokenVisibilityClaimName]; ok {
 			visibility := visibility.(string)
 			return &visibility, nil
 		}
@@ -118,7 +119,7 @@ func authorize(ctx context.Context) (*string, error) {
 
 func (s *MetaGpuServer) GenerateAuthTokens(visibility VisibilityLevel) string {
 
-	claims := jwt.MapClaims{"email": "metagpu@instance", "visibilityLevel": visibility}
+	claims := jwt.MapClaims{"email": "metagpu@instance", TokenVisibilityClaimName: visibility}
 	containerScopeToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := containerScopeToken.SignedString([]byte(viper.GetString("jwtSecret")))
 	if err != nil {
