@@ -74,8 +74,8 @@ func (s *MetaGpuServer) unaryServerInterceptor() grpc.UnaryServerInterceptor {
 			return nil, err
 		}
 		ctx = context.WithValue(ctx, TokenVisibilityClaimName, visibility)
-		ctx = context.WithValue(ctx, "containerVl", ContainerVisibility)
-		ctx = context.WithValue(ctx, "deviceVl", DeviceVisibility)
+		ctx = context.WithValue(ctx, "containerVl", string(ContainerVisibility))
+		ctx = context.WithValue(ctx, "deviceVl", string(DeviceVisibility))
 		ctx = context.WithValue(ctx, "plugin", s.plugin)
 		h, err := handler(ctx, req)
 		log.Infof("[method: %s duration: %s]", info.FullMethod, time.Since(start))
