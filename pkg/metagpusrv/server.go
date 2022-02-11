@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 	"net"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -94,7 +95,13 @@ func (s *MetaGpuServer) GenerateAuthTokens(visibility VisibilityLevel) string {
 }
 
 func (s *MetaGpuServer) SaveTokensOnLocalStorage() {
-	f, err := os.Create(".mgsrvtokens")
+	ex, err := os.Executable()
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	exPath := filepath.Dir(ex)
+	f, err := os.Create(exPath + "/.mgsrvtokens")
 	defer f.Close()
 	if err != nil {
 		log.Error("unable write tokens to local storage")
