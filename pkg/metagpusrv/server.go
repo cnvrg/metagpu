@@ -101,7 +101,8 @@ func (s *MetaGpuServer) SaveTokensOnLocalStorage() {
 		return
 	}
 	exPath := filepath.Dir(ex)
-	f, err := os.Create(exPath + "/.mgsrvtokens")
+	filePath := exPath + "/.mgsrvtokens"
+	f, err := os.Create(filePath)
 	defer f.Close()
 	if err != nil {
 		log.Error("unable write tokens to local storage")
@@ -111,6 +112,7 @@ func (s *MetaGpuServer) SaveTokensOnLocalStorage() {
 	if err != nil {
 		log.Error("failed to write tokens to .mgsrvtokens file")
 	}
+	log.Infof("tokens saved in %s", filePath)
 
 }
 
