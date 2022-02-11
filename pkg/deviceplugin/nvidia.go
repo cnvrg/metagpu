@@ -124,7 +124,7 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 		device.Utilization = &DeviceUtilization{Gpu: utilization.Gpu, Memory: utilization.Memory}
 	}
 
-	for deviceUuid, deviceProcesses := range m.ListDeviceProcesses() {
+	for deviceUuid, deviceProcesses := range m.ListDeviceProcesses("") {
 		log.Infof("=========== %s ===========", deviceUuid)
 		for _, deviceProcess := range deviceProcesses {
 			log.Infof("Pid             : %d", deviceProcess.Pid)
@@ -140,11 +140,19 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 	log.Info("************************************")
 }
 
-func (m *NvidiaDeviceManager) ListDeviceProcesses() map[DeviceUuid][]*DeviceProcess {
+func (m *NvidiaDeviceManager) ListDeviceProcesses(podId string) map[DeviceUuid][]*DeviceProcess {
 
 	deviceProcessInfoMap := make(map[DeviceUuid][]*DeviceProcess)
 	for uuid, device := range m.Devices {
-		deviceProcessInfoMap[DeviceUuid(uuid)] = device.Processes
+		if podId != "" {
+			for _, deviceProcess := range device.Processes {
+				if deviceProcess.PodNamespace == podId {
+					deviceProcessInfoMap[DeviceUuid(uuid)] = append(deviceProcessInfoMap[DeviceUuid(uuid)], deviceProcess)
+				}
+			}
+		} else {
+			deviceProcessInfoMap[DeviceUuid(uuid)] = device.Processes
+		}
 	}
 	return deviceProcessInfoMap
 }

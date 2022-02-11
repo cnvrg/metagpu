@@ -21,7 +21,7 @@ type DeviceManager interface {
 	CacheDevices()
 	ListMetaDevices() []*pluginapi.Device
 	DiscoverDeviceProcesses()
-	ListDeviceProcesses() map[DeviceUuid][]*DeviceProcess
+	ListDeviceProcesses(podId string) map[DeviceUuid][]*DeviceProcess
 	ParseRealDeviceId(metaDevicesIds []string) (realDeviceId []string)
 	MetagpuAllocation(allocationSize int, availableDevIds []string) ([]string, error)
 }

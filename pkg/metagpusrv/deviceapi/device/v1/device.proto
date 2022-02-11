@@ -7,7 +7,6 @@ service DeviceService{
 }
 
 
-
 message DeviceProcess{
   string uuid = 1;
   uint32 pid = 2;
@@ -20,7 +19,9 @@ message DeviceProcess{
   int64 metagpu_requests = 9;
 }
 
-message ListDeviceProcessesRequest{}
+message ListDeviceProcessesRequest{
+  string pod_id = 1;
+}
 message ListDeviceProcessesResponse{
   repeated DeviceProcess devices_processes = 1;
 }
