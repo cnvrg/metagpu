@@ -29,7 +29,7 @@ func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDevic
 		return response, status.Error(codes.Aborted, "can't detect visibility levels")
 	}
 	if vl == containerVl && r.PodId == "" {
-		return response, status.Errorf(codes.Aborted, "missing pod id and visibility level is to low (%s) to proceed", vl)
+		return response, status.Errorf(codes.Aborted, "missing pod id and visibility level is to low (%s), can't proceed", vl)
 	}
 	if vl == deviceVl {
 		r.PodId = "" // for deviceVisibilityLevel server should return all running process on all containers

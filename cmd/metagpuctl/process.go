@@ -28,7 +28,11 @@ func listDevicesProcesses() {
 		log.Fatalf("can't initiate connection to metagpu server, %s", err)
 	}
 	device := pbdevice.NewDeviceServiceClient(conn)
-	ldr := &pbdevice.ListDeviceProcessesRequest{}
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Errorf("faild to detect podId, err: %s", err)
+	}
+	ldr := &pbdevice.ListDeviceProcessesRequest{PodId: hostname}
 	resp, err := device.ListDeviceProcesses(authenticatedContext(), ldr)
 	if err != nil {
 		log.Errorf("falid to list device processes, err: %s ", err)
