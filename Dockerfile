@@ -13,7 +13,6 @@ RUN CGO_LDFLAGS_ALLOW='-Wl,--unresolved-symbols=ignore-in-object-files' \
     -ldflags="-s -w -X 'main.Build=${BUILD_SHA}' -X 'main.Version=${BUILD_VERSION}'" \
     -o metagpu-device-plugin cmd/metagpu-device-plugin/main.go
 
-#FROM nvcr.io/nvidia/cuda:11.4.2-base-ubuntu20.04
 FROM nvidia/cuda:11.6.0-base-ubuntu20.04
 
 

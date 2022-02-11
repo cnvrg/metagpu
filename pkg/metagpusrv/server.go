@@ -28,8 +28,8 @@ type MetaGpuServer struct {
 }
 
 var (
-	ContainerVisibility      VisibilityLevel = "containerVisibilityToken"
-	DeviceVisibility         VisibilityLevel = "deviceVisibilityToken"
+	ContainerVisibility      VisibilityLevel = "containerVisibilityLevelToken"
+	DeviceVisibility         VisibilityLevel = "deviceVisibilityLevelToken"
 	TokenVisibilityClaimName                 = "visibilityLevel"
 )
 
@@ -74,6 +74,8 @@ func (s *MetaGpuServer) unaryServerInterceptor() grpc.UnaryServerInterceptor {
 			return nil, err
 		}
 		ctx = context.WithValue(ctx, TokenVisibilityClaimName, visibility)
+		ctx = context.WithValue(ctx, "containerVl", ContainerVisibility)
+		ctx = context.WithValue(ctx, "deviceVl", DeviceVisibility)
 		ctx = context.WithValue(ctx, "plugin", s.plugin)
 		h, err := handler(ctx, req)
 		log.Infof("[method: %s duration: %s]", info.FullMethod, time.Since(start))
