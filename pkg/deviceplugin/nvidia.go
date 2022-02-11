@@ -146,7 +146,7 @@ func (m *NvidiaDeviceManager) ListDeviceProcesses(podId string) map[DeviceUuid][
 	for uuid, device := range m.Devices {
 		if podId != "" {
 			for _, deviceProcess := range device.Processes {
-				if deviceProcess.PodNamespace == podId {
+				if deviceProcess.PodId == podId {
 					deviceProcessInfoMap[DeviceUuid(uuid)] = append(deviceProcessInfoMap[DeviceUuid(uuid)], deviceProcess)
 				}
 			}
