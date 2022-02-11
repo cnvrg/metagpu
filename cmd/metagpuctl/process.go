@@ -6,6 +6,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var ProcessCmd = &cobra.Command{
@@ -36,6 +37,7 @@ func listDevicesProcesses() {
 	}
 
 	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
 	header := table.Row{
 		"#",
 		"Device UUID",
