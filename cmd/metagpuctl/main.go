@@ -6,6 +6,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
+	"path"
+	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -80,15 +83,21 @@ func setupLogging() {
 	// Set log verbosity
 	if viper.GetBool("verbose") {
 		log.SetLevel(log.DebugLevel)
+		log.SetFormatter(&log.TextFormatter{
+			FullTimestamp: true,
+			CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
+				fileName := fmt.Sprintf(" [%s]", path.Base(frame.Function)+":"+strconv.Itoa(frame.Line))
+				return "", fileName
+			},
+		})
 	} else {
 		log.SetLevel(log.InfoLevel)
+		log.SetFormatter(&log.TextFormatter{FullTimestamp: true})
 	}
 
 	// Set log format
 	if viper.GetBool("json-log") {
 		log.SetFormatter(&log.JSONFormatter{})
-	} else {
-		log.SetFormatter(&log.TextFormatter{FullTimestamp: true})
 	}
 
 	// Logs are always goes to STDOUT

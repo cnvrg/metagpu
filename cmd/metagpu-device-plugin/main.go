@@ -124,15 +124,6 @@ func setupLogging() {
 	// Set log verbosity
 	if viper.GetBool("verbose") {
 		log.SetLevel(log.DebugLevel)
-	} else {
-		log.SetLevel(log.InfoLevel)
-	}
-
-	// Set log format
-	if viper.GetBool("json-log") {
-		log.SetFormatter(&log.JSONFormatter{})
-	} else {
-		log.SetReportCaller(true)
 		log.SetFormatter(&log.TextFormatter{
 			FullTimestamp: true,
 			CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
@@ -140,6 +131,14 @@ func setupLogging() {
 				return "", fileName
 			},
 		})
+	} else {
+		log.SetLevel(log.InfoLevel)
+		log.SetFormatter(&log.TextFormatter{FullTimestamp: true})
+	}
+
+	// Set log format
+	if viper.GetBool("json-log") {
+		log.SetFormatter(&log.JSONFormatter{})
 	}
 
 	// Logs are always goes to STDOUT
