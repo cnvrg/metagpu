@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var PingCmd = &cobra.Command{
+var pingCmd = &cobra.Command{
 	Use:   "ping",
 	Short: "ping server to check connectivity",
 	Run: func(cmd *cobra.Command, args []string) {

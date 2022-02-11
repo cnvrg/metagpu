@@ -47,12 +47,13 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	cobra.OnInitialize(initConfig)
+	setParams(processListParams, processesListCmd)
 	setParams(rootParams, rootCmd)
 	// processes
-	ListCmd.AddCommand(ProcessesListCmd)
+	listCmd.AddCommand(processesListCmd)
 	// root commands
-	rootCmd.AddCommand(ListCmd)
-	rootCmd.AddCommand(PingCmd)
+	rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(pingCmd)
 	rootCmd.AddCommand(metaGpuCtlVersion)
 
 }
