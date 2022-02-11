@@ -24,6 +24,7 @@ var (
 		{name: "json-log", shorthand: "", value: false, usage: "output logs in json format"},
 		{name: "verbose", shorthand: "", value: false, usage: "enable verbose logs"},
 		{name: "metagpu-server-addr", shorthand: "", value: "localhost:50052", usage: "address to access the metagpu server"},
+		{name: "token", shorthand: "t", value: "", usage: "authentication token"},
 		{name: "output", shorthand: "o", value: "table", usage: "output format, one of: table|json|raw"},
 	}
 )

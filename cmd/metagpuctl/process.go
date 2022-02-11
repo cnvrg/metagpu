@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
 	"github.com/jedib0t/go-pretty/v6/table"
 	log "github.com/sirupsen/logrus"
@@ -30,7 +29,7 @@ func listDevicesProcesses() {
 	}
 	device := pbdevice.NewDeviceServiceClient(conn)
 	ldr := &pbdevice.ListDeviceProcessesRequest{}
-	resp, err := device.ListDeviceProcesses(context.Background(), ldr)
+	resp, err := device.ListDeviceProcesses(authenticatedContext(), ldr)
 	if err != nil {
 		log.Errorf("falid to list device processes, err: %s ", err)
 		return

@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/NVIDIA/go-nvml v0.11.1-0
 	github.com/fsnotify/fsnotify v1.5.1
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/jedib0t/go-pretty/v6 v6.2.7
 	github.com/markbates/pkger v0.17.1
 	github.com/prometheus/procfs v0.6.0

@@ -17,7 +17,11 @@ func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDevic
 	if plugin == nil {
 		log.Fatalf("plugin instance not set in context")
 	}
-
+	vl := ctx.Value("visibilityLevel")
+	if vl == nil {
+		log.Fatalf("can't detect visibility level for request")
+	}
+	log.Infof("request visibilit level: %s", vl)
 	for deviceUuid, deviceProcesses := range plugin.ListDeviceProcesses() {
 		for _, process := range deviceProcesses {
 
