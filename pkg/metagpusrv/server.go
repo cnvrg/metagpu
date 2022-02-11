@@ -39,8 +39,7 @@ func NewMetaGpuServer(plugin *deviceplugin.MetaGpuDevicePlugin) *MetaGpuServer {
 	s.DeviceLevelVisibilityToken = s.GenerateAuthTokens(DeviceVisibility)
 	plugin.SetContainerLevelVisibilityToken(s.ContainerLevelVisibilityToken)
 	plugin.SetDeviceLevelVisibilityToken(s.DeviceLevelVisibilityToken)
-	_ = os.Setenv("METAGPU_SERVER_CONTAINER_VISIBILITY_TOKEN", s.ContainerLevelVisibilityToken)
-	_ = os.Setenv("METAGPU_SERVER_DEVICE_VISIBILITY_TOKEN", s.DeviceLevelVisibilityToken)
+	s.SaveTokensOnLocalStorage()
 	return s
 }
 
@@ -83,6 +82,31 @@ func (s *MetaGpuServer) unaryServerInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
+func (s *MetaGpuServer) GenerateAuthTokens(visibility VisibilityLevel) string {
+
+	claims := jwt.MapClaims{"email": "metagpu@instance", TokenVisibilityClaimName: visibility}
+	containerScopeToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := containerScopeToken.SignedString([]byte(viper.GetString("jwtSecret")))
+	if err != nil {
+		log.Error(err)
+	}
+	return tokenString
+}
+
+func (s *MetaGpuServer) SaveTokensOnLocalStorage() {
+	f, err := os.Create(".mgsrvtokens")
+	defer f.Close()
+	if err != nil {
+		log.Error("unable write tokens to local storage")
+	}
+	tokensStr := fmt.Sprintf("containerVl: %s\ndeviceVl:%s\n", s.ContainerLevelVisibilityToken, s.DeviceLevelVisibilityToken)
+	_, err = f.WriteString(tokensStr)
+	if err != nil {
+		log.Error("failed to write tokens to .mgsrvtokens file")
+	}
+
+}
+
 func authorize(ctx context.Context) (string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -116,15 +140,4 @@ func authorize(ctx context.Context) (string, error) {
 	}
 	return "", status.Errorf(codes.Unauthenticated, errors.New("error authenticate").Error())
 
-}
-
-func (s *MetaGpuServer) GenerateAuthTokens(visibility VisibilityLevel) string {
-
-	claims := jwt.MapClaims{"email": "metagpu@instance", TokenVisibilityClaimName: visibility}
-	containerScopeToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := containerScopeToken.SignedString([]byte(viper.GetString("jwtSecret")))
-	if err != nil {
-		log.Error(err)
-	}
-	return tokenString
 }
