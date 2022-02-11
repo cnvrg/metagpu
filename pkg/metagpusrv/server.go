@@ -83,17 +83,16 @@ func (s *MetaGpuServer) unaryServerInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
-// authorize function authorizes the token received from Metadata
-func authorize(ctx context.Context) (*string, error) {
+func authorize(ctx context.Context) (string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return nil, status.Errorf(codes.InvalidArgument, "retrieving metadata is failed")
+		return "", status.Errorf(codes.InvalidArgument, "retrieving metadata is failed")
 	}
 
 	authHeader, ok := md["authorization"]
 
 	if !ok {
-		return nil, status.Errorf(codes.Unauthenticated, "authorization token is not supplied")
+		return "", status.Errorf(codes.Unauthenticated, "authorization token is not supplied")
 	}
 
 	tokenString := authHeader[0]
@@ -106,16 +105,16 @@ func authorize(ctx context.Context) (*string, error) {
 	})
 	if err != nil {
 		log.Error(err)
-		return nil, status.Errorf(codes.Unauthenticated, errors.New("error authenticate").Error())
+		return "", status.Errorf(codes.Unauthenticated, errors.New("error authenticate").Error())
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		if visibility, ok := claims[TokenVisibilityClaimName]; ok {
 			visibility := visibility.(string)
-			return &visibility, nil
+			return visibility, nil
 		}
 	}
-	return nil, status.Errorf(codes.Unauthenticated, errors.New("error authenticate").Error())
+	return "", status.Errorf(codes.Unauthenticated, errors.New("error authenticate").Error())
 
 }
 
