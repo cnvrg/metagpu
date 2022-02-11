@@ -39,7 +39,6 @@ func listDevicesProcesses() {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	header := table.Row{
-		"#",
 		"Device UUID",
 		"Pid",
 		"GpuMemory",
@@ -62,5 +61,6 @@ func listDevicesProcesses() {
 		})
 	}
 	t.AppendRows(rows)
+	t.SetStyle(table.StyleColoredBlackOnGreenWhite)
 	t.Render()
 }
