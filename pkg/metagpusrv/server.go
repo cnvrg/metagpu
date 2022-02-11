@@ -28,8 +28,8 @@ type MetaGpuServer struct {
 }
 
 var (
-	ContainerVisibility      VisibilityLevel = "containerVisibilityLevelToken"
-	DeviceVisibility         VisibilityLevel = "deviceVisibilityLevelToken"
+	DeviceVisibility         VisibilityLevel = "l0"
+	ContainerVisibility      VisibilityLevel = "l1"
 	TokenVisibilityClaimName                 = "visibilityLevel"
 )
 
