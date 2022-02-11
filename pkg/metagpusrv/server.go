@@ -69,13 +69,16 @@ func (s *MetaGpuServer) Start() {
 func (s *MetaGpuServer) unaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		start := time.Now()
-		visibility, err := authorize(ctx)
-		if err != nil {
-			return nil, err
+
+		if !s.IsMethodPublic(info.FullMethod) {
+			visibility, err := authorize(ctx)
+			if err != nil {
+				return nil, err
+			}
+			ctx = context.WithValue(ctx, TokenVisibilityClaimName, visibility)
+			ctx = context.WithValue(ctx, "containerVl", string(ContainerVisibility))
+			ctx = context.WithValue(ctx, "deviceVl", string(DeviceVisibility))
 		}
-		ctx = context.WithValue(ctx, TokenVisibilityClaimName, visibility)
-		ctx = context.WithValue(ctx, "containerVl", string(ContainerVisibility))
-		ctx = context.WithValue(ctx, "deviceVl", string(DeviceVisibility))
 		ctx = context.WithValue(ctx, "plugin", s.plugin)
 		h, err := handler(ctx, req)
 		log.Infof("[method: %s duration: %s]", info.FullMethod, time.Since(start))
@@ -113,6 +116,19 @@ func (s *MetaGpuServer) SaveTokensOnLocalStorage() {
 		log.Error("failed to write tokens to .mgsrvtokens file")
 	}
 	log.Infof("tokens saved in %s", filePath)
+
+}
+
+func (s *MetaGpuServer) IsMethodPublic(fullMethod string) bool {
+	publicMethods := []string{
+		"/device.v1.DeviceService/PingServer",
+	}
+	for _, method := range publicMethods {
+		if method == fullMethod {
+			return true
+		}
+	}
+	return false
 
 }
 
