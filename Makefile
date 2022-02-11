@@ -11,6 +11,9 @@ docker-build: build-proto
      --build-arg BUILD_VERSION=0.0.1 \
      -t docker.io/cnvrg/metagpu-device-plugin:latest .
 
+build-mgctl:
+	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=0.1.1'" -v -o bin/mgctl-darwin-x86_64 cmd/metagpuctl/*.go
+
 docker-push:
 	docker push docker.io/cnvrg/metagpu-device-plugin:latest
 

@@ -6,16 +6,22 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	"os"
 )
 
 func GetGrpcMetaGpuSrvClientConn() (*grpc.ClientConn, error) {
-	log.Infof("initiating gRPC connection to %s 🤞", viper.GetString("metagpu-server-addr"))
+	log.Infof("initiating gRPC connection to %s 🐱", viper.GetString("metagpu-server-addr"))
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 	conn, err := grpc.Dial(viper.GetString("metagpu-server-addr"), opts...)
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("connected to %s 👍", viper.GetString("metagpu-server-addr"))
+	if err := pingServer(conn); err != nil {
+		log.Errorf("failed to connect to server 🙀, err: %s", err)
+		os.Exit(1)
+	} else {
+		log.Infof("connected to %s 😺", viper.GetString("metagpu-server-addr"))
+	}
 	return conn, nil
 }
 

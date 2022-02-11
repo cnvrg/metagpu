@@ -52,3 +52,7 @@ func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDevic
 	}
 	return response, nil
 }
+
+func (s *DeviceService) PingServer(ctx context.Context, r *pb.PingServerRequest) (*pb.PingServerResponse, error) {
+	return &pb.PingServerResponse{}, nil
+}

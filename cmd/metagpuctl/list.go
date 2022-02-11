@@ -8,14 +8,14 @@ import (
 	"os"
 )
 
-var ProcessCmd = &cobra.Command{
-	Use:   "process",
-	Short: "manage gpu processes",
+var ListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "list resources",
 }
 
-var ProcessListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "list gpu processes, and process metadata",
+var ProcessesListCmd = &cobra.Command{
+	Use:   "process",
+	Short: "list gpu processes, and processes metadata",
 	Run: func(cmd *cobra.Command, args []string) {
 		listDevicesProcesses()
 	},

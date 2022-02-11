@@ -4,8 +4,11 @@ package device.v1;
 
 service DeviceService{
   rpc ListDeviceProcesses (ListDeviceProcessesRequest) returns (ListDeviceProcessesResponse){}
+  rpc PingServer(PingServerRequest) returns (PingServerResponse){}
 }
 
+message PingServerRequest{}
+message PingServerResponse{}
 
 message DeviceProcess{
   string uuid = 1;
@@ -18,7 +21,6 @@ message DeviceProcess{
   string pod_namespace = 8;
   int64 metagpu_requests = 9;
 }
-
 message ListDeviceProcessesRequest{
   string pod_id = 1;
 }
