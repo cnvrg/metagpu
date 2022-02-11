@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DeviceServiceClient interface {
 	ListDeviceProcesses(ctx context.Context, in *ListDeviceProcessesRequest, opts ...grpc.CallOption) (*ListDeviceProcessesResponse, error)
+	StreamDeviceProcesses(ctx context.Context, in *StreamDeviceProcessesRequest, opts ...grpc.CallOption) (DeviceService_StreamDeviceProcessesClient, error)
 	PingServer(ctx context.Context, in *PingServerRequest, opts ...grpc.CallOption) (*PingServerResponse, error)
 }
 
@@ -39,6 +40,38 @@ func (c *deviceServiceClient) ListDeviceProcesses(ctx context.Context, in *ListD
 	return out, nil
 }
 
+func (c *deviceServiceClient) StreamDeviceProcesses(ctx context.Context, in *StreamDeviceProcessesRequest, opts ...grpc.CallOption) (DeviceService_StreamDeviceProcessesClient, error) {
+	stream, err := c.cc.NewStream(ctx, &DeviceService_ServiceDesc.Streams[0], "/device.v1.DeviceService/StreamDeviceProcesses", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &deviceServiceStreamDeviceProcessesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type DeviceService_StreamDeviceProcessesClient interface {
+	Recv() (*StreamDeviceProcessesResponse, error)
+	grpc.ClientStream
+}
+
+type deviceServiceStreamDeviceProcessesClient struct {
+	grpc.ClientStream
+}
+
+func (x *deviceServiceStreamDeviceProcessesClient) Recv() (*StreamDeviceProcessesResponse, error) {
+	m := new(StreamDeviceProcessesResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (c *deviceServiceClient) PingServer(ctx context.Context, in *PingServerRequest, opts ...grpc.CallOption) (*PingServerResponse, error) {
 	out := new(PingServerResponse)
 	err := c.cc.Invoke(ctx, "/device.v1.DeviceService/PingServer", in, out, opts...)
@@ -53,6 +86,7 @@ func (c *deviceServiceClient) PingServer(ctx context.Context, in *PingServerRequ
 // for forward compatibility
 type DeviceServiceServer interface {
 	ListDeviceProcesses(context.Context, *ListDeviceProcessesRequest) (*ListDeviceProcessesResponse, error)
+	StreamDeviceProcesses(*StreamDeviceProcessesRequest, DeviceService_StreamDeviceProcessesServer) error
 	PingServer(context.Context, *PingServerRequest) (*PingServerResponse, error)
 	mustEmbedUnimplementedDeviceServiceServer()
 }
@@ -63,6 +97,9 @@ type UnimplementedDeviceServiceServer struct {
 
 func (UnimplementedDeviceServiceServer) ListDeviceProcesses(context.Context, *ListDeviceProcessesRequest) (*ListDeviceProcessesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListDeviceProcesses not implemented")
+}
+func (UnimplementedDeviceServiceServer) StreamDeviceProcesses(*StreamDeviceProcessesRequest, DeviceService_StreamDeviceProcessesServer) error {
+	return status.Errorf(codes.Unimplemented, "method StreamDeviceProcesses not implemented")
 }
 func (UnimplementedDeviceServiceServer) PingServer(context.Context, *PingServerRequest) (*PingServerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PingServer not implemented")
@@ -96,6 +133,27 @@ func _DeviceService_ListDeviceProcesses_Handler(srv interface{}, ctx context.Con
 		return srv.(DeviceServiceServer).ListDeviceProcesses(ctx, req.(*ListDeviceProcessesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _DeviceService_StreamDeviceProcesses_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StreamDeviceProcessesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(DeviceServiceServer).StreamDeviceProcesses(m, &deviceServiceStreamDeviceProcessesServer{stream})
+}
+
+type DeviceService_StreamDeviceProcessesServer interface {
+	Send(*StreamDeviceProcessesResponse) error
+	grpc.ServerStream
+}
+
+type deviceServiceStreamDeviceProcessesServer struct {
+	grpc.ServerStream
+}
+
+func (x *deviceServiceStreamDeviceProcessesServer) Send(m *StreamDeviceProcessesResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _DeviceService_PingServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -132,6 +190,12 @@ var DeviceService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _DeviceService_PingServer_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamDeviceProcesses",
+			Handler:       _DeviceService_StreamDeviceProcesses_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "device/v1/device.proto",
 }
