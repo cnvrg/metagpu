@@ -62,6 +62,6 @@ func listDevicesProcesses() {
 	}
 	t.AppendRows(rows)
 	t.SetStyle(table.StyleColoredGreenWhiteOnBlack)
-	t.AppendFooter(table.Row{"", "", "", "", "", "", ""})
+	t.AppendFooter(table.Row{"", "", "Free: 57%", "", "", "", "Total: 8"})
 	t.Render()
 }
