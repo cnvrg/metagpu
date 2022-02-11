@@ -22,7 +22,9 @@ import (
 type VisibilityLevel string
 
 type MetaGpuServer struct {
-	plugin *deviceplugin.MetaGpuDevicePlugin
+	plugin                        *deviceplugin.MetaGpuDevicePlugin
+	ContainerLevelVisibilityToken string
+	DeviceLevelVisibilityToken    string
 }
 
 var (
@@ -32,12 +34,12 @@ var (
 
 func NewMetaGpuServer(plugin *deviceplugin.MetaGpuDevicePlugin) *MetaGpuServer {
 	s := &MetaGpuServer{plugin: plugin}
-	containerToken := s.GenerateAuthTokens(ContainerVisibility)
-	deviceToken := s.GenerateAuthTokens(DeviceVisibility)
-	_ = os.Setenv("METAGPU_SERVER_CONTAINER_VISIBILITY_TOKEN", containerToken)
-	_ = os.Setenv("METAGPU_SERVER_DEVICE_VISIBILITY_TOKEN", deviceToken)
-	log.Infof("conatiner visibility token: %s", containerToken)
-	log.Infof("device visibility token: %s", deviceToken)
+	s.ContainerLevelVisibilityToken = s.GenerateAuthTokens(ContainerVisibility)
+	s.DeviceLevelVisibilityToken = s.GenerateAuthTokens(DeviceVisibility)
+	plugin.SetContainerLevelVisibilityToken(s.ContainerLevelVisibilityToken)
+	plugin.SetDeviceLevelVisibilityToken(s.DeviceLevelVisibilityToken)
+	_ = os.Setenv("METAGPU_SERVER_CONTAINER_VISIBILITY_TOKEN", s.ContainerLevelVisibilityToken)
+	_ = os.Setenv("METAGPU_SERVER_DEVICE_VISIBILITY_TOKEN", s.DeviceLevelVisibilityToken)
 	return s
 }
 

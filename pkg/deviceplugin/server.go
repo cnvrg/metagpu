@@ -21,11 +21,21 @@ var (
 
 type MetaGpuDevicePlugin struct {
 	DeviceManager
-	server               *grpc.Server
-	socket               string
-	resourceName         string
-	stop                 chan interface{}
-	metaGpuRecalculation chan bool
+	server                        *grpc.Server
+	socket                        string
+	resourceName                  string
+	containerLevelVisibilityToken string
+	deviceLevelVisibilityToken    string
+	stop                          chan interface{}
+	metaGpuRecalculation          chan bool
+}
+
+func (p *MetaGpuDevicePlugin) SetDeviceLevelVisibilityToken(token string) {
+	p.deviceLevelVisibilityToken = token
+}
+
+func (p *MetaGpuDevicePlugin) SetContainerLevelVisibilityToken(token string) {
+	p.containerLevelVisibilityToken = token
 }
 
 func (p *MetaGpuDevicePlugin) dial(socket string, timeout time.Duration) (*grpc.ClientConn, error) {
@@ -113,9 +123,10 @@ func (p *MetaGpuDevicePlugin) Allocate(ctx context.Context, request *pluginapi.A
 		}
 
 		response.Envs = map[string]string{
-			"CNVRG_META_GPU_DEVICES": strings.Join(req.DevicesIDs, ","),
-			"METAGPU_SERVER_ADDR":    fmt.Sprintf("%s:50052", os.Getenv("POD_IP")),
-			"NVIDIA_VISIBLE_DEVICES": strings.Join(p.ParseRealDeviceId(req.DevicesIDs), ","),
+			"CNVRG_META_GPU_DEVICES":     strings.Join(req.DevicesIDs, ","),
+			"NVIDIA_VISIBLE_DEVICES":     strings.Join(p.ParseRealDeviceId(req.DevicesIDs), ","),
+			"MG_CTL_METAGPU_SERVER_ADDR": fmt.Sprintf("%s:50052", os.Getenv("POD_IP")),
+			"MG_CTL_TOKEN":               p.containerLevelVisibilityToken,
 		}
 		allocResponse.ContainerResponses = append(allocResponse.ContainerResponses, &response)
 	}

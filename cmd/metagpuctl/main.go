@@ -58,6 +58,7 @@ func init() {
 
 func initConfig() {
 	viper.AutomaticEnv()
+	viper.SetEnvPrefix("MG_CTL")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	setupLogging()
 }
