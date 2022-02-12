@@ -39,12 +39,14 @@ func (o *TableOutput) print() {
 
 func (o *TableOutput) buildTable() {
 	o.data = nil
+	rowConfigAutoMerge := table.RowConfig{AutoMerge: true}
 	t := table.NewWriter()
 	t.SetOutputMirror(o)
-	t.AppendHeader(o.header)
+	t.AppendHeader(o.header, rowConfigAutoMerge)
 	t.AppendRows(o.body)
 	t.SetStyle(table.StyleColoredGreenWhiteOnBlack)
 	t.AppendFooter(o.footer)
+	t.SetColumnConfigs([]table.ColumnConfig{{Number: 1, AutoMerge: true}, {Number: 2, AutoMerge: true}})
 	t.Render()
 }
 

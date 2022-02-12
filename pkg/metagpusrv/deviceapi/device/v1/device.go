@@ -53,15 +53,17 @@ func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDevic
 		for _, process := range deviceProcesses {
 
 			response.DevicesProcesses = append(response.DevicesProcesses, &pb.DeviceProcess{
-				Uuid:            string(deviceUuid),
-				Pid:             process.Pid,
-				Memory:          process.GpuMemory,
-				Cmdline:         process.GetShortCmdLine(),
-				User:            process.User,
-				ContainerId:     process.ContainerId,
-				PodName:         process.PodId,
-				PodNamespace:    process.PodNamespace,
-				MetagpuRequests: process.PodMetagpuRequest,
+				Uuid:                    string(deviceUuid),
+				Pid:                     process.Pid,
+				Memory:                  process.GpuMemory,
+				Cmdline:                 process.GetShortCmdLine(),
+				User:                    process.User,
+				ContainerId:             process.ContainerId,
+				PodName:                 process.PodId,
+				PodNamespace:            process.PodNamespace,
+				MetagpuRequests:         process.PodMetagpuRequest,
+				DeviceGpuUtilization:    process.DeviceGpuUtilization,
+				DeviceMemoryUtilization: process.DeviceGpuMemory,
 			})
 		}
 	}

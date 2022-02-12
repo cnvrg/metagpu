@@ -45,7 +45,7 @@ func listDevicesProcesses() {
 	}
 
 	to := &TableOutput{}
-	to.header = table.Row{"Device UUID", "Pid", "GpuMemory", "Command", "Pod", "Namespace", "Metagpus"}
+	to.header = table.Row{"UUID", "Util", "Pid", "Memory", "Cmd", "Pod", "NS", "Req"}
 
 	if viper.GetBool("watch") {
 		request := &pbdevice.StreamDeviceProcessesRequest{PodId: hostname}
@@ -105,6 +105,7 @@ func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess) (body []tabl
 		totalMemory += deviceProcess.Memory
 		body = append(body, table.Row{
 			deviceProcess.Uuid,
+			fmt.Sprintf("GPU: %d Memory: %d", deviceProcess.DeviceGpuUtilization, deviceProcess.DeviceMemoryUtilization),
 			deviceProcess.Pid,
 			deviceProcess.Memory,
 			deviceProcess.Cmdline,
@@ -113,6 +114,6 @@ func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess) (body []tabl
 			deviceProcess.MetagpuRequests,
 		})
 	}
-	footer = table.Row{"Totals:", "", fmt.Sprintf("%dMb", totalMemory), "", len(devProc), "", totalRequest}
+	footer = table.Row{"Totals:", "", "", fmt.Sprintf("%dMb", totalMemory), "", len(devProc), "", totalRequest}
 	return
 }

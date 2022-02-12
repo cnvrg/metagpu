@@ -116,8 +116,11 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 		nvmlErrorCheck(ret)
 		var discoveredDevicesProcesses []*DeviceProcess
 		for _, nvmlProcessInfo := range processes {
-			discoveredDevicesProcesses = append(discoveredDevicesProcesses,
-				NewDeviceProcess(nvmlProcessInfo.Pid, nvmlProcessInfo.UsedGpuMemory/(1024*1024)))
+			p := NewDeviceProcess(nvmlProcessInfo.Pid, nvmlProcessInfo.UsedGpuMemory/(1024*1024))
+			// TODO: device GPU utilization and memory shouldn't be here, remove it!
+			p.DeviceGpuUtilization = utilization.Gpu
+			p.DeviceGpuMemory = utilization.Memory
+			discoveredDevicesProcesses = append(discoveredDevicesProcesses, p)
 		}
 		// override device utilization
 		device.Processes = discoveredDevicesProcesses
