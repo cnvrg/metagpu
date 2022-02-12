@@ -2,12 +2,51 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github.com/atomicgo/cursor"
+	"github.com/jedib0t/go-pretty/v6/table"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"os"
 )
+
+type TableOutput struct {
+	data         []byte
+	header       table.Row
+	footer       table.Row
+	body         []table.Row
+	lastPosition int
+}
+
+func (o *TableOutput) rowsCount() int {
+	return 2 + len(o.body)
+}
+
+func (o *TableOutput) Write(data []byte) (n int, err error) {
+	o.data = append(o.data, data...)
+	return len(data), nil
+}
+
+func (o *TableOutput) print() {
+	if o.lastPosition > 0 {
+		cursor.ClearLinesUp(o.lastPosition)
+	}
+	fmt.Printf("%s", o.data)
+	o.lastPosition = o.rowsCount()
+}
+
+func (o *TableOutput) buildTable() {
+	o.data = nil
+	t := table.NewWriter()
+	t.SetOutputMirror(o)
+	t.AppendHeader(o.header)
+	t.AppendRows(o.body)
+	t.SetStyle(table.StyleColoredGreenWhiteOnBlack)
+	t.AppendFooter(o.footer)
+	t.Render()
+}
 
 func GetGrpcMetaGpuSrvClientConn() (*grpc.ClientConn, error) {
 	log.Infof("initiating gRPC connection to %s 🐱", viper.GetString("metagpu-server-addr"))

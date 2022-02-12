@@ -43,6 +43,10 @@ func listDevicesProcesses() {
 	if err != nil {
 		log.Errorf("faild to detect podId, err: %s", err)
 	}
+
+	to := &TableOutput{}
+	to.header = table.Row{"Device UUID", "Pid", "GpuMemory", "Command", "Pod", "Namespace", "Metagpus"}
+
 	if viper.GetBool("watch") {
 		request := &pbdevice.StreamDeviceProcessesRequest{PodId: hostname}
 		stream, err := device.StreamDeviceProcesses(authenticatedContext(), request)
@@ -50,23 +54,24 @@ func listDevicesProcesses() {
 			log.Fatal(err)
 		}
 
-		refreshCh := make(chan bool, 1)
-		refreshCh <- true
+		refreshCh := make(chan bool)
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
+		go func() {
+			for {
+				time.Sleep(1 * time.Second)
+				refreshCh <- true
+			}
+		}()
+
 		for {
 			select {
-			case s := <-sigCh:
-
-				cursor.DownAndClear(6)
-				log.Infof("signal: %s, shutting down", s)
-				close(sigCh)
-				close(refreshCh)
-				cursor.Show()
+			case <-sigCh:
+				cursor.ClearLine()
+				log.Info("shutting down")
 				os.Exit(0)
 			case <-refreshCh:
-				cursor.Hide()
 				resp, err := stream.Recv()
 				if err == io.EOF {
 					break
@@ -74,12 +79,10 @@ func listDevicesProcesses() {
 				if err != nil {
 					log.Fatalf("error watching gpu processes, err: %s", err)
 				}
-				printProcessesTable(resp.DevicesProcesses)
-				time.Sleep(1 * time.Second)
-				refreshCh <- true
-
+				to.body, to.footer = composeProcessListAndFooter(resp.DevicesProcesses)
+				to.buildTable()
+				to.print()
 			}
-
 		}
 	} else {
 		ldr := &pbdevice.ListDeviceProcessesRequest{PodId: hostname}
@@ -88,46 +91,19 @@ func listDevicesProcesses() {
 			log.Errorf("falid to list device processes, err: %s ", err)
 			return
 		}
-		printProcessesTable(resp.DevicesProcesses)
-	}
-
-}
-
-type TableOutput struct {
-	data []byte
-	rows int
-}
-
-func (t *TableOutput) Write(data []byte) (n int, err error) {
-	t.data = append(t.data, data...)
-	return len(data), nil
-}
-
-func (t *TableOutput) print() {
-	fmt.Printf("%s", t.data)
-	if viper.GetBool("watch") {
-		cursor.StartOfLineUp(t.rows)
+		to.body, to.footer = composeProcessListAndFooter(resp.DevicesProcesses)
+		to.buildTable()
+		to.print()
 	}
 }
 
-func printProcessesTable(processes []*pbdevice.DeviceProcess) {
-	t := table.NewWriter()
-	to := &TableOutput{rows: 2}
-	t.SetOutputMirror(to)
-	header := table.Row{
-		"Device UUID",
-		"Pid",
-		"GpuMemory",
-		"Command",
-		"Pod",
-		"Namespace",
-		"Metagpus",
-	}
-	t.AppendHeader(header)
-	var rows []table.Row
-	for _, deviceProcess := range processes {
-		to.rows++
-		rows = append(rows, table.Row{
+func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess) (body []table.Row, footer table.Row) {
+	var totalRequest int64
+	var totalMemory uint64
+	for _, deviceProcess := range devProc {
+		totalRequest += deviceProcess.MetagpuRequests
+		totalMemory += deviceProcess.Memory / (1024 * 1024)
+		body = append(body, table.Row{
 			deviceProcess.Uuid,
 			deviceProcess.Pid,
 			deviceProcess.Memory / (1024 * 1024),
@@ -137,9 +113,6 @@ func printProcessesTable(processes []*pbdevice.DeviceProcess) {
 			deviceProcess.MetagpuRequests,
 		})
 	}
-	t.AppendRows(rows)
-	t.SetStyle(table.StyleColoredGreenWhiteOnBlack)
-	t.AppendFooter(table.Row{"", "", "Free: 57%", "", "", "", "Total: 8"})
-	t.Render()
-	to.print()
+	footer = table.Row{"Totals:", "", fmt.Sprintf("%dMb", totalMemory), "", len(devProc), "", totalRequest}
+	return
 }
