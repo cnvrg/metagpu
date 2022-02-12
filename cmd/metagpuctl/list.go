@@ -100,13 +100,14 @@ func listDevicesProcesses() {
 func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess) (body []table.Row, footer table.Row) {
 	var totalRequest int64
 	var totalMemory uint64
-	devMemUsage := ""
+	var totalShares int32
 	for _, deviceProcess := range devProc {
 		totalRequest += deviceProcess.MetagpuRequests
 		totalMemory += deviceProcess.Memory
+		totalShares = deviceProcess.TotalShares // I know, this is doesn't make sense, but I have to hurry up, whisky is ending
 		body = append(body, table.Row{
 			deviceProcess.Uuid,
-			fmt.Sprintf("GPU: %d%% Memory: %d%%", deviceProcess.DeviceGpuUtilization, deviceProcess.DeviceMemoryUtilization),
+			fmt.Sprintf("GPU: %d%% Memory: %d%% (total: %dMB)", deviceProcess.DeviceGpuUtilization, 100-deviceProcess.DeviceMemoryUtilization, deviceProcess.DeviceMemoryTotal),
 			deviceProcess.Pid,
 			deviceProcess.Memory,
 			deviceProcess.Cmdline,
@@ -114,8 +115,8 @@ func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess) (body []tabl
 			deviceProcess.PodNamespace,
 			deviceProcess.MetagpuRequests,
 		})
-		devMemUsage = fmt.Sprintf("total/free: %d/%d", deviceProcess.DeviceMemoryTotal, deviceProcess.DeviceMemoryFree)
+
 	}
-	footer = table.Row{"Totals:", devMemUsage, "", fmt.Sprintf("%dMb", totalMemory), "", len(devProc), "", totalRequest}
+	footer = table.Row{"Totals:", "", "", fmt.Sprintf("%dMb", totalMemory), "", len(devProc), "", fmt.Sprintf("%d/%d", totalShares, totalRequest)}
 	return
 }

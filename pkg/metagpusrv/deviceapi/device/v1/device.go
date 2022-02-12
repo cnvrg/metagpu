@@ -103,6 +103,7 @@ func (s *DeviceService) StreamDeviceProcesses(r *pb.StreamDeviceProcessesRequest
 					DeviceMemoryUtilization: process.DeviceGpuMemoryUtilization,
 					DeviceMemoryTotal:       process.DeviceGpuMemoryTotal,
 					DeviceMemoryFree:        process.DeviceGpuMemoryFree,
+					TotalShares:             int32(process.TotalShares),
 				})
 			}
 		}

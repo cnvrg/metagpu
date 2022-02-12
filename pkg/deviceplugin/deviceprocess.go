@@ -18,6 +18,7 @@ type DeviceProcess struct {
 	DeviceGpuMemoryTotal       uint64 // TODO: shouldn't be here, go back and remove me!
 	DeviceGpuMemoryFree        uint64 // TODO: shouldn't be here, go back and remove me!
 	DeviceGpuMemoryUsed        uint64 // TODO: shouldn't be here, go back and remove me!
+	TotalShares                int    // TODO: shouldn't be here, go back and remove me!
 	GpuMemory                  uint64
 	Cmdline                    []string
 	User                       string

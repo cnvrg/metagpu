@@ -125,6 +125,7 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 			p.DeviceGpuMemoryTotal = deviceMemory.Total / (1024 * 1024)
 			p.DeviceGpuMemoryFree = deviceMemory.Free / (1024 * 1024)
 			p.DeviceGpuMemoryUsed = deviceMemory.Used / (1024 * 1024)
+			p.TotalShares = viper.GetInt("metaGpus")
 			discoveredDevicesProcesses = append(discoveredDevicesProcesses, p)
 		}
 		// override device utilization
