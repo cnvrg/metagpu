@@ -117,7 +117,7 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 		var discoveredDevicesProcesses []*DeviceProcess
 		for _, nvmlProcessInfo := range processes {
 			discoveredDevicesProcesses = append(discoveredDevicesProcesses,
-				NewDeviceProcess(nvmlProcessInfo.Pid, nvmlProcessInfo.UsedGpuMemory))
+				NewDeviceProcess(nvmlProcessInfo.Pid, nvmlProcessInfo.UsedGpuMemory/(1024*1024)))
 		}
 		// override device utilization
 		device.Processes = discoveredDevicesProcesses
@@ -128,7 +128,7 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 		log.Infof("=========== %s ===========", deviceUuid)
 		for _, deviceProcess := range deviceProcesses {
 			log.Infof("Pid             : %d", deviceProcess.Pid)
-			log.Infof("Memory          : %d", deviceProcess.GpuMemory/(1024*1024))
+			log.Infof("Memory          : %d", deviceProcess.GpuMemory)
 			log.Infof("Command         : %s", deviceProcess.GetShortCmdLine())
 			log.Infof("ContainerID     : %s", deviceProcess.ContainerId)
 			log.Infof("PodName         : %s", deviceProcess.PodId)
