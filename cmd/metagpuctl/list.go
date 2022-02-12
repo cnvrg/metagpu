@@ -124,6 +124,6 @@ func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess) (body []tabl
 	if totalShares == 0 {
 		metaGpuSummary = fmt.Sprintf("%d", totalRequest)
 	}
-	footer = table.Row{"Totals:", "", "", fmt.Sprintf("%dMb", totalMemory), "", len(devProc), "", fmt.Sprintf("%d/%d", totalShares, metaGpuSummary)}
+	footer = table.Row{"Totals:", "", "", fmt.Sprintf("%dMb", totalMemory), "", len(devProc), "", metaGpuSummary}
 	return
 }
