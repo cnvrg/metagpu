@@ -157,6 +157,11 @@ func (m *NvidiaDeviceManager) ListDeviceProcesses(podId string) map[DeviceUuid][
 	return deviceProcessInfoMap
 }
 
+func (m *NvidiaDeviceManager) KillGpuProcess(pid uint32) error {
+	p := NewDeviceProcess(pid, 0)
+	return p.Kill()
+}
+
 func (m *NvidiaDeviceManager) MetagpuAllocation(allocationSize int, availableDevIds []string) ([]string, error) {
 	return NewDeviceAllocation(allocationSize, availableDevIds).MetagpusAllocations, nil
 }

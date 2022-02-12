@@ -24,4 +24,5 @@ type DeviceManager interface {
 	ListDeviceProcesses(podId string) map[DeviceUuid][]*DeviceProcess
 	ParseRealDeviceId(metaDevicesIds []string) (realDeviceId []string)
 	MetagpuAllocation(allocationSize int, availableDevIds []string) ([]string, error)
+	KillGpuProcess(pid uint32) error
 }

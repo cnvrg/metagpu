@@ -5,6 +5,9 @@ package device.v1;
 service DeviceService{
   rpc ListDeviceProcesses (ListDeviceProcessesRequest) returns (ListDeviceProcessesResponse){}
   rpc StreamDeviceProcesses (StreamDeviceProcessesRequest) returns (stream StreamDeviceProcessesResponse){}
+  rpc KillGpuProcess(KillGpuProcessRequest) returns (KillGpuProcessResponse){}
+
+
   rpc PingServer(PingServerRequest) returns (PingServerResponse){}
 
 }
@@ -34,6 +37,13 @@ message ListDeviceProcessesRequest{
 message ListDeviceProcessesResponse{
   repeated DeviceProcess devices_processes = 1;
 }
+
+message KillGpuProcessRequest{
+  uint32 pid = 1;
+}
+message KillGpuProcessResponse{}
+
+
 
 message PingServerRequest{}
 message PingServerResponse{}

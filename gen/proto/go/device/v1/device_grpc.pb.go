@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 type DeviceServiceClient interface {
 	ListDeviceProcesses(ctx context.Context, in *ListDeviceProcessesRequest, opts ...grpc.CallOption) (*ListDeviceProcessesResponse, error)
 	StreamDeviceProcesses(ctx context.Context, in *StreamDeviceProcessesRequest, opts ...grpc.CallOption) (DeviceService_StreamDeviceProcessesClient, error)
+	KillGpuProcess(ctx context.Context, in *KillGpuProcessRequest, opts ...grpc.CallOption) (*KillGpuProcessResponse, error)
 	PingServer(ctx context.Context, in *PingServerRequest, opts ...grpc.CallOption) (*PingServerResponse, error)
 }
 
@@ -72,6 +73,15 @@ func (x *deviceServiceStreamDeviceProcessesClient) Recv() (*StreamDeviceProcesse
 	return m, nil
 }
 
+func (c *deviceServiceClient) KillGpuProcess(ctx context.Context, in *KillGpuProcessRequest, opts ...grpc.CallOption) (*KillGpuProcessResponse, error) {
+	out := new(KillGpuProcessResponse)
+	err := c.cc.Invoke(ctx, "/device.v1.DeviceService/KillGpuProcess", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *deviceServiceClient) PingServer(ctx context.Context, in *PingServerRequest, opts ...grpc.CallOption) (*PingServerResponse, error) {
 	out := new(PingServerResponse)
 	err := c.cc.Invoke(ctx, "/device.v1.DeviceService/PingServer", in, out, opts...)
@@ -87,6 +97,7 @@ func (c *deviceServiceClient) PingServer(ctx context.Context, in *PingServerRequ
 type DeviceServiceServer interface {
 	ListDeviceProcesses(context.Context, *ListDeviceProcessesRequest) (*ListDeviceProcessesResponse, error)
 	StreamDeviceProcesses(*StreamDeviceProcessesRequest, DeviceService_StreamDeviceProcessesServer) error
+	KillGpuProcess(context.Context, *KillGpuProcessRequest) (*KillGpuProcessResponse, error)
 	PingServer(context.Context, *PingServerRequest) (*PingServerResponse, error)
 	mustEmbedUnimplementedDeviceServiceServer()
 }
@@ -100,6 +111,9 @@ func (UnimplementedDeviceServiceServer) ListDeviceProcesses(context.Context, *Li
 }
 func (UnimplementedDeviceServiceServer) StreamDeviceProcesses(*StreamDeviceProcessesRequest, DeviceService_StreamDeviceProcessesServer) error {
 	return status.Errorf(codes.Unimplemented, "method StreamDeviceProcesses not implemented")
+}
+func (UnimplementedDeviceServiceServer) KillGpuProcess(context.Context, *KillGpuProcessRequest) (*KillGpuProcessResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method KillGpuProcess not implemented")
 }
 func (UnimplementedDeviceServiceServer) PingServer(context.Context, *PingServerRequest) (*PingServerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PingServer not implemented")
@@ -156,6 +170,24 @@ func (x *deviceServiceStreamDeviceProcessesServer) Send(m *StreamDeviceProcesses
 	return x.ServerStream.SendMsg(m)
 }
 
+func _DeviceService_KillGpuProcess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(KillGpuProcessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeviceServiceServer).KillGpuProcess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/device.v1.DeviceService/KillGpuProcess",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeviceServiceServer).KillGpuProcess(ctx, req.(*KillGpuProcessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DeviceService_PingServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PingServerRequest)
 	if err := dec(in); err != nil {
@@ -184,6 +216,10 @@ var DeviceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListDeviceProcesses",
 			Handler:    _DeviceService_ListDeviceProcesses_Handler,
+		},
+		{
+			MethodName: "KillGpuProcess",
+			Handler:    _DeviceService_KillGpuProcess_Handler,
 		},
 		{
 			MethodName: "PingServer",

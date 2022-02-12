@@ -54,6 +54,14 @@ func (p *DeviceProcess) SetProcessUsername() {
 	}
 }
 
+func (p *DeviceProcess) Kill() error {
+	if pr, err := process.NewProcess(int32(p.Pid)); err == nil {
+		return pr.Kill()
+	} else {
+		return err
+	}
+}
+
 func (p *DeviceProcess) SetProcessContainerId() {
 	if proc, err := procfs.NewProc(int(p.Pid)); err == nil {
 		var e error

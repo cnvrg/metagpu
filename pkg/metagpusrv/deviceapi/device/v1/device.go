@@ -107,6 +107,17 @@ func (s *DeviceService) StreamDeviceProcesses(r *pb.StreamDeviceProcessesRequest
 
 }
 
+func (s *DeviceService) KillGpuProcess(ctx context.Context, r *pb.KillGpuProcessRequest) (*pb.KillGpuProcessResponse, error) {
+	response := &pb.KillGpuProcessResponse{}
+	if err := s.LoadContext(ctx); err != nil {
+		return response, err
+	}
+	if err := s.plugin.KillGpuProcess(r.Pid); err != nil {
+		return response, status.Errorf(codes.Internal, "error killing GPU process")
+	}
+	return response, nil
+}
+
 func (s *DeviceService) PingServer(ctx context.Context, r *pb.PingServerRequest) (*pb.PingServerResponse, error) {
 	return &pb.PingServerResponse{}, nil
 }
