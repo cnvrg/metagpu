@@ -102,11 +102,11 @@ func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess) (body []tabl
 	var totalMemory uint64
 	for _, deviceProcess := range devProc {
 		totalRequest += deviceProcess.MetagpuRequests
-		totalMemory += deviceProcess.Memory / (1024 * 1024)
+		totalMemory += deviceProcess.Memory
 		body = append(body, table.Row{
 			deviceProcess.Uuid,
 			deviceProcess.Pid,
-			deviceProcess.Memory / (1024 * 1024),
+			deviceProcess.Memory,
 			deviceProcess.Cmdline,
 			deviceProcess.PodName,
 			deviceProcess.PodNamespace,

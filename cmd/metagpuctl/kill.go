@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
 	"github.com/manifoldco/promptui"
@@ -78,12 +77,12 @@ func killGpuProcess() {
 	}
 
 	if confirm == "Yes" {
-		log.Infof("%d killed", process.Pid)
+		killRequest := &pbdevice.KillGpuProcessRequest{Pid: process.Pid}
+		if _, err := device.KillGpuProcess(authenticatedContext(), killRequest); err != nil {
+			log.Fatalf("error killing process, err: %s", err)
+		} else {
+			log.Infof("%d killed", process.Pid)
+		}
 	}
-	killRequest := &pbdevice.KillGpuProcessRequest{Pid: process.Pid}
-	if _, err := device.KillGpuProcess(context.Background(), killRequest); err != nil {
-		log.Fatalf("error killing process, err: %s", err)
-	}
-	log.Infof("Process: [%d] succefully terminated", &process.Pid)
 
 }
