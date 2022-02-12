@@ -51,7 +51,13 @@ func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDevic
 	}
 	for deviceUuid, deviceProcesses := range s.plugin.ListDeviceProcesses(r.PodId) {
 		for _, process := range deviceProcesses {
-
+			if s.vl == s.cvl { // TODO: fix all this shit
+				process.DeviceGpuUtilization = 0
+				process.DeviceGpuMemoryUtilization = 0
+				process.DeviceGpuMemoryTotal = 0
+				process.DeviceGpuMemoryFree = 0
+				process.TotalShares = 0
+			}
 			response.DevicesProcesses = append(response.DevicesProcesses, &pb.DeviceProcess{
 				Uuid:                    string(deviceUuid),
 				Pid:                     process.Pid,
@@ -88,7 +94,7 @@ func (s *DeviceService) StreamDeviceProcesses(r *pb.StreamDeviceProcessesRequest
 		response := &pb.StreamDeviceProcessesResponse{}
 		for deviceUuid, deviceProcesses := range s.plugin.ListDeviceProcesses(r.PodId) {
 			for _, process := range deviceProcesses {
-				if s.vl == s.cvl {
+				if s.vl == s.cvl { // TODO: fix all this shit
 					process.DeviceGpuUtilization = 0
 					process.DeviceGpuMemoryUtilization = 0
 					process.DeviceGpuMemoryTotal = 0
