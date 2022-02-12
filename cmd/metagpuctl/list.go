@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
+	"github.com/atomicgo/cursor"
 	"github.com/jedib0t/go-pretty/v6/table"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -49,19 +50,23 @@ func listDevicesProcesses() {
 			log.Fatal(err)
 		}
 
-		refreshCh := make(chan bool)
-
+		refreshCh := make(chan bool, 1)
+		refreshCh <- true
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 		for {
 			select {
 			case s := <-sigCh:
+
+				cursor.DownAndClear(6)
 				log.Infof("signal: %s, shutting down", s)
 				close(sigCh)
 				close(refreshCh)
+				cursor.Show()
 				os.Exit(0)
 			case <-refreshCh:
+				cursor.Hide()
 				resp, err := stream.Recv()
 				if err == io.EOF {
 					break
@@ -101,9 +106,7 @@ func (t *TableOutput) Write(data []byte) (n int, err error) {
 func (t *TableOutput) print() {
 	fmt.Printf("%s", t.data)
 	if viper.GetBool("watch") {
-		for i := 0; i < t.rows; i++ {
-			fmt.Print("\033[A")
-		}
+		cursor.StartOfLineUp(t.rows)
 	}
 }
 
