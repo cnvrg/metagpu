@@ -107,6 +107,7 @@ func (m *NvidiaDeviceManager) setDevices() {
 
 func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 	log.Info("refreshing nvidia devices processes")
+	totalDevices := len(m.Devices) // TODO: doesn't make sense
 	for _, device := range m.Devices {
 		nvidiaDevice, ret := nvml.DeviceGetHandleByIndex(device.Index)
 		nvmlErrorCheck(ret)
@@ -120,12 +121,12 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 		for _, nvmlProcessInfo := range processes {
 			p := NewDeviceProcess(nvmlProcessInfo.Pid, nvmlProcessInfo.UsedGpuMemory/(1024*1024))
 			// TODO: device GPU utilization and memory shouldn't be here, remove it!
-			p.DeviceGpuUtilization = utilization.Gpu
-			p.DeviceGpuMemoryUtilization = utilization.Memory
-			p.DeviceGpuMemoryTotal = deviceMemory.Total / (1024 * 1024)
-			p.DeviceGpuMemoryFree = deviceMemory.Free / (1024 * 1024)
-			p.DeviceGpuMemoryUsed = deviceMemory.Used / (1024 * 1024)
-			p.TotalShares = viper.GetInt("metaGpus")
+			p.DeviceGpuUtilization = utilization.Gpu                    // TODO: doesn't make sense
+			p.DeviceGpuMemoryUtilization = utilization.Memory           // TODO: doesn't make sense
+			p.DeviceGpuMemoryTotal = deviceMemory.Total / (1024 * 1024) // TODO: doesn't make sense
+			p.DeviceGpuMemoryFree = deviceMemory.Free / (1024 * 1024)   // TODO: doesn't make sense
+			p.DeviceGpuMemoryUsed = deviceMemory.Used / (1024 * 1024)   // TODO: doesn't make sense
+			p.TotalShares = viper.GetInt("metaGpus") * totalDevices     // TODO: doesn't make sense
 			discoveredDevicesProcesses = append(discoveredDevicesProcesses, p)
 		}
 		// override device utilization
