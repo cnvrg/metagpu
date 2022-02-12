@@ -24,6 +24,8 @@ message DeviceProcess{
   int64 metagpu_requests = 9;
   uint32 device_gpu_utilization = 10;
   uint32 device_memory_utilization = 11;
+  uint64 device_memory_total = 12;
+  uint64 device_memory_free = 13;
 }
 
 message StreamDeviceProcessesRequest{

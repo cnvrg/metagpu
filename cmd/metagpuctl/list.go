@@ -100,12 +100,13 @@ func listDevicesProcesses() {
 func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess) (body []table.Row, footer table.Row) {
 	var totalRequest int64
 	var totalMemory uint64
+	devMemUsage := ""
 	for _, deviceProcess := range devProc {
 		totalRequest += deviceProcess.MetagpuRequests
 		totalMemory += deviceProcess.Memory
 		body = append(body, table.Row{
 			deviceProcess.Uuid,
-			fmt.Sprintf("GPU: %d Memory: %d", deviceProcess.DeviceGpuUtilization, deviceProcess.DeviceMemoryUtilization),
+			fmt.Sprintf("GPU: %d%% Memory: %d%%", deviceProcess.DeviceGpuUtilization, deviceProcess.DeviceMemoryUtilization),
 			deviceProcess.Pid,
 			deviceProcess.Memory,
 			deviceProcess.Cmdline,
@@ -113,7 +114,8 @@ func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess) (body []tabl
 			deviceProcess.PodNamespace,
 			deviceProcess.MetagpuRequests,
 		})
+		devMemUsage = fmt.Sprintf("total/free: %d/%d", deviceProcess.DeviceMemoryTotal, deviceProcess.DeviceMemoryFree)
 	}
-	footer = table.Row{"Totals:", "", "", fmt.Sprintf("%dMb", totalMemory), "", len(devProc), "", totalRequest}
+	footer = table.Row{"Totals:", devMemUsage, "", fmt.Sprintf("%dMb", totalMemory), "", len(devProc), "", totalRequest}
 	return
 }

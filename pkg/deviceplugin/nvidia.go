@@ -110,6 +110,8 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 	for _, device := range m.Devices {
 		nvidiaDevice, ret := nvml.DeviceGetHandleByIndex(device.Index)
 		nvmlErrorCheck(ret)
+		deviceMemory, ret := nvidiaDevice.GetMemoryInfo()
+		nvmlErrorCheck(ret)
 		utilization, ret := nvidiaDevice.GetUtilizationRates()
 		nvmlErrorCheck(ret)
 		processes, ret := nvidiaDevice.GetComputeRunningProcesses()
@@ -119,7 +121,10 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 			p := NewDeviceProcess(nvmlProcessInfo.Pid, nvmlProcessInfo.UsedGpuMemory/(1024*1024))
 			// TODO: device GPU utilization and memory shouldn't be here, remove it!
 			p.DeviceGpuUtilization = utilization.Gpu
-			p.DeviceGpuMemory = utilization.Memory
+			p.DeviceGpuMemoryUtilization = utilization.Memory
+			p.DeviceGpuMemoryTotal = deviceMemory.Total
+			p.DeviceGpuMemoryFree = deviceMemory.Free
+			p.DeviceGpuMemoryUsed = deviceMemory.Used
 			discoveredDevicesProcesses = append(discoveredDevicesProcesses, p)
 		}
 		// override device utilization

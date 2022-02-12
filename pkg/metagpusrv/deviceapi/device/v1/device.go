@@ -63,7 +63,9 @@ func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDevic
 				PodNamespace:            process.PodNamespace,
 				MetagpuRequests:         process.PodMetagpuRequest,
 				DeviceGpuUtilization:    process.DeviceGpuUtilization,
-				DeviceMemoryUtilization: process.DeviceGpuMemory,
+				DeviceMemoryUtilization: process.DeviceGpuMemoryUtilization,
+				DeviceMemoryTotal:       process.DeviceGpuMemoryTotal,
+				DeviceMemoryFree:        process.DeviceGpuMemoryFree,
 			})
 		}
 	}
@@ -98,7 +100,9 @@ func (s *DeviceService) StreamDeviceProcesses(r *pb.StreamDeviceProcessesRequest
 					PodNamespace:            process.PodNamespace,
 					MetagpuRequests:         process.PodMetagpuRequest,
 					DeviceGpuUtilization:    process.DeviceGpuUtilization,
-					DeviceMemoryUtilization: process.DeviceGpuMemory,
+					DeviceMemoryUtilization: process.DeviceGpuMemoryUtilization,
+					DeviceMemoryTotal:       process.DeviceGpuMemoryTotal,
+					DeviceMemoryFree:        process.DeviceGpuMemoryFree,
 				})
 			}
 		}
