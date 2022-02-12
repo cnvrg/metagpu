@@ -45,7 +45,7 @@ func listDevicesProcesses() {
 	}
 
 	to := &TableOutput{}
-	to.header = table.Row{"UUID", "Util", "Pid", "Memory", "Cmd", "Pod", "NS", "Req"}
+	to.header = table.Row{"Device UUID", "Device Utilization", "Pid", "Memory", "Cmd", "Pod", "NS", "Req"}
 
 	if viper.GetBool("watch") {
 		request := &pbdevice.StreamDeviceProcessesRequest{PodId: hostname}
