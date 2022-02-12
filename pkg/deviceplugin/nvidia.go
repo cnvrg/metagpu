@@ -122,9 +122,9 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 			// TODO: device GPU utilization and memory shouldn't be here, remove it!
 			p.DeviceGpuUtilization = utilization.Gpu
 			p.DeviceGpuMemoryUtilization = utilization.Memory
-			p.DeviceGpuMemoryTotal = deviceMemory.Total
-			p.DeviceGpuMemoryFree = deviceMemory.Free
-			p.DeviceGpuMemoryUsed = deviceMemory.Used
+			p.DeviceGpuMemoryTotal = deviceMemory.Total / (1024 * 1024)
+			p.DeviceGpuMemoryFree = deviceMemory.Free / (1024 * 1024)
+			p.DeviceGpuMemoryUsed = deviceMemory.Used / (1024 * 1024)
 			discoveredDevicesProcesses = append(discoveredDevicesProcesses, p)
 		}
 		// override device utilization
