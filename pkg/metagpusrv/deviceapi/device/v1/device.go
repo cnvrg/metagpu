@@ -89,6 +89,7 @@ func (s *DeviceService) StreamDeviceProcesses(r *pb.StreamDeviceProcessesRequest
 		for deviceUuid, deviceProcesses := range s.plugin.ListDeviceProcesses(r.PodId) {
 			for _, process := range deviceProcesses {
 				if s.vl == s.cvl {
+					process.DeviceGpuUtilization = 0
 					process.DeviceGpuMemoryUtilization = 0
 					process.DeviceGpuMemoryTotal = 0
 					process.DeviceGpuMemoryFree = 0

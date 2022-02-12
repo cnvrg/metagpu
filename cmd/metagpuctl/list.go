@@ -105,9 +105,13 @@ func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess) (body []tabl
 		totalRequest += deviceProcess.MetagpuRequests
 		totalMemory += deviceProcess.Memory
 		totalShares = deviceProcess.TotalShares // I know, this is doesn't make sense, but I have to hurry up, whisky is ending
+		devUtil := "-"
+		if deviceProcess.DeviceGpuUtilization != 0 && deviceProcess.DeviceMemoryUtilization != 0 {
+			devUtil = fmt.Sprintf("GPU: %d%% Memory: %d%% (total: %dMB)", deviceProcess.DeviceGpuUtilization, 100-deviceProcess.DeviceMemoryUtilization, deviceProcess.DeviceMemoryTotal)
+		}
 		body = append(body, table.Row{
 			deviceProcess.Uuid,
-			fmt.Sprintf("GPU: %d%% Memory: %d%% (total: %dMB)", deviceProcess.DeviceGpuUtilization, 100-deviceProcess.DeviceMemoryUtilization, deviceProcess.DeviceMemoryTotal),
+			devUtil,
 			deviceProcess.Pid,
 			deviceProcess.Memory,
 			deviceProcess.Cmdline,
@@ -115,8 +119,11 @@ func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess) (body []tabl
 			deviceProcess.PodNamespace,
 			deviceProcess.MetagpuRequests,
 		})
-
 	}
-	footer = table.Row{"Totals:", "", "", fmt.Sprintf("%dMb", totalMemory), "", len(devProc), "", fmt.Sprintf("%d/%d", totalShares, totalRequest)}
+	metaGpuSummary := fmt.Sprintf("%d/%d", totalShares, totalRequest)
+	if totalShares == 0 {
+		metaGpuSummary = fmt.Sprintf("%d", totalRequest)
+	}
+	footer = table.Row{"Totals:", "", "", fmt.Sprintf("%dMb", totalMemory), "", len(devProc), "", fmt.Sprintf("%d/%d", totalShares, metaGpuSummary)}
 	return
 }
