@@ -1,12 +1,12 @@
 package v1
 
 import (
-	"cloud.google.com/go/functions/metadata"
 	"context"
 	pb "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/deviceplugin"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"time"
 )
@@ -86,7 +86,7 @@ func (s *DeviceService) StreamDeviceProcesses(r *pb.StreamDeviceProcessesRequest
 		return err
 	}
 
-	d, err := metadata.FromContext(stream.Context())
+	d, err := metadata.FromIncomingContext(stream.Context())
 	log.Info(err)
 	log.Info(d)
 	// stop execution if visibility level is container and pod id is not set (not enough permissions)
