@@ -139,7 +139,7 @@ func (s *DeviceService) KillGpuProcess(ctx context.Context, r *pb.KillGpuProcess
 		return response, err
 	}
 	if err := s.plugin.KillGpuProcess(r.Pid); err != nil {
-		return response, status.Errorf(codes.Internal, "error killing GPU process")
+		return response, status.Errorf(codes.Internal, "error killing GPU process, err: %s", err)
 	}
 	return response, nil
 }

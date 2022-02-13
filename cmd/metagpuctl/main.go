@@ -52,6 +52,7 @@ func init() {
 	// processes
 	listCmd.AddCommand(processesListCmd)
 	// root commands
+	rootCmd.AddCommand(enforceCmd)
 	rootCmd.AddCommand(killCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(pingCmd)
