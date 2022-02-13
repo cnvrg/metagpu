@@ -106,7 +106,7 @@ func (m *NvidiaDeviceManager) setDevices() {
 }
 
 func (m *NvidiaDeviceManager) discoverGpuProcesses() {
-	log.Info("refreshing nvidia devices processes")
+	//log.Info("refreshing nvidia devices processes")
 	totalDevices := len(m.Devices) // TODO: doesn't make sense
 	for _, device := range m.Devices {
 		nvidiaDevice, ret := nvml.DeviceGetHandleByIndex(device.Index)
