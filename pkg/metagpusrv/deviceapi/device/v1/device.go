@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"cloud.google.com/go/functions/metadata"
 	"context"
 	pb "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/deviceplugin"
@@ -19,6 +20,7 @@ type DeviceService struct {
 }
 
 func (s *DeviceService) LoadContext(ctx context.Context) error {
+
 	s.plugin = ctx.Value("plugin").(*deviceplugin.MetaGpuDevicePlugin)
 	if s.plugin == nil {
 		log.Fatalf("plugin instance not set in context")
@@ -80,19 +82,23 @@ func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDevic
 
 func (s *DeviceService) StreamDeviceProcesses(r *pb.StreamDeviceProcessesRequest, stream pb.DeviceService_StreamDeviceProcessesServer) error {
 
-	for {
-		if err := s.LoadContext(stream.Context()); err != nil {
-			return err
-		}
-		// stop execution if visibility level is container and pod id is not set (not enough permissions)
-		if s.vl == s.cvl && r.PodId == "" {
-			return status.Errorf(codes.PermissionDenied, "missing pod id and visibility level is to low (%s), can't proceed", s.vl)
-		}
-		if s.vl == s.dvl {
-			r.PodId = "" // for deviceVisibilityLevel server should return all running process on all containers
-		}
-		log.Infof("vl: %s cvl: %s dvl: %s", s.vl, s.cvl, s.dvl)
+	if err := s.LoadContext(stream.Context()); err != nil {
+		return err
+	}
 
+	d, err := metadata.FromContext(stream.Context())
+	log.Info(err)
+	log.Info(d)
+	// stop execution if visibility level is container and pod id is not set (not enough permissions)
+	if s.vl == s.cvl && r.PodId == "" {
+		return status.Errorf(codes.PermissionDenied, "missing pod id and visibility level is to low (%s), can't proceed", s.vl)
+	}
+	if s.vl == s.dvl {
+		r.PodId = "" // for deviceVisibilityLevel server should return all running process on all containers
+	}
+	log.Infof("vl: %s cvl: %s dvl: %s", s.vl, s.cvl, s.dvl)
+
+	for {
 		response := &pb.StreamDeviceProcessesResponse{}
 		for deviceUuid, deviceProcesses := range s.plugin.ListDeviceProcesses(r.PodId) {
 			for _, process := range deviceProcesses {
