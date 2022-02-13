@@ -31,10 +31,10 @@ func (s *MetaGpuServer) streamServerInterceptor() grpc.StreamServerInterceptor {
 			if err != nil {
 				return err
 			}
-			ctx := context.WithValue(ss.Context(), TokenVisibilityClaimName, visibility)
-			ctx = context.WithValue(ctx, "containerVl", string(ContainerVisibility))
-			ctx = context.WithValue(ctx, "deviceVl", string(DeviceVisibility))
-			ctx = context.WithValue(ctx, "plugin", s.plugin)
+			wrapper.ctx = context.WithValue(ss.Context(), TokenVisibilityClaimName, visibility)
+			wrapper.ctx = context.WithValue(wrapper.ctx, "containerVl", string(ContainerVisibility))
+			wrapper.ctx = context.WithValue(wrapper.ctx, "deviceVl", string(DeviceVisibility))
+			wrapper.ctx = context.WithValue(wrapper.ctx, "plugin", s.plugin)
 
 			//wrapper.VisibilityToken = visibility
 			//wrapper.ContainerVl = string(ContainerVisibility)
