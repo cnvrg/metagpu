@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
-	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/metagpusrv"
 	"github.com/atomicgo/cursor"
 	"github.com/jedib0t/go-pretty/v6/table"
 	log "github.com/sirupsen/logrus"
@@ -46,7 +45,7 @@ func listDevicesProcesses() {
 	}
 
 	to := &TableOutput{}
-	to.header = table.Row{"Device UUID", "Device Utilization", "Pid", "Memory", "Cmd", "Pod", "NS", "Req"}
+	to.header = table.Row{"Device UUID", "Pod", "NS", "Pid", "Memory", "Cmd", "Req"}
 
 	if viper.GetBool("watch") {
 		request := &pbdevice.StreamDeviceProcessesRequest{PodId: hostname}
@@ -81,7 +80,7 @@ func listDevicesProcesses() {
 					log.Fatalf("error watching gpu processes, err: %s", err)
 				}
 
-				to.body, to.footer = composeProcessListAndFooter(resp.DevicesProcesses, metagpusrv.VisibilityLevel(resp.VisibilityLevel))
+				to.body, to.footer = composeProcessListAndFooter(resp.DevicesProcesses, resp.VisibilityLevel)
 				to.buildTable()
 				to.print()
 			}
@@ -93,40 +92,64 @@ func listDevicesProcesses() {
 			log.Errorf("falid to list device processes, err: %s ", err)
 			return
 		}
-		to.body, to.footer = composeProcessListAndFooter(resp.DevicesProcesses, metagpusrv.VisibilityLevel(resp.VisibilityLevel))
+		to.body, to.footer = composeProcessListAndFooter(resp.DevicesProcesses, resp.VisibilityLevel)
 		to.buildTable()
 		to.print()
 	}
 }
 
-func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess, vl metagpusrv.VisibilityLevel) (body []table.Row, footer table.Row) {
+func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess, vl string) (body []table.Row, footer table.Row) {
 	var totalRequest int64
 	var totalMemory uint64
 	var totalShares int32
+
+	devu := make(map[string]string)
+	devProcTotMemPerGPU := make(map[string]uint64)
+	metaGpuPodRequests := make(map[string]bool)
 	for _, deviceProcess := range devProc {
-		totalRequest += deviceProcess.MetagpuRequests
-		totalMemory += deviceProcess.Memory
-		totalShares = deviceProcess.TotalShares // I know, this is doesn't make sense, but I have to hurry up, whisky is ending
-		devUtil := "-"
-		if vl == metagpusrv.DeviceVisibility {
-			devUtil = fmt.Sprintf("GPU: %d%% Memory: %d%% (total: %dMB)", deviceProcess.DeviceGpuUtilization, deviceProcess.DeviceMemoryUtilization, deviceProcess.DeviceMemoryTotal)
+		if _, ok := metaGpuPodRequests[deviceProcess.PodName]; !ok {
+			totalRequest += deviceProcess.MetagpuRequests
+			metaGpuPodRequests[deviceProcess.PodName] = true
 		}
 
+	}
+	// fuck 1
+	for _, deviceProcess := range devProc {
+		devProcTotMemPerGPU[deviceProcess.Uuid] += deviceProcess.Memory
+	}
+	// fuck 2
+	for _, deviceProcess := range devProc {
+		if vl != "l0" {
+			devu[deviceProcess.Uuid] = "-"
+		} else {
+			devu[deviceProcess.Uuid] = fmt.Sprintf("[GPU:%d%%|MEM:%d%%|TOT:%dMB]",
+				deviceProcess.DeviceGpuUtilization,
+				devProcTotMemPerGPU[deviceProcess.Uuid]*100/deviceProcess.DeviceMemoryTotal,
+				deviceProcess.DeviceMemoryTotal,
+			)
+		}
+	}
+	// fuck 3
+	for _, deviceProcess := range devProc {
+		totalMemory += deviceProcess.Memory
+		totalShares = deviceProcess.TotalShares // I know, this is doesn't make sense, but I have to hurry up, whisky is ending
+		uuid := fmt.Sprintf("%s %s", deviceProcess.Uuid, devu[deviceProcess.Uuid])
+
 		body = append(body, table.Row{
-			deviceProcess.Uuid,
-			devUtil,
+			uuid,
+			deviceProcess.PodName,
+			deviceProcess.PodNamespace,
 			deviceProcess.Pid,
 			deviceProcess.Memory,
 			deviceProcess.Cmdline,
-			deviceProcess.PodName,
-			deviceProcess.PodNamespace,
 			deviceProcess.MetagpuRequests,
 		})
 	}
+
 	metaGpuSummary := fmt.Sprintf("%d/%d", totalShares, totalRequest)
 	if totalShares == 0 {
 		metaGpuSummary = fmt.Sprintf("%d", totalRequest)
 	}
-	footer = table.Row{"Totals:", "", "", fmt.Sprintf("%dMb", totalMemory), "", len(devProc), "", metaGpuSummary}
+	footer = table.Row{"Totals:", "", "", len(devProc), fmt.Sprintf("%dMb", totalMemory), "", metaGpuSummary}
 	return
 }

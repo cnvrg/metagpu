@@ -46,7 +46,8 @@ func (o *TableOutput) buildTable() {
 	t.AppendRows(o.body)
 	t.SetStyle(table.StyleColoredGreenWhiteOnBlack)
 	t.AppendFooter(o.footer)
-	t.SetColumnConfigs([]table.ColumnConfig{{Number: 1, AutoMerge: true}, {Number: 2, AutoMerge: true}})
+	t.SetColumnConfigs([]table.ColumnConfig{{Number: 1, AutoMerge: true}})
+	t.SortBy([]table.SortBy{{Name: "Device UUID", Mode: table.Asc}})
 	t.Render()
 }
 
