@@ -27,7 +27,7 @@ func copymgctlToContainer(containerId string) {
 	}
 
 	if f := getmgctlBinFile(); f != nil {
-		if err := cli.CopyToContainer(ctx, containerId, "/usr/bin", f, types.CopyToContainerOptions{}); err != nil {
+		if err := cli.CopyToContainer(ctx, containerId, "/tmp/mgctl", f, types.CopyToContainerOptions{}); err != nil {
 			log.Error(err)
 		}
 		_ = f.Close()
