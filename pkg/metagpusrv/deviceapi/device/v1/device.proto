@@ -33,14 +33,16 @@ message StreamDeviceProcessesRequest{
   string pod_id = 1;
 }
 message StreamDeviceProcessesResponse{
-  repeated DeviceProcess devices_processes = 1;
+  string visibility_level = 1;
+  repeated DeviceProcess devices_processes = 2;
 }
 
 message ListDeviceProcessesRequest{
   string pod_id = 1;
 }
 message ListDeviceProcessesResponse{
-  repeated DeviceProcess devices_processes = 1;
+  string visibility_level = 1;
+  repeated DeviceProcess devices_processes = 2;
 }
 
 message KillGpuProcessRequest{

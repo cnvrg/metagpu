@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/metagpusrv"
 	"github.com/atomicgo/cursor"
 	"github.com/jedib0t/go-pretty/v6/table"
 	log "github.com/sirupsen/logrus"
@@ -79,7 +80,8 @@ func listDevicesProcesses() {
 				if err != nil {
 					log.Fatalf("error watching gpu processes, err: %s", err)
 				}
-				to.body, to.footer = composeProcessListAndFooter(resp.DevicesProcesses)
+
+				to.body, to.footer = composeProcessListAndFooter(resp.DevicesProcesses, metagpusrv.VisibilityLevel(resp.VisibilityLevel))
 				to.buildTable()
 				to.print()
 			}
@@ -91,13 +93,13 @@ func listDevicesProcesses() {
 			log.Errorf("falid to list device processes, err: %s ", err)
 			return
 		}
-		to.body, to.footer = composeProcessListAndFooter(resp.DevicesProcesses)
+		to.body, to.footer = composeProcessListAndFooter(resp.DevicesProcesses, metagpusrv.VisibilityLevel(resp.VisibilityLevel))
 		to.buildTable()
 		to.print()
 	}
 }
 
-func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess) (body []table.Row, footer table.Row) {
+func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess, vl metagpusrv.VisibilityLevel) (body []table.Row, footer table.Row) {
 	var totalRequest int64
 	var totalMemory uint64
 	var totalShares int32
@@ -106,9 +108,10 @@ func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess) (body []tabl
 		totalMemory += deviceProcess.Memory
 		totalShares = deviceProcess.TotalShares // I know, this is doesn't make sense, but I have to hurry up, whisky is ending
 		devUtil := "-"
-		if deviceProcess.DeviceGpuUtilization != 0 && deviceProcess.DeviceMemoryUtilization != 0 {
+		if vl == metagpusrv.DeviceVisibility {
 			devUtil = fmt.Sprintf("GPU: %d%% Memory: %d%% (total: %dMB)", deviceProcess.DeviceGpuUtilization, deviceProcess.DeviceMemoryUtilization, deviceProcess.DeviceMemoryTotal)
 		}
+
 		body = append(body, table.Row{
 			deviceProcess.Uuid,
 			devUtil,
