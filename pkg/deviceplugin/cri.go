@@ -6,11 +6,8 @@ import (
 	docker "github.com/docker/docker/client"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"io"
 	"os"
 )
-
-var mgctlBinLocation = viper.GetString("mgctlTar")
 
 func copymgctlToContainer(containerId string) {
 	ctx := context.Background()
@@ -33,6 +30,7 @@ func copymgctlToContainer(containerId string) {
 		if err := cli.CopyToContainer(ctx, containerId, "/usr/bin", f, types.CopyToContainerOptions{}); err != nil {
 			log.Error(err)
 		}
+		_ = f.Close()
 	}
 }
 
@@ -59,9 +57,10 @@ func isContainerExists(dc *docker.Client, containerId string) bool {
 	return false
 }
 
-func getmgctlBinFile() io.Reader {
-	if _, err := os.Stat(mgctlBinLocation); err == nil {
-		if f, err := os.Open(mgctlBinLocation); err == nil {
+func getmgctlBinFile() *os.File {
+	mgctlFile := viper.GetString("mgctlTar")
+	if _, err := os.Stat(mgctlFile); err == nil {
+		if f, err := os.Open(mgctlFile); err == nil {
 			return f
 		} else {
 			log.Error(err)
