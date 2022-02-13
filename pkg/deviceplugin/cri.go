@@ -38,7 +38,7 @@ func copymgctlToContainer(containerId string) {
 func shouldCopy(dc *docker.Client, containerId string) bool {
 	_, err := dc.ContainerStatPath(context.Background(), containerId, "/usr/bin/mgctl")
 	if err != nil {
-		log.Warnf("mgctl not found in %s, will copy it, err: %s", containerId, err)
+		log.Warnf("mgctl not found, err: %s", err)
 		return true
 	}
 	return false
