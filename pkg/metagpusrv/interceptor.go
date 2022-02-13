@@ -2,7 +2,6 @@ package metagpusrv
 
 import (
 	"context"
-	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/deviceplugin"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"time"
@@ -10,30 +9,35 @@ import (
 
 type MetaGpuServerStream struct {
 	grpc.ServerStream
-	plugin          *deviceplugin.MetaGpuDevicePlugin
-	VisibilityToken string
-	DeviceVl        string
-	ContainerVl     string
+	ctx context.Context
+	//plugin          *deviceplugin.MetaGpuDevicePlugin
+	//VisibilityToken string
+	//DeviceVl        string
+	//ContainerVl     string
 }
 
-func (s *MetaGpuServerStream) Context() context.Context {
-	ctx := context.WithValue(context.Background(), TokenVisibilityClaimName, s.VisibilityToken)
-	ctx = context.WithValue(ctx, "containerVl", string(ContainerVisibility))
-	ctx = context.WithValue(ctx, "plugin", s.plugin)
-	return context.WithValue(ctx, "deviceVl", string(DeviceVisibility))
-}
+//func (s *MetaGpuServerStream) Context() context.Context {
+//	ctx := context.WithValue(context.Background(), TokenVisibilityClaimName, s.VisibilityToken)
+//	ctx = context.WithValue(ctx, "containerVl", string(ContainerVisibility))
+//	ctx = context.WithValue(ctx, "plugin", s.plugin)
+//	return context.WithValue(ctx, "deviceVl", string(DeviceVisibility))
+//}
 
 func (s *MetaGpuServer) streamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		wrapper := &MetaGpuServerStream{ServerStream: ss, plugin: s.plugin}
+		wrapper := &MetaGpuServerStream{ServerStream: ss}
 		if !s.IsMethodPublic(info.FullMethod) {
 			visibility, err := authorize(ss.Context())
 			if err != nil {
 				return err
 			}
-			wrapper.VisibilityToken = visibility
-			wrapper.ContainerVl = string(ContainerVisibility)
-			wrapper.DeviceVl = string(DeviceVisibility)
+			ctx := context.WithValue(ss.Context(), TokenVisibilityClaimName, visibility)
+			ctx = context.WithValue(ctx, "containerVl", string(ContainerVisibility))
+			ctx = context.WithValue(ctx, "deviceVl", string(DeviceVisibility))
+
+			//wrapper.VisibilityToken = visibility
+			//wrapper.ContainerVl = string(ContainerVisibility)
+			//wrapper.DeviceVl = string(DeviceVisibility)
 		}
 		return handler(srv, wrapper)
 	}
