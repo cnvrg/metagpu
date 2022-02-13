@@ -81,19 +81,18 @@ func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDevic
 
 func (s *DeviceService) StreamDeviceProcesses(r *pb.StreamDeviceProcessesRequest, stream pb.DeviceService_StreamDeviceProcessesServer) error {
 
-	for {
+	if err := s.LoadContext(stream.Context()); err != nil {
+		return err
+	}
+	// stop execution if visibility level is container and pod id is not set (not enough permissions)
+	if s.vl == s.cvl && r.PodId == "" {
+		return status.Errorf(codes.PermissionDenied, "missing pod id and visibility level is to low (%s), can't proceed", s.vl)
+	}
+	if s.vl == s.dvl {
+		r.PodId = "" // for deviceVisibilityLevel server should return all running process on all containers
+	}
 
-		if err := s.LoadContext(stream.Context()); err != nil {
-			return err
-		}
-		// stop execution if visibility level is container and pod id is not set (not enough permissions)
-		if s.vl == s.cvl && r.PodId == "" {
-			return status.Errorf(codes.PermissionDenied, "missing pod id and visibility level is to low (%s), can't proceed", s.vl)
-		}
-		if s.vl == s.dvl {
-			r.PodId = "" // for deviceVisibilityLevel server should return all running process on all containers
-		}
-		log.Infof("vl: %s cvl: %s dvl: %s", s.vl, s.cvl, s.dvl)
+	for {
 
 		response := &pb.StreamDeviceProcessesResponse{}
 		for deviceUuid, deviceProcesses := range s.plugin.ListDeviceProcesses(r.PodId) {
@@ -116,7 +115,6 @@ func (s *DeviceService) StreamDeviceProcesses(r *pb.StreamDeviceProcessesRequest
 					TotalShares:             int32(process.TotalShares),
 				}
 				if s.vl == s.cvl { // TODO: fix all this shit
-					log.Infof("->>>> vl: %s cvl: %s", s.vl, s.cvl)
 					dp.DeviceGpuUtilization = 0
 					dp.DeviceMemoryUtilization = 0
 					dp.DeviceMemoryTotal = 0

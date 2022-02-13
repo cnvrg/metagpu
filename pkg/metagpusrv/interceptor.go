@@ -16,13 +16,13 @@ type MetaGpuServerStream struct {
 	//ContainerVl     string
 }
 
-func (s *MetaGpuServerStream) Context() context.Context {
-	return s.ctx
-	//ctx := context.WithValue(context.Background(), TokenVisibilityClaimName, s.VisibilityToken)
-	//ctx = context.WithValue(ctx, "containerVl", string(ContainerVisibility))
-	//ctx = context.WithValue(ctx, "plugin", s.plugin)
-	//return context.WithValue(ctx, "deviceVl", string(DeviceVisibility))
-}
+//func (s *MetaGpuServerStream) Context() context.Context {
+//	return s.ctx
+//	//ctx := context.WithValue(context.Background(), TokenVisibilityClaimName, s.VisibilityToken)
+//	//ctx = context.WithValue(ctx, "containerVl", string(ContainerVisibility))
+//	//ctx = context.WithValue(ctx, "plugin", s.plugin)
+//	//return context.WithValue(ctx, "deviceVl", string(DeviceVisibility))
+//}
 
 func (s *MetaGpuServer) streamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
