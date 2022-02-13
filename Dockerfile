@@ -35,3 +35,4 @@ RUN apt update -y \
     && apt install -y vim
 COPY --from=builder /root/.go/src/metagpu/metagpu-device-plugin /usr/bin/metagpu-device-plugin
 COPY --from=builder /root/.go/src/metagpu/mgctl /usr/bin/mgctl
+RUN tar -zcvf mgctl.tar.gz /usr/bin/mgctl && mv mgctl.tar.gz /tmp

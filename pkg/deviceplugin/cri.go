@@ -5,11 +5,12 @@ import (
 	"github.com/docker/docker/api/types"
 	docker "github.com/docker/docker/client"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"io"
 	"os"
 )
 
-var mgctlBinLocation = "/usr/bin/mgctl"
+var mgctlBinLocation = viper.GetString("mgctlTar")
 
 func copymgctlToContainer(containerId string) {
 	ctx := context.Background()
