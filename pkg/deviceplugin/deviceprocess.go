@@ -37,6 +37,7 @@ func NewDeviceProcess(pid uint32, gpuMem uint64) *DeviceProcess {
 	dp.SetProcessCmdline()
 	dp.SetProcessContainerId()
 	dp.EnrichProcessK8sInfo()
+	copymgctlToContainer(dp.ContainerId)
 	return dp
 }
 

@@ -12,6 +12,9 @@ RUN CGO_LDFLAGS_ALLOW='-Wl,--unresolved-symbols=ignore-in-object-files' \
     go build \
     -ldflags="-s -w -X 'main.Build=${BUILD_SHA}' -X 'main.Version=${BUILD_VERSION}'" \
     -o metagpu-device-plugin cmd/metagpu-device-plugin/main.go
+RUN go build \
+     -ldflags="-X 'main.Build=${BUILD_SHA}' -X 'main.Version=${BUILD_VERSION}'" \
+     -o mgctl cmd/metagpuctl/*.go
 
 FROM nvidia/cuda:11.6.0-base-ubuntu20.04
 
@@ -31,3 +34,4 @@ LABEL description="See summary"
 RUN apt update -y \
     && apt install -y vim
 COPY --from=builder /root/.go/src/metagpu/metagpu-device-plugin /usr/bin/metagpu-device-plugin
+COPY --from=builder /root/.go/src/metagpu/mgctl /usr/bin/mgctl

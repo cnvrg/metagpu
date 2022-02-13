@@ -87,6 +87,8 @@ spec:
               mountPropagation: HostToContainer
               name: proc
               readOnly: true
+            - mountPath: /var/run/docker.sock
+              name: docker
       volumes:
         - name: device-plugin
           hostPath:
@@ -97,6 +99,9 @@ spec:
         - hostPath:
             path: /proc
           name: proc
+        - hostPath:
+            path: /var/run/docker.sock
+          name: docker
 ---
 kind: Service
 apiVersion: v1
