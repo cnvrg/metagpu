@@ -17,6 +17,7 @@ type MetaGpuServerStream struct {
 }
 
 func (s *MetaGpuServerStream) Context() context.Context {
+	log.Info(s.VisibilityToken)
 	ctx := context.WithValue(context.Background(), TokenVisibilityClaimName, s.VisibilityToken)
 	ctx = context.WithValue(ctx, "containerVl", string(ContainerVisibility))
 	ctx = context.WithValue(ctx, "plugin", s.plugin)
