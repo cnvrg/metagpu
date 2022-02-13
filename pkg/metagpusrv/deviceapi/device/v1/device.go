@@ -39,10 +39,11 @@ func (s *DeviceService) LoadContext(ctx context.Context) error {
 }
 
 func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDeviceProcessesRequest) (*pb.ListDeviceProcessesResponse, error) {
-	response := &pb.ListDeviceProcessesResponse{}
+
 	if err := s.LoadContext(ctx); err != nil {
-		return response, err
+		return &pb.ListDeviceProcessesResponse{}, err
 	}
+	response := &pb.ListDeviceProcessesResponse{VisibilityLevel: s.vl}
 	// stop execution if visibility level is container and pod id is not set (not enough permissions)
 	if s.vl == s.cvl && r.PodId == "" {
 		return response, status.Errorf(codes.PermissionDenied, "missing pod id and visibility level is to low (%s), can't proceed", s.vl)
