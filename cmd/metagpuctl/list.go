@@ -107,7 +107,7 @@ func composeProcessListAndFooter(devProc []*pbdevice.DeviceProcess) (body []tabl
 		totalShares = deviceProcess.TotalShares // I know, this is doesn't make sense, but I have to hurry up, whisky is ending
 		devUtil := "-"
 		if deviceProcess.DeviceGpuUtilization != 0 && deviceProcess.DeviceMemoryUtilization != 0 {
-			devUtil = fmt.Sprintf("GPU: %d%% Memory: %d%% (total: %dMB)", deviceProcess.DeviceGpuUtilization, 100-deviceProcess.DeviceMemoryUtilization, deviceProcess.DeviceMemoryTotal)
+			devUtil = fmt.Sprintf("GPU: %d%% Memory: %d%% (total: %dMB)", deviceProcess.DeviceGpuUtilization, deviceProcess.DeviceMemoryUtilization, deviceProcess.DeviceMemoryTotal)
 		}
 		body = append(body, table.Row{
 			deviceProcess.Uuid,
