@@ -6,7 +6,6 @@ import (
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/deviceplugin"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"time"
 )
@@ -86,9 +85,6 @@ func (s *DeviceService) StreamDeviceProcesses(r *pb.StreamDeviceProcessesRequest
 		return err
 	}
 
-	d, err := metadata.FromIncomingContext(stream.Context())
-	log.Info(err)
-	log.Info(d)
 	// stop execution if visibility level is container and pod id is not set (not enough permissions)
 	if s.vl == s.cvl && r.PodId == "" {
 		return status.Errorf(codes.PermissionDenied, "missing pod id and visibility level is to low (%s), can't proceed", s.vl)
