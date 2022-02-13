@@ -91,9 +91,7 @@ func (s *DeviceService) StreamDeviceProcesses(r *pb.StreamDeviceProcessesRequest
 		if s.vl == s.dvl {
 			r.PodId = "" // for deviceVisibilityLevel server should return all running process on all containers
 		}
-		log.Infof("vl: %s", s.vl)
-		log.Infof("cvl: %s", s.cvl)
-		log.Infof("dvl: %s", s.dvl)
+		log.Infof("vl: %s cvl: %s dvl: %s", s.vl, s.cvl, s.dvl)
 
 		response := &pb.StreamDeviceProcessesResponse{}
 		for deviceUuid, deviceProcesses := range s.plugin.ListDeviceProcesses(r.PodId) {
