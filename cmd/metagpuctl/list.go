@@ -79,6 +79,7 @@ func listDevicesProcesses() {
 				if err != nil {
 					log.Fatalf("error watching gpu processes, err: %s", err)
 				}
+				log.Info("received")
 				to.body, to.footer = composeProcessListAndFooter(resp.DevicesProcesses)
 				to.buildTable()
 				to.print()
