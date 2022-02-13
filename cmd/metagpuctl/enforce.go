@@ -74,9 +74,7 @@ func enforceMemoryLimits() {
 			for _, devProc := range resp.DevicesProcesses {
 				if devProc.Memory > devProc.DeviceMemoryTotal/uint64(devProc.TotalShares) {
 					killRequest := &pbdevice.KillGpuProcessRequest{Pid: devProc.Pid}
-					if _, err := device.KillGpuProcess(authenticatedContext(), killRequest); err != nil {
-						log.Fatalf("error killing process, err: %s", err)
-					}
+					_, _ = device.KillGpuProcess(authenticatedContext(), killRequest)
 				}
 			}
 		}
