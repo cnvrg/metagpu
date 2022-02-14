@@ -123,10 +123,10 @@ func (p *MetaGpuDevicePlugin) Allocate(ctx context.Context, request *pluginapi.A
 		}
 
 		response.Envs = map[string]string{
-			"CNVRG_META_GPU_DEVICES":     strings.Join(req.DevicesIDs, ","),
-			"NVIDIA_VISIBLE_DEVICES":     strings.Join(p.ParseRealDeviceId(req.DevicesIDs), ","),
-			"MG_CTL_METAGPU_SERVER_ADDR": fmt.Sprintf("%s:50052", os.Getenv("POD_IP")),
-			"MG_CTL_TOKEN":               p.containerLevelVisibilityToken,
+			"CNVRG_META_GPU_DEVICES": strings.Join(req.DevicesIDs, ","),
+			"NVIDIA_VISIBLE_DEVICES": strings.Join(p.ParseRealDeviceId(req.DevicesIDs), ","),
+			"MG_CTL_ADDR":            fmt.Sprintf("%s:50052", os.Getenv("POD_IP")),
+			"MG_CTL_TOKEN":           p.containerLevelVisibilityToken,
 		}
 		allocResponse.ContainerResponses = append(allocResponse.ContainerResponses, &response)
 	}
