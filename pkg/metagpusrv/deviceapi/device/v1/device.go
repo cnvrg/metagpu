@@ -5,9 +5,9 @@ import (
 	pb "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/deviceplugin"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"os"
 	"time"
 )
 
@@ -152,9 +152,8 @@ func (s *DeviceService) PatchConfigs(ctx context.Context, r *pb.PatchConfigsRequ
 	if s.vl != s.dvl {
 		return &pb.PatchConfigsResponse{}, status.Errorf(codes.PermissionDenied, "visibility level to high", s.vl)
 	}
-	if err := os.Setenv("METAGPU_DEVICE_PLUGIN_METAGPUS", string(r.MetaGpus)); err != nil {
-		log.Error(err)
-	}
+	// override runtime configuration
+	viper.Set("metaGpus", r.MetaGpus)
 	s.plugin.MetaGpuRecalculation <- true
 	return &pb.PatchConfigsResponse{}, nil
 
