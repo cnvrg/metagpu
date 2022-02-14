@@ -155,6 +155,7 @@ func (s *DeviceService) PatchConfigs(ctx context.Context, r *pb.PatchConfigsRequ
 	if err := os.Setenv("METAGPU_DEVICE_PLUGIN_METAGPUS", string(r.MetaGpus)); err != nil {
 		log.Error(err)
 	}
+	s.plugin.MetaGpuRecalculation <- true
 	return &pb.PatchConfigsResponse{}, nil
 
 }

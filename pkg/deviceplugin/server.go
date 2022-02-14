@@ -27,7 +27,7 @@ type MetaGpuDevicePlugin struct {
 	containerLevelVisibilityToken string
 	deviceLevelVisibilityToken    string
 	stop                          chan interface{}
-	metaGpuRecalculation          chan bool
+	MetaGpuRecalculation          chan bool
 }
 
 func (p *MetaGpuDevicePlugin) SetDeviceLevelVisibilityToken(token string) {
@@ -88,7 +88,7 @@ func (p *MetaGpuDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.Devic
 		select {
 		case <-p.stop:
 			return nil
-		case <-p.metaGpuRecalculation:
+		case <-p.MetaGpuRecalculation:
 			if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.ListMetaDevices()}); err != nil {
 				log.Error(err)
 			}
@@ -184,7 +184,7 @@ func (p *MetaGpuDevicePlugin) Stop() {
 	_ = os.Remove(p.socket)
 	log.Info("closing all channels")
 	close(p.stop)
-	close(p.metaGpuRecalculation)
+	close(p.MetaGpuRecalculation)
 }
 
 func NewMetaGpuDevicePlugin(metaGpuRecalculation chan bool) *MetaGpuDevicePlugin {
@@ -197,6 +197,6 @@ func NewMetaGpuDevicePlugin(metaGpuRecalculation chan bool) *MetaGpuDevicePlugin
 		resourceName:         viper.GetString("resourceName"),
 		DeviceManager:        NewNvidiaDeviceManager(),
 		stop:                 make(chan interface{}),
-		metaGpuRecalculation: metaGpuRecalculation,
+		MetaGpuRecalculation: metaGpuRecalculation,
 	}
 }

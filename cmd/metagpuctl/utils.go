@@ -52,7 +52,7 @@ func (o *TableOutput) buildTable() {
 }
 
 func GetGrpcMetaGpuSrvClientConn() (*grpc.ClientConn, error) {
-	log.Infof("initiating gRPC connection to %s 🐱", viper.GetString("addr"))
+	log.Infof("initiating gRPC connection to %s", viper.GetString("addr"))
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 	conn, err := grpc.Dial(viper.GetString("addr"), opts...)
 	if err != nil {
@@ -62,7 +62,7 @@ func GetGrpcMetaGpuSrvClientConn() (*grpc.ClientConn, error) {
 		log.Errorf("failed to connect to server 🙀, err: %s", err)
 		os.Exit(1)
 	} else {
-		log.Infof("connected to %s 😺", viper.GetString("addr"))
+		log.Infof("connected to %s", viper.GetString("addr"))
 	}
 	return conn, nil
 }
