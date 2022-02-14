@@ -27,6 +27,7 @@ message DeviceProcess{
   uint64 device_memory_total = 12;
   uint64 device_memory_free = 13;
   int32 total_shares = 14;
+  int32 total_devices = 15;
 }
 
 message StreamDeviceProcessesRequest{

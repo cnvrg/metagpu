@@ -66,13 +66,12 @@ func enforceMemoryLimits() {
 			if err != nil {
 				log.Fatalf("error watching gpu processes, err: %s", err)
 			}
-			var gpuTotal uint64
-			to.body, to.footer, gpuTotal = composeMemEnforceListAndFooter(resp.DevicesProcesses)
+			to.body, to.footer = composeMemEnforceListAndFooter(resp.DevicesProcesses)
 			to.buildTable()
 			to.print()
 
 			for _, devProc := range resp.DevicesProcesses {
-				if devProc.Memory > devProc.DeviceMemoryTotal/(uint64(devProc.TotalShares)/gpuTotal) {
+				if devProc.Memory > (devProc.DeviceMemoryTotal/(uint64(devProc.TotalShares)/uint64(devProc.TotalDevices)))*uint64(devProc.MetagpuRequests) {
 					killRequest := &pbdevice.KillGpuProcessRequest{Pid: devProc.Pid}
 					_, _ = device.KillGpuProcess(authenticatedContext(), killRequest)
 				}
@@ -81,7 +80,7 @@ func enforceMemoryLimits() {
 	}
 }
 
-func composeMemEnforceListAndFooter(devProc []*pbdevice.DeviceProcess) (body []table.Row, footer table.Row, gpuTotal uint64) {
+func composeMemEnforceListAndFooter(devProc []*pbdevice.DeviceProcess) (body []table.Row, footer table.Row) {
 
 	type enforceObj struct {
 		uuid    string
@@ -97,7 +96,7 @@ func composeMemEnforceListAndFooter(devProc []*pbdevice.DeviceProcess) (body []t
 			uuid:    enforceList.Uuid,
 			podName: enforceList.PodName,
 			memUsed: enforceList.Memory,
-			metaMem: enforceList.DeviceMemoryTotal / uint64(enforceList.TotalShares),
+			metaMem: (enforceList.DeviceMemoryTotal / (uint64(enforceList.TotalShares) / uint64(enforceList.TotalDevices))) * uint64(enforceList.MetagpuRequests),
 		}
 	}
 
@@ -110,7 +109,7 @@ func composeMemEnforceListAndFooter(devProc []*pbdevice.DeviceProcess) (body []t
 	}
 
 	footer = table.Row{"", "", "", ""}
-	gpuTotal = uint64(len(el))
+
 	return
 
 }

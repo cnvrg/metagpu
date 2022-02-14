@@ -75,6 +75,7 @@ func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDevic
 				DeviceMemoryUtilization: process.DeviceGpuMemoryUtilization,
 				DeviceMemoryTotal:       process.DeviceGpuMemoryTotal,
 				DeviceMemoryFree:        process.DeviceGpuMemoryFree,
+				TotalDevices:            process.TotalDevices,
 			})
 		}
 	}
@@ -114,6 +115,7 @@ func (s *DeviceService) StreamDeviceProcesses(r *pb.StreamDeviceProcessesRequest
 					DeviceMemoryTotal:       process.DeviceGpuMemoryTotal,
 					DeviceMemoryFree:        process.DeviceGpuMemoryFree,
 					TotalShares:             int32(process.TotalShares),
+					TotalDevices:            process.TotalDevices,
 				}
 				if s.vl == s.cvl { // TODO: fix all this shit
 					dp.DeviceGpuUtilization = 0

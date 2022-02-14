@@ -26,6 +26,7 @@ type DeviceProcess struct {
 	PodId                      string
 	PodNamespace               string
 	PodMetagpuRequest          int64
+	TotalDevices               int32
 }
 
 func NewDeviceProcess(pid uint32, gpuMem uint64) *DeviceProcess {
