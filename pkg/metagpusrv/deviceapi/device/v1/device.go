@@ -75,6 +75,7 @@ func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDevic
 				DeviceMemoryUtilization: process.DeviceGpuMemoryUtilization,
 				DeviceMemoryTotal:       process.DeviceGpuMemoryTotal,
 				DeviceMemoryFree:        process.DeviceGpuMemoryFree,
+				TotalShares:             int32(process.TotalShares),
 				TotalDevices:            process.TotalDevices,
 			})
 		}
