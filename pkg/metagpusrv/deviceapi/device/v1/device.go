@@ -153,6 +153,7 @@ func (s *DeviceService) PatchConfigs(ctx context.Context, r *pb.PatchConfigsRequ
 		return &pb.PatchConfigsResponse{}, status.Errorf(codes.PermissionDenied, "visibility level to high", s.vl)
 	}
 	// override runtime configuration
+	// TODO: make configuration persistent
 	viper.Set("metaGpus", r.MetaGpus)
 	s.plugin.MetaGpuRecalculation <- true
 	return &pb.PatchConfigsResponse{}, nil
