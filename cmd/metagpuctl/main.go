@@ -26,7 +26,7 @@ var (
 	rootParams = []param{
 		{name: "json-log", shorthand: "", value: false, usage: "output logs in json format"},
 		{name: "verbose", shorthand: "", value: false, usage: "enable verbose logs"},
-		{name: "metagpu-server-addr", shorthand: "s", value: "localhost:50052", usage: "address to access the metagpu server"},
+		{name: "addr", shorthand: "s", value: "localhost:50052", usage: "address to access the metagpu server"},
 		{name: "token", shorthand: "t", value: "", usage: "authentication token"},
 		{name: "output", shorthand: "o", value: "table", usage: "output format, one of: table|json|raw"},
 	}
@@ -47,11 +47,13 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	cobra.OnInitialize(initConfig)
+	setParams(configCmdParams, configCmd)
 	setParams(processListParams, processesListCmd)
 	setParams(rootParams, rootCmd)
 	// processes
 	listCmd.AddCommand(processesListCmd)
 	// root commands
+	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(enforceCmd)
 	rootCmd.AddCommand(killCmd)
 	rootCmd.AddCommand(listCmd)

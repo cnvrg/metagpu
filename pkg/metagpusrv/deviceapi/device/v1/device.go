@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"os"
 	"time"
 )
 
@@ -142,6 +143,20 @@ func (s *DeviceService) KillGpuProcess(ctx context.Context, r *pb.KillGpuProcess
 		return response, status.Errorf(codes.Internal, "error killing GPU process, err: %s", err)
 	}
 	return response, nil
+}
+
+func (s *DeviceService) PatchConfigs(ctx context.Context, r *pb.PatchConfigsRequest) (*pb.PatchConfigsResponse, error) {
+	if err := s.LoadContext(ctx); err != nil {
+		return &pb.PatchConfigsResponse{}, err
+	}
+	if s.vl != s.dvl {
+		return &pb.PatchConfigsResponse{}, status.Errorf(codes.PermissionDenied, "visibility level to high", s.vl)
+	}
+	if err := os.Setenv("METAGPU_DEVICE_PLUGIN_METAGPUS", string(r.MetaGpus)); err != nil {
+		log.Error(err)
+	}
+	return &pb.PatchConfigsResponse{}, nil
+
 }
 
 func (s *DeviceService) PingServer(ctx context.Context, r *pb.PingServerRequest) (*pb.PingServerResponse, error) {

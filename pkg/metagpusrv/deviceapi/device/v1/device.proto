@@ -6,7 +6,7 @@ service DeviceService{
   rpc ListDeviceProcesses (ListDeviceProcessesRequest) returns (ListDeviceProcessesResponse){}
   rpc StreamDeviceProcesses (StreamDeviceProcessesRequest) returns (stream StreamDeviceProcessesResponse){}
   rpc KillGpuProcess(KillGpuProcessRequest) returns (KillGpuProcessResponse){}
-
+  rpc PatchConfigs(PatchConfigsRequest) returns (PatchConfigsResponse){}
 
   rpc PingServer(PingServerRequest) returns (PingServerResponse){}
 
@@ -50,7 +50,10 @@ message KillGpuProcessRequest{
 }
 message KillGpuProcessResponse{}
 
-
+message PatchConfigsRequest{
+  int32 meta_gpus = 1;
+}
+message PatchConfigsResponse{}
 
 message PingServerRequest{}
 message PingServerResponse{}

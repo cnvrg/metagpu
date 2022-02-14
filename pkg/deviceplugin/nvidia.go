@@ -79,7 +79,6 @@ func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
 				Health: pluginapi.Healthy,
 			})
 		}
-
 	}
 
 	return metaGpus

@@ -21,6 +21,7 @@ type DeviceServiceClient interface {
 	ListDeviceProcesses(ctx context.Context, in *ListDeviceProcessesRequest, opts ...grpc.CallOption) (*ListDeviceProcessesResponse, error)
 	StreamDeviceProcesses(ctx context.Context, in *StreamDeviceProcessesRequest, opts ...grpc.CallOption) (DeviceService_StreamDeviceProcessesClient, error)
 	KillGpuProcess(ctx context.Context, in *KillGpuProcessRequest, opts ...grpc.CallOption) (*KillGpuProcessResponse, error)
+	PatchConfigs(ctx context.Context, in *PatchConfigsRequest, opts ...grpc.CallOption) (*PatchConfigsResponse, error)
 	PingServer(ctx context.Context, in *PingServerRequest, opts ...grpc.CallOption) (*PingServerResponse, error)
 }
 
@@ -82,6 +83,15 @@ func (c *deviceServiceClient) KillGpuProcess(ctx context.Context, in *KillGpuPro
 	return out, nil
 }
 
+func (c *deviceServiceClient) PatchConfigs(ctx context.Context, in *PatchConfigsRequest, opts ...grpc.CallOption) (*PatchConfigsResponse, error) {
+	out := new(PatchConfigsResponse)
+	err := c.cc.Invoke(ctx, "/device.v1.DeviceService/PatchConfigs", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *deviceServiceClient) PingServer(ctx context.Context, in *PingServerRequest, opts ...grpc.CallOption) (*PingServerResponse, error) {
 	out := new(PingServerResponse)
 	err := c.cc.Invoke(ctx, "/device.v1.DeviceService/PingServer", in, out, opts...)
@@ -98,6 +108,7 @@ type DeviceServiceServer interface {
 	ListDeviceProcesses(context.Context, *ListDeviceProcessesRequest) (*ListDeviceProcessesResponse, error)
 	StreamDeviceProcesses(*StreamDeviceProcessesRequest, DeviceService_StreamDeviceProcessesServer) error
 	KillGpuProcess(context.Context, *KillGpuProcessRequest) (*KillGpuProcessResponse, error)
+	PatchConfigs(context.Context, *PatchConfigsRequest) (*PatchConfigsResponse, error)
 	PingServer(context.Context, *PingServerRequest) (*PingServerResponse, error)
 	mustEmbedUnimplementedDeviceServiceServer()
 }
@@ -114,6 +125,9 @@ func (UnimplementedDeviceServiceServer) StreamDeviceProcesses(*StreamDeviceProce
 }
 func (UnimplementedDeviceServiceServer) KillGpuProcess(context.Context, *KillGpuProcessRequest) (*KillGpuProcessResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method KillGpuProcess not implemented")
+}
+func (UnimplementedDeviceServiceServer) PatchConfigs(context.Context, *PatchConfigsRequest) (*PatchConfigsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PatchConfigs not implemented")
 }
 func (UnimplementedDeviceServiceServer) PingServer(context.Context, *PingServerRequest) (*PingServerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PingServer not implemented")
@@ -188,6 +202,24 @@ func _DeviceService_KillGpuProcess_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DeviceService_PatchConfigs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PatchConfigsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeviceServiceServer).PatchConfigs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/device.v1.DeviceService/PatchConfigs",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeviceServiceServer).PatchConfigs(ctx, req.(*PatchConfigsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DeviceService_PingServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PingServerRequest)
 	if err := dec(in); err != nil {
@@ -220,6 +252,10 @@ var DeviceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "KillGpuProcess",
 			Handler:    _DeviceService_KillGpuProcess_Handler,
+		},
+		{
+			MethodName: "PatchConfigs",
+			Handler:    _DeviceService_PatchConfigs_Handler,
 		},
 		{
 			MethodName: "PingServer",
