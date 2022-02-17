@@ -52,34 +52,7 @@ func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDevic
 	if s.vl == s.dvl {
 		r.PodId = "" // for deviceVisibilityLevel server should return all running process on all containers
 	}
-	for deviceUuid, deviceProcesses := range s.plugin.ListDeviceProcesses(r.PodId) {
-		for _, process := range deviceProcesses {
-			if s.vl == s.cvl { // TODO: fix all this shit
-				process.DeviceGpuUtilization = 0
-				process.DeviceGpuMemoryUtilization = 0
-				process.DeviceGpuMemoryTotal = 0
-				process.DeviceGpuMemoryFree = 0
-				process.TotalShares = 0
-			}
-			response.DevicesProcesses = append(response.DevicesProcesses, &pb.DeviceProcess{
-				Uuid:                    string(deviceUuid),
-				Pid:                     process.Pid,
-				Memory:                  process.GpuMemory,
-				Cmdline:                 process.GetShortCmdLine(),
-				User:                    process.User,
-				ContainerId:             process.ContainerId,
-				PodName:                 process.PodId,
-				PodNamespace:            process.PodNamespace,
-				MetagpuRequests:         process.PodMetagpuRequest,
-				DeviceGpuUtilization:    process.DeviceGpuUtilization,
-				DeviceMemoryUtilization: process.DeviceGpuMemoryUtilization,
-				DeviceMemoryTotal:       process.DeviceGpuMemoryTotal,
-				DeviceMemoryFree:        process.DeviceGpuMemoryFree,
-				TotalShares:             int32(process.TotalShares),
-				TotalDevices:            process.TotalDevices,
-			})
-		}
-	}
+	response.DevicesProcesses = listDeviceProcesses(r.PodId, s.plugin)
 	return response, nil
 }
 
@@ -98,36 +71,7 @@ func (s *DeviceService) StreamDeviceProcesses(r *pb.StreamDeviceProcessesRequest
 			r.PodId = "" // for deviceVisibilityLevel server should return all running process on all containers
 		}
 		response := &pb.StreamDeviceProcessesResponse{VisibilityLevel: s.vl}
-		for deviceUuid, deviceProcesses := range s.plugin.ListDeviceProcesses(r.PodId) {
-			for _, process := range deviceProcesses {
-
-				dp := &pb.DeviceProcess{
-					Uuid:                    string(deviceUuid),
-					Pid:                     process.Pid,
-					Memory:                  process.GpuMemory,
-					Cmdline:                 process.GetShortCmdLine(),
-					User:                    process.User,
-					ContainerId:             process.ContainerId,
-					PodName:                 process.PodId,
-					PodNamespace:            process.PodNamespace,
-					MetagpuRequests:         process.PodMetagpuRequest,
-					DeviceGpuUtilization:    process.DeviceGpuUtilization,
-					DeviceMemoryUtilization: process.DeviceGpuMemoryUtilization,
-					DeviceMemoryTotal:       process.DeviceGpuMemoryTotal,
-					DeviceMemoryFree:        process.DeviceGpuMemoryFree,
-					TotalShares:             int32(process.TotalShares),
-					TotalDevices:            process.TotalDevices,
-				}
-				if s.vl == s.cvl { // TODO: fix all this shit
-					dp.DeviceGpuUtilization = 0
-					dp.DeviceMemoryUtilization = 0
-					dp.DeviceMemoryTotal = 0
-					dp.DeviceMemoryFree = 0
-					dp.TotalShares = 0
-				}
-				response.DevicesProcesses = append(response.DevicesProcesses, dp)
-			}
-		}
+		response.DevicesProcesses = listDeviceProcesses(r.PodId, s.plugin)
 		if err := stream.Send(response); err != nil {
 			return err
 		}

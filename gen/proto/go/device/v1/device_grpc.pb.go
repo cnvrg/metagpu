@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 type DeviceServiceClient interface {
 	ListDeviceProcesses(ctx context.Context, in *ListDeviceProcessesRequest, opts ...grpc.CallOption) (*ListDeviceProcessesResponse, error)
 	StreamDeviceProcesses(ctx context.Context, in *StreamDeviceProcessesRequest, opts ...grpc.CallOption) (DeviceService_StreamDeviceProcessesClient, error)
+	ListDevices(ctx context.Context, in *ListDevicesRequest, opts ...grpc.CallOption) (*ListDevicesResponse, error)
 	KillGpuProcess(ctx context.Context, in *KillGpuProcessRequest, opts ...grpc.CallOption) (*KillGpuProcessResponse, error)
 	PatchConfigs(ctx context.Context, in *PatchConfigsRequest, opts ...grpc.CallOption) (*PatchConfigsResponse, error)
 	PingServer(ctx context.Context, in *PingServerRequest, opts ...grpc.CallOption) (*PingServerResponse, error)
@@ -74,6 +75,15 @@ func (x *deviceServiceStreamDeviceProcessesClient) Recv() (*StreamDeviceProcesse
 	return m, nil
 }
 
+func (c *deviceServiceClient) ListDevices(ctx context.Context, in *ListDevicesRequest, opts ...grpc.CallOption) (*ListDevicesResponse, error) {
+	out := new(ListDevicesResponse)
+	err := c.cc.Invoke(ctx, "/device.v1.DeviceService/ListDevices", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *deviceServiceClient) KillGpuProcess(ctx context.Context, in *KillGpuProcessRequest, opts ...grpc.CallOption) (*KillGpuProcessResponse, error) {
 	out := new(KillGpuProcessResponse)
 	err := c.cc.Invoke(ctx, "/device.v1.DeviceService/KillGpuProcess", in, out, opts...)
@@ -107,6 +117,7 @@ func (c *deviceServiceClient) PingServer(ctx context.Context, in *PingServerRequ
 type DeviceServiceServer interface {
 	ListDeviceProcesses(context.Context, *ListDeviceProcessesRequest) (*ListDeviceProcessesResponse, error)
 	StreamDeviceProcesses(*StreamDeviceProcessesRequest, DeviceService_StreamDeviceProcessesServer) error
+	ListDevices(context.Context, *ListDevicesRequest) (*ListDevicesResponse, error)
 	KillGpuProcess(context.Context, *KillGpuProcessRequest) (*KillGpuProcessResponse, error)
 	PatchConfigs(context.Context, *PatchConfigsRequest) (*PatchConfigsResponse, error)
 	PingServer(context.Context, *PingServerRequest) (*PingServerResponse, error)
@@ -122,6 +133,9 @@ func (UnimplementedDeviceServiceServer) ListDeviceProcesses(context.Context, *Li
 }
 func (UnimplementedDeviceServiceServer) StreamDeviceProcesses(*StreamDeviceProcessesRequest, DeviceService_StreamDeviceProcessesServer) error {
 	return status.Errorf(codes.Unimplemented, "method StreamDeviceProcesses not implemented")
+}
+func (UnimplementedDeviceServiceServer) ListDevices(context.Context, *ListDevicesRequest) (*ListDevicesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListDevices not implemented")
 }
 func (UnimplementedDeviceServiceServer) KillGpuProcess(context.Context, *KillGpuProcessRequest) (*KillGpuProcessResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method KillGpuProcess not implemented")
@@ -182,6 +196,24 @@ type deviceServiceStreamDeviceProcessesServer struct {
 
 func (x *deviceServiceStreamDeviceProcessesServer) Send(m *StreamDeviceProcessesResponse) error {
 	return x.ServerStream.SendMsg(m)
+}
+
+func _DeviceService_ListDevices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDevicesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeviceServiceServer).ListDevices(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/device.v1.DeviceService/ListDevices",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeviceServiceServer).ListDevices(ctx, req.(*ListDevicesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _DeviceService_KillGpuProcess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -248,6 +280,10 @@ var DeviceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListDeviceProcesses",
 			Handler:    _DeviceService_ListDeviceProcesses_Handler,
+		},
+		{
+			MethodName: "ListDevices",
+			Handler:    _DeviceService_ListDevices_Handler,
 		},
 		{
 			MethodName: "KillGpuProcess",

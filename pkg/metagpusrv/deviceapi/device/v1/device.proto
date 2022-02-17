@@ -5,6 +5,7 @@ package device.v1;
 service DeviceService{
   rpc ListDeviceProcesses (ListDeviceProcessesRequest) returns (ListDeviceProcessesResponse){}
   rpc StreamDeviceProcesses (StreamDeviceProcessesRequest) returns (stream StreamDeviceProcessesResponse){}
+  rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse){}
   rpc KillGpuProcess(KillGpuProcessRequest) returns (KillGpuProcessResponse){}
   rpc PatchConfigs(PatchConfigsRequest) returns (PatchConfigsResponse){}
 
@@ -13,8 +14,8 @@ service DeviceService{
 }
 
 message DeviceProcess{
-  string uuid = 1;
   uint32 pid = 2;
+  string uuid = 1;
   uint64 memory = 3;
   string cmdline = 4;
   string user = 5;
@@ -22,14 +23,17 @@ message DeviceProcess{
   string pod_name = 7;
   string pod_namespace = 8;
   int64 metagpu_requests = 9;
-  uint32 device_gpu_utilization = 10;
-  uint32 device_memory_utilization = 11;
-  uint64 device_memory_total = 12;
-  uint64 device_memory_free = 13;
-  int32 total_shares = 14;
-  int32 total_devices = 15;
 }
-
+message Device{
+  string uuid = 1;
+  uint32 index = 2;
+  uint32 shares = 3;
+  uint32 gpu_utilization = 4;
+  uint32 memory_utilization = 5;
+  uint64 memory_total = 6;
+  uint64 memory_free = 7;
+  uint64 memory_used = 8;
+}
 message StreamDeviceProcessesRequest{
   string pod_id = 1;
 }
@@ -55,6 +59,11 @@ message PatchConfigsRequest{
   int32 meta_gpus = 1;
 }
 message PatchConfigsResponse{}
+
+message ListDevicesRequest{}
+message ListDevicesResponse{
+  repeated Device device = 1;
+}
 
 message PingServerRequest{}
 message PingServerResponse{}
