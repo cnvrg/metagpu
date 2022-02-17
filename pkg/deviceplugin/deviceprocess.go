@@ -12,27 +12,22 @@ import (
 )
 
 type DeviceProcess struct {
-	Pid                        uint32
-	DeviceGpuUtilization       uint32 // TODO: shouldn't be here, go back and remove me!
-	DeviceGpuMemoryUtilization uint32 // TODO: shouldn't be here, go back and remove me!
-	DeviceGpuMemoryTotal       uint64 // TODO: shouldn't be here, go back and remove me!
-	DeviceGpuMemoryFree        uint64 // TODO: shouldn't be here, go back and remove me!
-	DeviceGpuMemoryUsed        uint64 // TODO: shouldn't be here, go back and remove me!
-	TotalShares                int    // TODO: shouldn't be here, go back and remove me!
-	GpuMemory                  uint64
-	Cmdline                    []string
-	User                       string
-	ContainerId                string
-	PodId                      string
-	PodNamespace               string
-	PodMetagpuRequest          int64
-	TotalDevices               int32
+	Pid               uint32
+	DeviceUuid        string
+	GpuMemory         uint64
+	Cmdline           []string
+	User              string
+	ContainerId       string
+	PodId             string
+	PodNamespace      string
+	PodMetagpuRequest int64
 }
 
-func NewDeviceProcess(pid uint32, gpuMem uint64) *DeviceProcess {
+func NewDeviceProcess(pid uint32, gpuMem uint64, devUuid string) *DeviceProcess {
 	dp := &DeviceProcess{
-		Pid:       pid,
-		GpuMemory: gpuMem,
+		Pid:        pid,
+		GpuMemory:  gpuMem,
+		DeviceUuid: devUuid,
 	}
 	dp.SetProcessUsername()
 	dp.SetProcessCmdline()

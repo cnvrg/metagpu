@@ -133,18 +133,3 @@ func (l *DeviceLoad) removeDevices(devIds []string) {
 		}
 	}
 }
-
-//func (m *DeviceAllocation) AllocateMetagpus(allocatableGPUs map[string]int) []string {
-//	for devUuid, size := range allocatableGPUs {
-//		for i = 0; i < deviceLoad[devUuid]
-//	}
-//}
-//
-//func containsString(slice []string, s string) bool {
-//	for _, item := range slice {
-//		if item == s {
-//			return true
-//		}
-//	}
-//	return false
-//}

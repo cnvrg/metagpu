@@ -11,7 +11,8 @@ import (
 )
 
 type NvidiaDeviceManager struct {
-	Devices                  map[string]*MetaDevice
+	Devices                  []*MetaDevice
+	Processes                []*DeviceProcess
 	cacheTTL                 time.Duration
 	processesDiscoveryPeriod time.Duration
 }
@@ -32,7 +33,7 @@ func (m *NvidiaDeviceManager) CacheDevices() {
 func (m *NvidiaDeviceManager) DiscoverDeviceProcesses() {
 	go func() {
 		for {
-			m.discoverGpuProcesses()
+			m.discoverGpuProcessesAndDevicesLoad()
 			<-time.After(m.processesDiscoveryPeriod)
 		}
 	}()
@@ -62,7 +63,7 @@ func (m *NvidiaDeviceManager) ParseRealDeviceId(metaDevicesIds []string) (realDe
 
 func (m *NvidiaDeviceManager) DeviceExists(deviceId string) bool {
 	for _, d := range m.Devices {
-		if d.K8sDevice.ID == deviceId {
+		if d.UUID == deviceId {
 			return true
 		}
 	}
@@ -76,7 +77,7 @@ func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
 	for _, d := range m.Devices {
 		for j := 0; j < metaGpusQuantity; j++ {
 			metaGpus = append(metaGpus, &pluginapi.Device{
-				ID:     fmt.Sprintf("cnvrg-meta-%d-%d-%s", d.Index, j, d.K8sDevice.ID),
+				ID:     fmt.Sprintf("cnvrg-meta-%d-%d-%s", d.Index, j, d.UUID),
 				Health: pluginapi.Healthy,
 			})
 		}
@@ -91,23 +92,16 @@ func (m *NvidiaDeviceManager) setDevices() {
 	count, ret := nvml.DeviceGetCount()
 	log.Infof("refreshing nvidia devices cache (total: %d)", count)
 	nvmlErrorCheck(ret)
-	discoveredDevices := make(map[string]*MetaDevice)
 	for i := 0; i < count; i++ {
 		device, ret := nvml.DeviceGetHandleByIndex(i)
 		uuid, ret := device.GetUUID()
 		nvmlErrorCheck(ret)
-		discoveredDevices[uuid] = &MetaDevice{
-			UUID:      uuid,
-			Index:     i,
-			K8sDevice: &pluginapi.Device{ID: uuid, Health: pluginapi.Healthy},
-		}
+		m.Devices = append(m.Devices, &MetaDevice{UUID: uuid, Index: i})
 	}
-	m.Devices = discoveredDevices
 }
 
-func (m *NvidiaDeviceManager) discoverGpuProcesses() {
-	//log.Info("refreshing nvidia devices processes")
-	totalDevices := len(m.Devices) // TODO: doesn't make sense
+func (m *NvidiaDeviceManager) discoverGpuProcessesAndDevicesLoad() {
+	var discoveredDevicesProcesses []*DeviceProcess
 	for _, device := range m.Devices {
 		nvidiaDevice, ret := nvml.DeviceGetHandleByIndex(device.Index)
 		nvmlErrorCheck(ret)
@@ -117,44 +111,36 @@ func (m *NvidiaDeviceManager) discoverGpuProcesses() {
 		nvmlErrorCheck(ret)
 		processes, ret := nvidiaDevice.GetComputeRunningProcesses()
 		nvmlErrorCheck(ret)
-		var discoveredDevicesProcesses []*DeviceProcess
 		for _, nvmlProcessInfo := range processes {
-			p := NewDeviceProcess(nvmlProcessInfo.Pid, nvmlProcessInfo.UsedGpuMemory/(1024*1024))
-			// TODO: device GPU utilization and memory shouldn't be here, remove it!
-			p.DeviceGpuUtilization = utilization.Gpu                    // TODO: doesn't make sense
-			p.DeviceGpuMemoryUtilization = utilization.Memory           // TODO: doesn't make sense
-			p.DeviceGpuMemoryTotal = deviceMemory.Total / (1024 * 1024) // TODO: doesn't make sense
-			p.DeviceGpuMemoryFree = deviceMemory.Free / (1024 * 1024)   // TODO: doesn't make sense
-			p.DeviceGpuMemoryUsed = deviceMemory.Used / (1024 * 1024)   // TODO: doesn't make sense
-			p.TotalShares = viper.GetInt("metaGpus") * totalDevices     // TODO: doesn't make sense
-			p.TotalDevices = int32(totalDevices)                        // TODO: doesn't make sense
-			discoveredDevicesProcesses = append(discoveredDevicesProcesses, p)
+			discoveredDevicesProcesses = append(discoveredDevicesProcesses,
+				NewDeviceProcess(nvmlProcessInfo.Pid, nvmlProcessInfo.UsedGpuMemory/(1024*1024), device.UUID))
 		}
-		// override device utilization
-		device.Processes = discoveredDevicesProcesses
 		device.Utilization = &DeviceUtilization{Gpu: utilization.Gpu, Memory: utilization.Memory}
+		device.Memory = &DeviceMemory{Total: deviceMemory.Total, Free: deviceMemory.Free, Used: deviceMemory.Used}
 	}
+	m.Processes = discoveredDevicesProcesses
 }
 
-func (m *NvidiaDeviceManager) ListDeviceProcesses(podId string) map[DeviceUuid][]*DeviceProcess {
+func (m *NvidiaDeviceManager) ListDevices() []*MetaDevice {
+	return m.Devices
+}
 
-	deviceProcessInfoMap := make(map[DeviceUuid][]*DeviceProcess)
-	for uuid, device := range m.Devices {
-		if podId != "" {
-			for _, deviceProcess := range device.Processes {
-				if deviceProcess.PodId == podId {
-					deviceProcessInfoMap[DeviceUuid(uuid)] = append(deviceProcessInfoMap[DeviceUuid(uuid)], deviceProcess)
-				}
+func (m *NvidiaDeviceManager) ListProcesses(podId string) []*DeviceProcess {
+
+	if podId != "" {
+		var podProcesses []*DeviceProcess
+		for _, deviceProcess := range m.Processes {
+			if deviceProcess.PodId == podId {
+				podProcesses = append(podProcesses, deviceProcess)
 			}
-		} else {
-			deviceProcessInfoMap[DeviceUuid(uuid)] = device.Processes
 		}
+		return podProcesses
 	}
-	return deviceProcessInfoMap
+	return m.Processes
 }
 
 func (m *NvidiaDeviceManager) KillGpuProcess(pid uint32) error {
-	p := NewDeviceProcess(pid, 0)
+	p := NewDeviceProcess(pid, 0, "")
 	return p.Kill()
 }
 
@@ -172,7 +158,6 @@ func NewNvidiaDeviceManager() *NvidiaDeviceManager {
 	ret := nvml.Init()
 	nvmlErrorCheck(ret)
 	ndm := &NvidiaDeviceManager{
-		Devices:                  make(map[string]*MetaDevice),
 		cacheTTL:                 time.Second * time.Duration(viper.GetInt("deviceCacheTTL")),
 		processesDiscoveryPeriod: time.Second * time.Duration(viper.GetInt("processesDiscoveryPeriod")),
 	}

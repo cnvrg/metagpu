@@ -4,6 +4,12 @@ import (
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
+type DeviceMemory struct {
+	Total uint64
+	Free  uint64
+	Used  uint64
+}
+
 type DeviceUtilization struct {
 	Gpu    uint32
 	Memory uint32
@@ -12,16 +18,17 @@ type DeviceUtilization struct {
 type MetaDevice struct {
 	UUID        string
 	Index       int
+	Shares      int
 	Utilization *DeviceUtilization
-	Processes   []*DeviceProcess
-	K8sDevice   *pluginapi.Device
+	Memory      *DeviceMemory
 }
 
 type DeviceManager interface {
 	CacheDevices()
-	ListMetaDevices() []*pluginapi.Device
 	DiscoverDeviceProcesses()
-	ListDeviceProcesses(podId string) map[DeviceUuid][]*DeviceProcess
+	ListDevices() []*MetaDevice
+	ListMetaDevices() []*pluginapi.Device
+	ListProcesses(podId string) []*DeviceProcess
 	ParseRealDeviceId(metaDevicesIds []string) (realDeviceId []string)
 	MetagpuAllocation(allocationSize int, availableDevIds []string) ([]string, error)
 	KillGpuProcess(pid uint32) error
