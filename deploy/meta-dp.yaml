@@ -58,6 +58,7 @@ spec:
       imagePullSecrets:
         - name: regcred
       hostPID: true
+      hostNetwork: true
       serviceAccountName: metagpu-device-plugin
       containers:
         - name: metagpu-device-plugin
