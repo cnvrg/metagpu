@@ -17,6 +17,8 @@ type NvidiaDeviceManager struct {
 	processesDiscoveryPeriod time.Duration
 }
 
+var MB uint64 = 1024 * 1024
+
 func (m *NvidiaDeviceManager) CacheDevices() {
 	// enforce device discovery
 	// to make sure all the devices will be set
@@ -113,10 +115,16 @@ func (m *NvidiaDeviceManager) discoverGpuProcessesAndDevicesLoad() {
 		nvmlErrorCheck(ret)
 		for _, nvmlProcessInfo := range processes {
 			discoveredDevicesProcesses = append(discoveredDevicesProcesses,
-				NewDeviceProcess(nvmlProcessInfo.Pid, nvmlProcessInfo.UsedGpuMemory/(1024*1024), device.UUID))
+				NewDeviceProcess(nvmlProcessInfo.Pid, nvmlProcessInfo.UsedGpuMemory/MB, device.UUID))
 		}
-		device.Utilization = &DeviceUtilization{Gpu: utilization.Gpu, Memory: utilization.Memory}
-		device.Memory = &DeviceMemory{Total: deviceMemory.Total, Free: deviceMemory.Free, Used: deviceMemory.Used}
+		device.Utilization = &DeviceUtilization{Gpu: utilization.Gpu, Memory: utilization.Memory / uint32(MB)}
+		device.Memory = &DeviceMemory{
+			Total:     deviceMemory.Total / MB,
+			Free:      deviceMemory.Free / MB,
+			Used:      deviceMemory.Used / MB,
+			ShareSize: deviceMemory.Total / viper.GetUint64("metaGpus") / MB,
+		}
+		device.Shares = viper.GetInt("metaGpus")
 	}
 	m.Processes = discoveredDevicesProcesses
 }

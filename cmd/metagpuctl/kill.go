@@ -27,8 +27,8 @@ func killGpuProcess() {
 	if err != nil {
 		log.Errorf("faild to detect podId, err: %s", err)
 	}
-	ldr := &pbdevice.ListDeviceProcessesRequest{PodId: hostname}
-	resp, err := device.ListDeviceProcesses(authenticatedContext(), ldr)
+	ldr := &pbdevice.ListProcessesRequest{PodId: hostname}
+	resp, err := device.ListProcesses(authenticatedContext(), ldr)
 	if err != nil {
 		log.Errorf("falid to list device processes, err: %s ", err)
 		return

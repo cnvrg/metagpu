@@ -3,8 +3,8 @@ syntax = "proto3";
 package device.v1;
 
 service DeviceService{
-  rpc ListDeviceProcesses (ListDeviceProcessesRequest) returns (ListDeviceProcessesResponse){}
-  rpc StreamDeviceProcesses (StreamDeviceProcessesRequest) returns (stream StreamDeviceProcessesResponse){}
+  rpc ListProcesses (ListProcessesRequest) returns (ListProcessesResponse){}
+  rpc StreamProcesses (StreamProcessesRequest) returns (stream StreamProcessesResponse){}
   rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse){}
   rpc KillGpuProcess(KillGpuProcessRequest) returns (KillGpuProcessResponse){}
   rpc PatchConfigs(PatchConfigsRequest) returns (PatchConfigsResponse){}
@@ -33,19 +33,20 @@ message Device{
   uint64 memory_total = 6;
   uint64 memory_free = 7;
   uint64 memory_used = 8;
+  uint64 memory_share_size = 9;
 }
-message StreamDeviceProcessesRequest{
+message StreamProcessesRequest{
   string pod_id = 1;
 }
-message StreamDeviceProcessesResponse{
+message StreamProcessesResponse{
   string visibility_level = 1;
   repeated DeviceProcess devices_processes = 2;
 }
 
-message ListDeviceProcessesRequest{
+message ListProcessesRequest{
   string pod_id = 1;
 }
-message ListDeviceProcessesResponse{
+message ListProcessesResponse{
   string visibility_level = 1;
   repeated DeviceProcess devices_processes = 2;
 }

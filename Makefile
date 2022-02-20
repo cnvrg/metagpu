@@ -1,5 +1,5 @@
 #rsync -r /Users/dima/.go/src/github.com/AccessibleAI/metagpu-device-plugin/docs/* rancher@212.199.86.38:/tmp/docs
-
+# rsync -av  --exclude 'bin' --exclude '.git'  /Users/dima/.go/src/github.com/AccessibleAI/metagpu-device-plugin/* root@20.120.94.51:/root/.go/src/github.com/AccessibleAI/fractional-accelerator-device-plugin
 build-mac:
 	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=0.1.1'" -v -o bin/metagpu-dp-darwin-x86_64 main.go
 

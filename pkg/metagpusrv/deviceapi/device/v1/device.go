@@ -39,12 +39,12 @@ func (s *DeviceService) LoadContext(ctx context.Context) error {
 	return nil
 }
 
-func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDeviceProcessesRequest) (*pb.ListDeviceProcessesResponse, error) {
+func (s *DeviceService) ListProcesses(ctx context.Context, r *pb.ListProcessesRequest) (*pb.ListProcessesResponse, error) {
 
 	if err := s.LoadContext(ctx); err != nil {
-		return &pb.ListDeviceProcessesResponse{}, err
+		return &pb.ListProcessesResponse{}, err
 	}
-	response := &pb.ListDeviceProcessesResponse{VisibilityLevel: s.vl}
+	response := &pb.ListProcessesResponse{VisibilityLevel: s.vl}
 	// stop execution if visibility level is container and pod id is not set (not enough permissions)
 	if s.vl == s.cvl && r.PodId == "" {
 		return response, status.Errorf(codes.PermissionDenied, "missing pod id and visibility level is to low (%s), can't proceed", s.vl)
@@ -56,7 +56,7 @@ func (s *DeviceService) ListDeviceProcesses(ctx context.Context, r *pb.ListDevic
 	return response, nil
 }
 
-func (s *DeviceService) StreamDeviceProcesses(r *pb.StreamDeviceProcessesRequest, stream pb.DeviceService_StreamDeviceProcessesServer) error {
+func (s *DeviceService) StreamProcesses(r *pb.StreamProcessesRequest, stream pb.DeviceService_StreamProcessesServer) error {
 
 	for {
 
@@ -70,7 +70,7 @@ func (s *DeviceService) StreamDeviceProcesses(r *pb.StreamDeviceProcessesRequest
 		if s.vl == s.dvl {
 			r.PodId = "" // for deviceVisibilityLevel server should return all running process on all containers
 		}
-		response := &pb.StreamDeviceProcessesResponse{VisibilityLevel: s.vl}
+		response := &pb.StreamProcessesResponse{VisibilityLevel: s.vl}
 		response.DevicesProcesses = listDeviceProcesses(r.PodId, s.plugin)
 		if err := stream.Send(response); err != nil {
 			return err
@@ -79,6 +79,28 @@ func (s *DeviceService) StreamDeviceProcesses(r *pb.StreamDeviceProcessesRequest
 		time.Sleep(1 * time.Second)
 	}
 
+}
+
+func (s *DeviceService) ListDevices(ctx context.Context, r *pb.ListDevicesRequest) (*pb.ListDevicesResponse, error) {
+	response := &pb.ListDevicesResponse{}
+	if err := s.LoadContext(ctx); err != nil {
+		return response, err
+	}
+
+	for _, device := range s.plugin.ListDevices() {
+		response.Device = append(response.Device, &pb.Device{
+			Uuid:              device.UUID,
+			Index:             uint32(device.Index),
+			Shares:            uint32(device.Shares),
+			GpuUtilization:    device.Utilization.Gpu,
+			MemoryUtilization: device.Utilization.Memory,
+			MemoryTotal:       device.Memory.Total,
+			MemoryFree:        device.Memory.Free,
+			MemoryUsed:        device.Memory.Used,
+			MemoryShareSize:   device.Memory.ShareSize,
+		})
+	}
+	return response, nil
 }
 
 func (s *DeviceService) KillGpuProcess(ctx context.Context, r *pb.KillGpuProcessRequest) (*pb.KillGpuProcessResponse, error) {

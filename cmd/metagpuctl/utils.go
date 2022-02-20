@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
 	"github.com/atomicgo/cursor"
 	"github.com/jedib0t/go-pretty/v6/table"
 	log "github.com/sirupsen/logrus"
@@ -71,4 +72,46 @@ func authenticatedContext() context.Context {
 	ctx := context.Background()
 	md := metadata.Pairs("Authorization", viper.GetString("token"))
 	return metadata.NewOutgoingContext(ctx, md)
+}
+
+func getTotalRequests(processes []*pbdevice.DeviceProcess) (totalRequest int) {
+	metaGpuPodRequests := make(map[string]bool)
+	for _, deviceProcess := range processes {
+		if _, ok := metaGpuPodRequests[deviceProcess.PodName]; !ok {
+			totalRequest += int(deviceProcess.MetagpuRequests)
+			metaGpuPodRequests[deviceProcess.PodName] = true
+		}
+	}
+	return
+}
+
+func getTotalShares(devices []*pbdevice.Device) (totalShares int) {
+	for _, d := range devices {
+		totalShares += int(d.Shares)
+	}
+	return
+}
+
+func getTotalMemoryUsedByProcesses(processes []*pbdevice.DeviceProcess) (totalUsedMem int) {
+	for _, p := range processes {
+		totalUsedMem += int(p.Memory)
+	}
+	return
+}
+
+func getDeviceLoad(device *pbdevice.Device) string {
+	return fmt.Sprintf("%d [GPU:%d%%|MEM:%d%%|TOT:%dMB]",
+		device.Index,
+		device.GpuUtilization,
+		device.MemoryUsed*100/device.MemoryTotal,
+		device.MemoryTotal)
+}
+
+func getDeviceByUuid(uuid string, devices []*pbdevice.Device) (device *pbdevice.Device) {
+	for _, d := range devices {
+		if uuid == d.Uuid {
+			return d
+		}
+	}
+	return
 }

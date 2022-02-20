@@ -32,8 +32,8 @@ func enforceMemoryLimits() {
 	if err != nil {
 		log.Errorf("faild to detect podId, err: %s", err)
 	}
-	request := &pbdevice.StreamDeviceProcessesRequest{PodId: hostname}
-	stream, err := device.StreamDeviceProcesses(authenticatedContext(), request)
+	request := &pbdevice.StreamProcessesRequest{PodId: hostname}
+	stream, err := device.StreamProcesses(authenticatedContext(), request)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,12 +70,12 @@ func enforceMemoryLimits() {
 			to.buildTable()
 			to.print()
 
-			for _, devProc := range resp.DevicesProcesses {
-				if devProc.Memory > (devProc.DeviceMemoryTotal/(uint64(devProc.TotalShares)/uint64(devProc.TotalDevices)))*uint64(devProc.MetagpuRequests) {
-					killRequest := &pbdevice.KillGpuProcessRequest{Pid: devProc.Pid}
-					_, _ = device.KillGpuProcess(authenticatedContext(), killRequest)
-				}
-			}
+			//for _, devProc := range resp.DevicesProcesses {
+			//	if devProc.Memory > (devProc.DeviceMemoryTotal/(uint64(devProc.TotalShares)/uint64(devProc.TotalDevices)))*uint64(devProc.MetagpuRequests) {
+			//		killRequest := &pbdevice.KillGpuProcessRequest{Pid: devProc.Pid}
+			//		_, _ = device.KillGpuProcess(authenticatedContext(), killRequest)
+			//	}
+			//}
 		}
 	}
 }
@@ -91,14 +91,14 @@ func composeMemEnforceListAndFooter(devProc []*pbdevice.DeviceProcess) (body []t
 
 	var el = make(map[string]*enforceObj)
 
-	for _, enforceList := range devProc {
-		el[enforceList.PodName] = &enforceObj{
-			uuid:    enforceList.Uuid,
-			podName: enforceList.PodName,
-			memUsed: enforceList.Memory,
-			metaMem: (enforceList.DeviceMemoryTotal / (uint64(enforceList.TotalShares) / uint64(enforceList.TotalDevices))) * uint64(enforceList.MetagpuRequests),
-		}
-	}
+	//for _, enforceList := range devProc {
+	//	el[enforceList.PodName] = &enforceObj{
+	//		uuid:    enforceList.Uuid,
+	//		podName: enforceList.PodName,
+	//		memUsed: enforceList.Memory,
+	//		metaMem: (enforceList.DeviceMemoryTotal / (uint64(enforceList.TotalShares) / uint64(enforceList.TotalDevices))) * uint64(enforceList.MetagpuRequests),
+	//	}
+	//}
 
 	for _, eObj := range el {
 		podName := fmt.Sprintf("\033[32m%s\033[0m", eObj.podName)

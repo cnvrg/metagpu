@@ -5,9 +5,10 @@ import (
 )
 
 type DeviceMemory struct {
-	Total uint64
-	Free  uint64
-	Used  uint64
+	Total     uint64
+	Free      uint64
+	Used      uint64
+	ShareSize uint64
 }
 
 type DeviceUtilization struct {
