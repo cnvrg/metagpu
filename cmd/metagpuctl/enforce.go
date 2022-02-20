@@ -43,7 +43,7 @@ func enforceMemoryLimits() {
 	signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	to := &TableOutput{}
-	to.header = table.Row{"Device UUID", "Pod", "Used Mem", "Meta Mem"}
+	to.header = table.Row{"Idx", "Pod", "Used Mem", "Meta Mem"}
 
 	go func() {
 		for {
@@ -59,53 +59,60 @@ func enforceMemoryLimits() {
 			log.Info("shutting down")
 			os.Exit(0)
 		case <-refreshCh:
-			resp, err := stream.Recv()
+			processResp, err := stream.Recv()
 			if err == io.EOF {
 				break
 			}
 			if err != nil {
 				log.Fatalf("error watching gpu processes, err: %s", err)
 			}
-			to.body, to.footer = composeMemEnforceListAndFooter(resp.DevicesProcesses)
+			deviceResp, err := device.ListDevices(authenticatedContext(), &pbdevice.ListDevicesRequest{})
+			if err != nil {
+				log.Errorf("falid to list devices, err: %s ", err)
+				return
+			}
+			to.body, to.footer = composeMemEnforceListAndFooter(processResp.DevicesProcesses, deviceResp.Device)
 			to.buildTable()
 			to.print()
 
-			//for _, devProc := range resp.DevicesProcesses {
-			//	if devProc.Memory > (devProc.DeviceMemoryTotal/(uint64(devProc.TotalShares)/uint64(devProc.TotalDevices)))*uint64(devProc.MetagpuRequests) {
-			//		killRequest := &pbdevice.KillGpuProcessRequest{Pid: devProc.Pid}
-			//		_, _ = device.KillGpuProcess(authenticatedContext(), killRequest)
-			//	}
-			//}
+			for _, p := range processResp.DevicesProcesses {
+				d := getDeviceByUuid(p.Uuid, deviceResp.Device) // TODO: find a better way
+				if p.Memory > d.MemoryShareSize*uint64(p.MetagpuRequests) {
+					killRequest := &pbdevice.KillGpuProcessRequest{Pid: p.Pid}
+					_, _ = device.KillGpuProcess(authenticatedContext(), killRequest)
+				}
+			}
 		}
 	}
 }
 
-func composeMemEnforceListAndFooter(devProc []*pbdevice.DeviceProcess) (body []table.Row, footer table.Row) {
+func composeMemEnforceListAndFooter(processes []*pbdevice.DeviceProcess, devices []*pbdevice.Device) (body []table.Row, footer table.Row) {
 
 	type enforceObj struct {
 		uuid    string
 		podName string
 		memUsed uint64
-		metaMem uint64
+		maxMem  uint64
 	}
 
 	var el = make(map[string]*enforceObj)
 
-	//for _, enforceList := range devProc {
-	//	el[enforceList.PodName] = &enforceObj{
-	//		uuid:    enforceList.Uuid,
-	//		podName: enforceList.PodName,
-	//		memUsed: enforceList.Memory,
-	//		metaMem: (enforceList.DeviceMemoryTotal / (uint64(enforceList.TotalShares) / uint64(enforceList.TotalDevices))) * uint64(enforceList.MetagpuRequests),
-	//	}
-	//}
+	for _, p := range processes {
+		d := getDeviceByUuid(p.Uuid, devices)
+		el[p.PodName] = &enforceObj{
+			uuid:    p.Uuid,
+			podName: p.PodName,
+			memUsed: p.Memory,
+			maxMem:  d.MemoryShareSize * uint64(p.MetagpuRequests),
+		}
+	}
 
 	for _, eObj := range el {
 		podName := fmt.Sprintf("\033[32m%s\033[0m", eObj.podName)
-		if eObj.memUsed > eObj.metaMem {
+		if eObj.memUsed > eObj.maxMem {
 			podName = fmt.Sprintf("\033[31m%s\033[0m", eObj.podName)
 		}
-		body = append(body, table.Row{eObj.uuid, podName, eObj.memUsed, eObj.metaMem})
+		body = append(body, table.Row{eObj.uuid, podName, eObj.memUsed, eObj.maxMem})
 	}
 
 	footer = table.Row{"", "", "", ""}

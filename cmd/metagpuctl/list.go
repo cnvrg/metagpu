@@ -111,7 +111,7 @@ func listDevicesProcesses() {
 
 func buildTableBody(processes []*pbdevice.DeviceProcess, devices []*pbdevice.Device) (body []table.Row) {
 	for _, p := range processes {
-		d := getDeviceByUuid(p.Uuid, devices)
+		d := getDeviceByUuid(p.Uuid, devices) // TODO: find a better way
 		maxMem := d.MemoryShareSize * uint64(p.MetagpuRequests)
 		memUsage := fmt.Sprintf("\u001B[32m%d\u001B[0m/%d", p.Memory, maxMem)
 		if p.Memory > maxMem {
