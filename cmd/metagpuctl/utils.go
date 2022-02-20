@@ -100,6 +100,9 @@ func getTotalMemoryUsedByProcesses(processes []*pbdevice.DeviceProcess) (totalUs
 }
 
 func getDeviceLoad(device *pbdevice.Device) string {
+	if device.MemoryTotal <= 0 {
+		return fmt.Sprintf("%d", device.Index)
+	}
 	return fmt.Sprintf("%d [GPU:%d%%|MEM:%d%%|TOT:%dMB]",
 		device.Index,
 		device.GpuUtilization,

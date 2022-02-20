@@ -16,8 +16,9 @@ import (
 )
 
 var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "list resources",
+	Use:     "list",
+	Aliases: []string{"l"},
+	Short:   "list resources",
 }
 
 var processListParams = []param{
@@ -132,8 +133,10 @@ func buildTableBody(processes []*pbdevice.DeviceProcess, devices []*pbdevice.Dev
 }
 
 func buildTableFooter(processes []*pbdevice.DeviceProcess, devices []*pbdevice.Device) (footer table.Row) {
-
-	metaGpuSummary := fmt.Sprintf("%d/%d", getTotalShares(devices), getTotalRequests(processes))
+	metaGpuSummary := fmt.Sprintf("%d", getTotalRequests(processes))
+	if devices[0].MemoryTotal > 0 {
+		metaGpuSummary = fmt.Sprintf("%d/%d", getTotalShares(devices), getTotalRequests(processes))
+	}
 	usedMem := fmt.Sprintf("%dMb", getTotalMemoryUsedByProcesses(processes))
 	return table.Row{len(devices), "", "", len(processes), usedMem, "", metaGpuSummary}
 }

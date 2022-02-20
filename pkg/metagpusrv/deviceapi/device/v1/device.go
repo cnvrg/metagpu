@@ -88,17 +88,20 @@ func (s *DeviceService) ListDevices(ctx context.Context, r *pb.ListDevicesReques
 	}
 
 	for _, device := range s.plugin.ListDevices() {
-		response.Device = append(response.Device, &pb.Device{
+		d := &pb.Device{
 			Uuid:              device.UUID,
 			Index:             uint32(device.Index),
 			Shares:            uint32(device.Shares),
 			GpuUtilization:    device.Utilization.Gpu,
 			MemoryUtilization: device.Utilization.Memory,
-			MemoryTotal:       device.Memory.Total,
-			MemoryFree:        device.Memory.Free,
-			MemoryUsed:        device.Memory.Used,
 			MemoryShareSize:   device.Memory.ShareSize,
-		})
+		}
+		if s.vl == s.dvl {
+			d.MemoryTotal = device.Memory.Total
+			d.MemoryFree = device.Memory.Free
+			d.MemoryUsed = device.Memory.Used
+		}
+		response.Device = append(response.Device, d)
 	}
 	return response, nil
 }
