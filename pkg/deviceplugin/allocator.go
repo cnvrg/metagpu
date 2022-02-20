@@ -145,7 +145,7 @@ func (l *DeviceLoad) removeDevices(devIds []string) {
 
 func metaDeviceIdToDeviceIndex(metaDeviceId string) (deviceIndex int) {
 	r, _ := regexp.Compile("-\\d+-")
-	s := r.ReplaceAllString(metaDeviceId, "-")
+	s := r.FindString(metaDeviceId)
 	log.Info(s)
 	return
 }
