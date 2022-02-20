@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/viper"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -145,7 +146,10 @@ func (l *DeviceLoad) removeDevices(devIds []string) {
 
 func metaDeviceIdToDeviceIndex(metaDeviceId string) (deviceIndex int) {
 	r, _ := regexp.Compile("-\\d+-")
-	s := r.FindString(metaDeviceId)
-	log.Info(s)
-	return
+	s := strings.ReplaceAll(r.FindString(metaDeviceId), "-", "")
+	idx, err := strconv.Atoi(s)
+	if err != nil {
+		log.Error("can't detect physical device ID from meta device id, err: %s", err)
+	}
+	return idx
 }
