@@ -29,6 +29,7 @@ func NewDeviceAllocation(allocationSize int, availableDevIds []string) *DeviceAl
 		AllocationSize:    allocationSize,
 		TotalSharesPerGPU: viper.GetInt("metaGpus"),
 	}
+	devAlloc.PrintAvailableDevIds()
 	devAlloc.InitLoadMap()
 	devAlloc.SetAllocations()
 	return devAlloc
@@ -47,6 +48,13 @@ func (a *DeviceAllocation) InitLoadMap() {
 			}
 			a.LoadMap[DeviceUuid(deviceId)].Metagpus = append(a.LoadMap[DeviceUuid(deviceId)].Metagpus, availableDevId)
 		}
+	}
+}
+
+func (a *DeviceAllocation) PrintAvailableDevIds() {
+	log.Info("[preferred-allocation] available devices IDs")
+	for _, devId := range a.AvailableDevIds {
+		log.Info(devId)
 	}
 }
 
