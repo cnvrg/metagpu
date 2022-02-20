@@ -15,7 +15,7 @@ type DeviceLoad struct {
 }
 
 type DeviceAllocation struct {
-	LoadMap             map[DeviceUuid]*DeviceLoad
+	LoadMap             []*DeviceLoad
 	AvailableDevIds     []string
 	AllocationSize      int
 	TotalSharesPerGPU   int
@@ -36,17 +36,18 @@ func NewDeviceAllocation(allocationSize int, availableDevIds []string) *DeviceAl
 }
 
 func (a *DeviceAllocation) InitLoadMap() {
-	a.LoadMap = make(map[DeviceUuid]*DeviceLoad)
+	a.LoadMap = make([]*DeviceLoad, len(a.MetaDeviceIdsToRealDeviceIds()))
 	// build a map of real device id to meta device id
 	for _, deviceId := range a.MetaDeviceIdsToRealDeviceIds() {
 		for _, availableDevId := range a.AvailableDevIds {
 			if !strings.Contains(availableDevId, deviceId) {
 				continue
 			}
-			if a.LoadMap[DeviceUuid(deviceId)] == nil {
-				a.LoadMap[DeviceUuid(deviceId)] = &DeviceLoad{}
+			devIdx := metaDeviceIdToDeviceIndex(availableDevId)
+			if a.LoadMap[devIdx] == nil {
+				a.LoadMap[devIdx] = &DeviceLoad{}
 			}
-			a.LoadMap[DeviceUuid(deviceId)].Metagpus = append(a.LoadMap[DeviceUuid(deviceId)].Metagpus, availableDevId)
+			a.LoadMap[devIdx].Metagpus = append(a.LoadMap[devIdx].Metagpus, availableDevId)
 		}
 	}
 }
@@ -140,4 +141,11 @@ func (l *DeviceLoad) removeDevices(devIds []string) {
 			}
 		}
 	}
+}
+
+func metaDeviceIdToDeviceIndex(metaDeviceId string) (deviceIndex int) {
+	r, _ := regexp.Compile("-\\d+-")
+	s := r.ReplaceAllString(metaDeviceId, "-")
+	log.Info(s)
+	return
 }
