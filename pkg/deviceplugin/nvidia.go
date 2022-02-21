@@ -129,8 +129,12 @@ func (m *NvidiaDeviceManager) discoverGpuProcessesAndDevicesLoad() {
 	m.Processes = discoveredDevicesProcesses
 }
 
-func (m *NvidiaDeviceManager) ListDevices() []*MetaDevice {
-	return m.Devices
+func (m *NvidiaDeviceManager) ListDevices() map[string]*MetaDevice {
+	var deviceMap = make(map[string]*MetaDevice)
+	for _, d := range m.Devices {
+		deviceMap[d.UUID] = d
+	}
+	return deviceMap
 }
 
 func (m *NvidiaDeviceManager) ListProcesses(podId string) []*DeviceProcess {

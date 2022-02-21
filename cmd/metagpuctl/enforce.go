@@ -76,7 +76,7 @@ func enforceMemoryLimits() {
 			to.print()
 
 			for _, p := range processResp.DevicesProcesses {
-				d := getDeviceByUuid(p.Uuid, deviceResp.Device) // TODO: find a better way
+				d := deviceResp.Device[p.Uuid]
 				if p.Memory > d.MemoryShareSize*uint64(p.MetagpuRequests) {
 					killRequest := &pbdevice.KillGpuProcessRequest{Pid: p.Pid}
 					_, _ = device.KillGpuProcess(authenticatedContext(), killRequest)
@@ -86,7 +86,7 @@ func enforceMemoryLimits() {
 	}
 }
 
-func composeMemEnforceListAndFooter(processes []*pbdevice.DeviceProcess, devices []*pbdevice.Device) (body []table.Row, footer table.Row) {
+func composeMemEnforceListAndFooter(processes []*pbdevice.DeviceProcess, devices map[string]*pbdevice.Device) (body []table.Row, footer table.Row) {
 
 	type enforceObj struct {
 		uuid    string
@@ -98,7 +98,7 @@ func composeMemEnforceListAndFooter(processes []*pbdevice.DeviceProcess, devices
 	var el = make(map[string]*enforceObj)
 
 	for _, p := range processes {
-		d := getDeviceByUuid(p.Uuid, devices)
+		d := devices[p.Uuid]
 		el[p.PodName] = &enforceObj{
 			uuid:    p.Uuid,
 			podName: p.PodName,

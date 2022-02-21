@@ -86,7 +86,7 @@ func (s *DeviceService) ListDevices(ctx context.Context, r *pb.ListDevicesReques
 	if err := s.LoadContext(ctx); err != nil {
 		return response, err
 	}
-
+	response.Device = make(map[string]*pb.Device)
 	for _, device := range s.plugin.ListDevices() {
 		d := &pb.Device{
 			Uuid:              device.UUID,
@@ -101,7 +101,7 @@ func (s *DeviceService) ListDevices(ctx context.Context, r *pb.ListDevicesReques
 			d.MemoryFree = device.Memory.Free
 			d.MemoryUsed = device.Memory.Used
 		}
-		response.Device = append(response.Device, d)
+		response.Device[d.Uuid] = d
 	}
 	return response, nil
 }

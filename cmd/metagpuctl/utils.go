@@ -85,7 +85,7 @@ func getTotalRequests(processes []*pbdevice.DeviceProcess) (totalRequest int) {
 	return
 }
 
-func getTotalShares(devices []*pbdevice.Device) (totalShares int) {
+func getTotalShares(devices map[string]*pbdevice.Device) (totalShares int) {
 	for _, d := range devices {
 		totalShares += int(d.Shares)
 	}
@@ -108,13 +108,4 @@ func getDeviceLoad(device *pbdevice.Device) string {
 		device.GpuUtilization,
 		device.MemoryUsed*100/device.MemoryTotal,
 		device.MemoryTotal)
-}
-
-func getDeviceByUuid(uuid string, devices []*pbdevice.Device) (device *pbdevice.Device) {
-	for _, d := range devices {
-		if uuid == d.Uuid {
-			return d
-		}
-	}
-	return
 }

@@ -63,7 +63,7 @@ message PatchConfigsResponse{}
 
 message ListDevicesRequest{}
 message ListDevicesResponse{
-  repeated Device device = 1;
+  map<string, Device> device = 1;
 }
 
 message PingServerRequest{}

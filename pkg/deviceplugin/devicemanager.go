@@ -27,7 +27,7 @@ type MetaDevice struct {
 type DeviceManager interface {
 	CacheDevices()
 	DiscoverDeviceProcesses()
-	ListDevices() []*MetaDevice
+	ListDevices() map[string]*MetaDevice
 	ListMetaDevices() []*pluginapi.Device
 	ListProcesses(podId string) []*DeviceProcess
 	ParseRealDeviceId(metaDevicesIds []string) (realDeviceId []string)
