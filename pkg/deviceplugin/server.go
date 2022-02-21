@@ -121,10 +121,15 @@ func (p *MetaGpuDevicePlugin) Allocate(ctx context.Context, request *pluginapi.A
 		for _, dev := range req.DevicesIDs {
 			log.Info(dev)
 		}
-
+		metaGpuMaxMem := ""
+		realDevices := p.ParseRealDeviceId(req.DevicesIDs)
+		if len(realDevices) > 0 {
+			metaGpuMaxMem = fmt.Sprintf("%d", p.GetGpuShareMemSize(realDevices[0])*uint64(len(req.DevicesIDs)))
+		}
 		response.Envs = map[string]string{
 			"CNVRG_META_GPU_DEVICES": strings.Join(req.DevicesIDs, ","),
-			"NVIDIA_VISIBLE_DEVICES": strings.Join(p.ParseRealDeviceId(req.DevicesIDs), ","),
+			"NVIDIA_VISIBLE_DEVICES": strings.Join(realDevices, ","),
+			"METAGPU_MAX_MEM":        metaGpuMaxMem,
 			"MG_CTL_ADDR":            fmt.Sprintf("%s:50052", os.Getenv("POD_IP")),
 			"MG_CTL_TOKEN":           p.containerLevelVisibilityToken,
 		}

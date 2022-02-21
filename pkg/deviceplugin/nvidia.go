@@ -41,6 +41,15 @@ func (m *NvidiaDeviceManager) DiscoverDeviceProcesses() {
 	}()
 }
 
+func (m *NvidiaDeviceManager) GetGpuShareMemSize(uuid string) (shareSize uint64) {
+	for _, d := range m.Devices {
+		if d.UUID == uuid {
+			return d.Memory.ShareSize
+		}
+	}
+	return
+}
+
 func (m *NvidiaDeviceManager) ParseRealDeviceId(metaDevicesIds []string) (realDevicesIds []string) {
 
 	// each meta gpu will start from 'cnvrg-meta-[index-number]-[sequence-number]'

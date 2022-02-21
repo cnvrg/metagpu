@@ -29,6 +29,7 @@ type DeviceManager interface {
 	DiscoverDeviceProcesses()
 	ListDevices() map[string]*MetaDevice
 	ListMetaDevices() []*pluginapi.Device
+	GetGpuShareMemSize(uuid string) (shareSize uint64)
 	ListProcesses(podId string) []*DeviceProcess
 	ParseRealDeviceId(metaDevicesIds []string) (realDeviceId []string)
 	MetagpuAllocation(allocationSize int, availableDevIds []string) ([]string, error)
