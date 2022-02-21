@@ -11,6 +11,15 @@ rules:
     verbs:
       - list
       - get
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    resourceNames:
+      - metagpu-device-plugin-config
+    verbs:
+      - get
+      - update
 ---
 apiVersion: v1
 kind: ServiceAccount

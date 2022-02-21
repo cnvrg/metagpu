@@ -122,10 +122,9 @@ func (s *DeviceService) PatchConfigs(ctx context.Context, r *pb.PatchConfigsRequ
 		return &pb.PatchConfigsResponse{}, err
 	}
 	if s.vl != s.dvl {
-		return &pb.PatchConfigsResponse{}, status.Errorf(codes.PermissionDenied, "visibility level to high", s.vl)
+		return &pb.PatchConfigsResponse{}, status.Errorf(codes.PermissionDenied, "visibility level too high", s.vl)
 	}
 	deviceplugin.UpdatePersistentConfigs(r.MetaGpus)
-	// TODO: make configuration persistent
 	viper.Set("metaGpus", r.MetaGpus)
 	s.plugin.MetaGpuRecalculation <- true
 	return &pb.PatchConfigsResponse{}, nil
