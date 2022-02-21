@@ -68,6 +68,7 @@ spec:
             - start
             - -c
             - /etc/metagpu-device-plugin
+            - --auto-reshare
           ports:
             - containerPort: 50052
           securityContext:
@@ -125,7 +126,7 @@ metadata:
   namespace: kube-system
 data:
   config.yaml: |
-    metaGpus: 10
+    metaGpus: 2
     accelerator: nvidia
     processesDiscoveryPeriod: 5
     deviceCacheTTL: 3600

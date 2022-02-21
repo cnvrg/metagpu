@@ -138,6 +138,30 @@ func (m *NvidiaDeviceManager) discoverGpuProcessesAndDevicesLoad() {
 	m.Processes = discoveredDevicesProcesses
 }
 
+func (m *NvidiaDeviceManager) AutoGpuResharing() {
+	if !viper.GetBool("auto-reshare") {
+		log.Info("automatic GPU resharing disabled, skipping")
+		return
+	}
+	m.discoverGpuProcessesAndDevicesLoad()
+	if len(m.Devices) == 0 {
+		log.Warn("devices list is empty")
+		return
+	}
+	// assuming each device will have the same amount of gpu memory
+	if m.Devices[0].Memory.Total > 0 {
+		metaGpus := int32(m.Devices[0].Memory.Total / 1024)
+		log.Infof("single gpu mem: %d, going to split each gpu to %d shares", m.Devices[0].Memory.Total, metaGpus)
+		// update persistent configs
+		UpdatePersistentConfigs(metaGpus)
+		// update runtime configs
+		viper.Set("metaGpus", metaGpus)
+	} else {
+		log.Error("error automatically resharing gpus, the device mem is 0!")
+	}
+
+}
+
 func (m *NvidiaDeviceManager) ListDevices() map[string]*MetaDevice {
 	var deviceMap = make(map[string]*MetaDevice)
 	for _, d := range m.Devices {
@@ -187,5 +211,7 @@ func NewNvidiaDeviceManager() *NvidiaDeviceManager {
 	ndm.CacheDevices()
 	// start process discovery loop
 	ndm.DiscoverDeviceProcesses()
+	// if --auto-reshare is true, try to calculate automatically amount of shares
+	ndm.AutoGpuResharing()
 	return ndm
 }

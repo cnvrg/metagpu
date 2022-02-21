@@ -10,6 +10,7 @@ import (
 var (
 	configCmdParams = []param{
 		{name: "metagpu", shorthand: "m", value: 0, usage: "set metagpus quantity (gpu shares)"},
+		{name: "auto", shorthand: "a", value: false, usage: "automatically configure GPU shares"},
 	}
 )
 

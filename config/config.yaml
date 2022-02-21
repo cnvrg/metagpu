@@ -1,4 +1,4 @@
-metaGpus: 10
+metaGpus: 2
 accelerator: nvidia
 processesDiscoveryPeriod: 5
 deviceCacheTTL: 3600
