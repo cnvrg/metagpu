@@ -8,6 +8,7 @@ RUN go mod download
 COPY cmd cmd
 COPY pkg pkg
 COPY gen gen
+RUN go mod tidy
 RUN CGO_LDFLAGS_ALLOW='-Wl,--unresolved-symbols=ignore-in-object-files' \
     go build \
     -ldflags="-s -w -X 'main.Build=${BUILD_SHA}' -X 'main.Version=${BUILD_VERSION}'" \

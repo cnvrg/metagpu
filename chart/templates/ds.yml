@@ -31,6 +31,7 @@ spec:
       containers:
         - name: metagpu-device-plugin
           image: "docker.io/cnvrg/metagpu-device-plugin:{{ .Values.tag }}"
+          imagePullPolicy: Always
           command:
             - /usr/bin/metagpu-device-plugin
             - start
