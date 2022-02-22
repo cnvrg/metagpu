@@ -1,46 +1,3 @@
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: metagpu-device-plugin
-  namespace: kube-system
-rules:
-  - apiGroups:
-      - ""
-    resources:
-      - pods
-    verbs:
-      - list
-      - get
-  - apiGroups:
-      - ""
-    resources:
-      - configmaps
-    resourceNames:
-      - metagpu-device-plugin-config
-    verbs:
-      - get
-      - update
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: metagpu-device-plugin
-  namespace: kube-system
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: metagpu-device-plugin
-  namespace: kube-system
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: metagpu-device-plugin
-subjects:
-  - kind: ServiceAccount
-    name: metagpu-device-plugin
-    namespace: kube-system
----
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -73,7 +30,7 @@ spec:
         accelerator: nvidia
       containers:
         - name: metagpu-device-plugin
-          image: docker.io/cnvrg/metagpu-device-plugin:latest
+          image: "docker.io/cnvrg/metagpu-device-plugin:{{ .Values.tag }}"
           command:
             - /usr/bin/metagpu-device-plugin
             - start
@@ -105,7 +62,7 @@ spec:
             - mountPath: /var/run/docker.sock
               name: docker
             - mountPath: /var/run/containerd/containerd.sock
-              name: conatinerd
+              name: containerd
       volumes:
         - name: device-plugin
           hostPath:
@@ -122,31 +79,3 @@ spec:
         - hostPath:
             path: /var/run/containerd/containerd.sock
           name: containerd
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: metagpu-device-plugin
-  namespace: kube-system
-spec:
-  selector:
-    name: metagpu-device-plugin
-  ports:
-    - protocol: TCP
-      port: 50052
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: metagpu-device-plugin-config
-  namespace: kube-system
-data:
-  config.yaml: |
-    metaGpus: 2
-    accelerator: nvidia
-    processesDiscoveryPeriod: 5
-    deviceCacheTTL: 3600
-    resourceName: cnvrg.io/metagpu
-    jwtSecret: topSecret
-    mgctlTar: /tmp/mgctl.tar.gz
-    mgctlAutoInject: true

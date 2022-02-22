@@ -1,0 +1,12 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: metagpu-device-plugin
+  namespace: kube-system
+spec:
+  selector:
+    name: metagpu-device-plugin
+  ports:
+    - protocol: TCP
+      port: 50052

@@ -1,0 +1,42 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: metagpu-device-plugin
+  namespace: kube-system
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - list
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    resourceNames:
+      - metagpu-device-plugin-config
+    verbs:
+      - get
+      - update
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: metagpu-device-plugin
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: metagpu-device-plugin
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metagpu-device-plugin
+subjects:
+  - kind: ServiceAccount
+    name: metagpu-device-plugin
+    namespace: kube-system

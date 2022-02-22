@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: metagpu-device-plugin-config
+  namespace: kube-system
+data:
+  config.yaml: |
+    metaGpus: 2
+    accelerator: nvidia
+    processesDiscoveryPeriod: 5
+    deviceCacheTTL: 3600
+    resourceName: cnvrg.io/metagpu
+    jwtSecret: topSecret
+    mgctlTar: /tmp/mgctl.tar.gz
+    mgctlAutoInject: true

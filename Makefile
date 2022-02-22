@@ -11,13 +11,13 @@ docker-build: build-proto
 	 --platform linux/x86_64 \
      --build-arg BUILD_SHA=$(shell git rev-parse --short HEAD) \
      --build-arg BUILD_VERSION=0.0.1 \
-     -t docker.io/cnvrg/metagpu-device-plugin:latest .
+     -t docker.io/cnvrg/metagpu-device-plugin:$(shell git rev-parse --abbrev-ref HEAD) .
 
 build-mgctl:
 	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=0.1.1'" -v -o bin/mgctl-darwin-x86_64 cmd/metagpuctl/*.go
 
 docker-push:
-	docker push docker.io/cnvrg/metagpu-device-plugin:latest
+	docker push docker.io/cnvrg/metagpu-device-plugin:$(shell git rev-parse --abbrev-ref HEAD)
 
 controller-generate:
 	 controller-gen-v0.8.0 object paths=./cmd/metagpu-controller/api/...
@@ -31,4 +31,9 @@ build-proto:
 	buf build
 	buf generate
 
+generate-manifests:
+	helm template chart/ --set tag=$(shell git rev-parse --abbrev-ref HEAD) > deploy/static.yaml
 
+.PHONY: deploy
+deploy:
+	helm template chart/ --set tag=$(shell git rev-parse --abbrev-ref HEAD) | kubectl apply -f -
