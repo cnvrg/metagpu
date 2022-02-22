@@ -163,7 +163,7 @@ func (p *MetaGpuDevicePlugin) Serve() error {
 		return err
 	} else {
 		_ = conn.Close()
-		log.Info("GRPC successfully started and ready accept new connections")
+		log.Info("gRPC server successfully started and ready accept new connections")
 	}
 	return nil
 

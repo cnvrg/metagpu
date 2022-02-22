@@ -5,17 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"github.com/containerd/containerd"
-	"github.com/containerd/containerd/namespaces"
-	"io"
-	"strings"
-
 	"github.com/containerd/containerd/api/services/tasks/v1"
+	"github.com/containerd/containerd/namespaces"
 	"github.com/docker/docker/api/types"
 	docker "github.com/docker/docker/client"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"io"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 func copymgctlToContainer(containerId string) {
