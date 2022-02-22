@@ -6,3 +6,4 @@ resourceName: cnvrg.io/metagpu
 jwtSecret: topSecret
 mgctlTar: /tmp/mgctl.tar.gz
 mgctlAutoInject: true
+cri: docker
