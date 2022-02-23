@@ -4,12 +4,9 @@ import (
 	"context"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	v1apps "k8s.io/api/apps/v1"
-	v1batch "k8s.io/api/batch/v1"
-	v1core "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sClientConfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"strings"
@@ -19,16 +16,9 @@ func GetK8sClient() (client.Client, error) {
 	l := log.WithFields(log.Fields{"context": "getK8sClient"})
 	rc := k8sClientConfig.GetConfigOrDie()
 	scheme := runtime.NewScheme()
-	if err := v1core.AddToScheme(scheme); err != nil {
-		l.Fatalf("error adding to scheme, err: %s ", err)
+	if err := corev1.AddToScheme(scheme); err != nil {
+		log.Fatalf("error adding to scheme, err: %s ", err)
 	}
-	if err := v1apps.AddToScheme(scheme); err != nil {
-		l.Fatalf("error adding to scheme, err: %s ", err)
-	}
-	if err := v1batch.AddToScheme(scheme); err != nil {
-		l.Fatalf("error adding to scheme, err: %s ", err)
-	}
-
 	controllerClient, err := client.New(rc, client.Options{Scheme: scheme})
 	if err != nil {
 		l.Errorf("error creating new client, err: %s", err)
@@ -36,11 +26,6 @@ func GetK8sClient() (client.Client, error) {
 	}
 
 	return controllerClient, nil
-}
-
-func GetRestConfigs() (*rest.Config, error) {
-	return k8sClientConfig.GetConfigOrDie(), nil
-
 }
 
 func UpdatePersistentConfigs(metaGpus int32) {
@@ -51,7 +36,7 @@ func UpdatePersistentConfigs(metaGpus int32) {
 		return
 	}
 	name := types.NamespacedName{Namespace: "kube-system", Name: "metagpu-device-plugin-config"}
-	metaGpuCm := &v1core.ConfigMap{}
+	metaGpuCm := &corev1.ConfigMap{}
 	if err := c.Get(context.Background(), name, metaGpuCm); err != nil {
 		log.Error(err)
 	}

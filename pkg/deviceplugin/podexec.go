@@ -12,18 +12,18 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/remotecommand"
-	"k8s.io/kubernetes/pkg/apis/core"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8sClientConfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"strings"
 )
 
 type podExec struct {
-	pod       *core.Pod
-	container string
-	cmd       []string
-	stdin     io.Reader
-	stdout    *bytes.Buffer
+	pod           *corev1.Pod
+	containerName string
+	cmd           []string
+	stdin         io.Reader
+	stdout        *bytes.Buffer
 }
 
 func copymgctlToContainer(containerId string) {
@@ -35,6 +35,7 @@ func copymgctlToContainer(containerId string) {
 	}
 	if shouldCopyMgctl(pe) {
 		copyMgctl(pe)
+		makeMgctlExecutable(pe)
 	}
 }
 
@@ -43,14 +44,15 @@ func getPodByContainerId(containerId string) (podExec *podExec, err error) {
 	if err != nil {
 		return nil, err
 	}
-	pl := &core.PodList{}
-	if err := c.List(context.Background(), pl); err != nil {
+
+	pl := &corev1.PodList{}
+	if err := c.List(context.Background(), pl, []client.ListOption{}...); err != nil {
 		return nil, err
 	}
 	for _, pod := range pl.Items {
 		for _, sc := range pod.Status.ContainerStatuses {
-			if sc.ContainerID == containerId {
-				return newPodExec(&pod, sc.ContainerID), nil
+			if strings.Contains(sc.ContainerID, containerId) {
+				return newPodExec(&pod, sc.Name), nil
 			}
 		}
 	}
@@ -64,12 +66,22 @@ func shouldCopyMgctl(pe *podExec) bool {
 		log.Error(err)
 		return false
 	}
-	for _, fileName := range strings.Split(pe.stdout.String(), "\n") {
+	files := strings.Split(pe.stdout.String(), "\n")
+	for _, fileName := range files {
 		if fileName == "mgctl" {
 			return false
 		}
 	}
+	log.Infof("mgctl not found in %s, going to injecting the mgctl binary", pe.containerName)
 	return true
+}
+
+func makeMgctlExecutable(pe *podExec) {
+	pe.cmd = []string{"chmod", "+x", "/usr/bin/mgctl"}
+	pe.stdout = new(bytes.Buffer)
+	if err := pe.exec(); err != nil {
+		log.Error(err)
+	}
 }
 
 func copyMgctl(pe *podExec) {
@@ -95,8 +107,8 @@ func getmgctlBinFile() (*os.File, error) {
 	}
 }
 
-func newPodExec(pod *core.Pod, container string) *podExec {
-	return &podExec{pod: pod, container: container}
+func newPodExec(pod *corev1.Pod, container string) *podExec {
+	return &podExec{pod: pod, containerName: container}
 }
 
 func (p *podExec) exec() error {
@@ -105,8 +117,8 @@ func (p *podExec) exec() error {
 	if err != nil {
 		return err
 	}
-	s := runtime.NewScheme()
-	if err := corev1.AddToScheme(s); err != nil {
+	scheme := runtime.NewScheme()
+	if err := corev1.AddToScheme(scheme); err != nil {
 		return err
 	}
 	req := clientset.CoreV1().RESTClient().Post().
@@ -119,9 +131,9 @@ func (p *podExec) exec() error {
 			Stdout:    p.stdout != nil,
 			Stderr:    true,
 			TTY:       false,
-			Container: p.container,
+			Container: p.containerName,
 			Command:   p.cmd,
-		}, runtime.NewParameterCodec(s))
+		}, runtime.NewParameterCodec(scheme))
 	exec, err := remotecommand.NewSPDYExecutor(rc, "POST", req.URL())
 	if err != nil {
 		return err

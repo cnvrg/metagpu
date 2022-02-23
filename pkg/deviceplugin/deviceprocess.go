@@ -97,7 +97,7 @@ func (p *DeviceProcess) EnrichProcessK8sInfo() {
 		for _, cStatus := range pod.Status.ContainerStatuses {
 			cId := strings.Split(cStatus.ContainerID, "//")
 			if len(cId) < 2 {
-				log.Error("can't detect container id form k8s pod")
+				log.Error("can't detect containerName id form k8s pod")
 				return
 			}
 			if cId[1] == p.ContainerId {
