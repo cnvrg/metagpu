@@ -54,7 +54,7 @@ func getDevices() {
 		log.Fatal(err)
 	}
 	to := &TableOutput{}
-	to.header = table.Row{"Idx", "UUID", "Memory Total", "Gpu shares", "Share size"}
+	to.header = table.Row{"Idx", "UUID", "Memory", "Shares", "Share size"}
 	to.body, to.footer = buildDeviceInfoTableBody(resp.Devices)
 	to.buildTable()
 	to.print()
