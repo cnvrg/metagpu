@@ -12,6 +12,5 @@ data:
     deviceCacheTTL: 3600
     resourceName: cnvrg.io/metagpu
     jwtSecret: topSecret
-    mgctlTar: /tmp/mgctl.tar.gz
+    mgctlTar: /tmp/mgctl
     mgctlAutoInject: true
-    cri: docker
