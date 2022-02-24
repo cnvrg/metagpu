@@ -7,7 +7,7 @@ import (
 
 func listDeviceProcesses(podId string, p *deviceplugin.MetaGpuDevicePlugin) (devProc []*pb.DeviceProcess) {
 
-	for _, process := range p.ListProcesses(podId) {
+	for _, process := range p.GetProcesses(podId) {
 		devProc = append(devProc, &pb.DeviceProcess{
 			Pid:             process.Pid,
 			Uuid:            process.DeviceUuid,

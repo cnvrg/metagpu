@@ -6,6 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+	"os"
 	"regexp"
 	"time"
 )
@@ -81,7 +82,7 @@ func (m *NvidiaDeviceManager) DeviceExists(deviceId string) bool {
 	return false
 }
 
-func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
+func (m *NvidiaDeviceManager) GetPluginDevices() []*pluginapi.Device {
 	var metaGpus []*pluginapi.Device
 	metaGpusQuantity := viper.GetInt("metaGpus")
 	log.Infof("generating meta gpu devices (total: %d)", len(m.Devices)*metaGpusQuantity)
@@ -95,7 +96,6 @@ func (m *NvidiaDeviceManager) ListMetaDevices() []*pluginapi.Device {
 	}
 
 	return metaGpus
-
 }
 
 func (m *NvidiaDeviceManager) setDevices() {
@@ -162,7 +162,7 @@ func (m *NvidiaDeviceManager) AutoGpuResharing() {
 
 }
 
-func (m *NvidiaDeviceManager) ListDevices() map[string]*MetaDevice {
+func (m *NvidiaDeviceManager) GetMetaDevices() map[string]*MetaDevice {
 	var deviceMap = make(map[string]*MetaDevice)
 	for _, d := range m.Devices {
 		deviceMap[d.UUID] = d
@@ -170,7 +170,7 @@ func (m *NvidiaDeviceManager) ListDevices() map[string]*MetaDevice {
 	return deviceMap
 }
 
-func (m *NvidiaDeviceManager) ListProcesses(podId string) []*DeviceProcess {
+func (m *NvidiaDeviceManager) GetProcesses(podId string) []*DeviceProcess {
 
 	if podId != "" {
 		var podProcesses []*DeviceProcess
@@ -182,6 +182,22 @@ func (m *NvidiaDeviceManager) ListProcesses(podId string) []*DeviceProcess {
 		return podProcesses
 	}
 	return m.Processes
+}
+
+func (m *NvidiaDeviceManager) GetMetaDeviceInfo() *MetaDeviceInfo {
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Errorf("faild to detect hostname, err: %s", err)
+	}
+	info := make(map[string]string)
+	cudaVersion, ret := nvml.SystemGetCudaDriverVersion_v2()
+	nvmlErrorCheck(ret)
+	info["cudaVersion"] = fmt.Sprintf("%d", cudaVersion)
+	driver, ret := nvml.SystemGetDriverVersion()
+	nvmlErrorCheck(ret)
+	info["driverVersion"] = driver
+	return &MetaDeviceInfo{Node: hostname, Metadata: info, Devices: m.Devices}
+
 }
 
 func (m *NvidiaDeviceManager) KillGpuProcess(pid uint32) error {

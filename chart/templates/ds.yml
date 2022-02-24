@@ -60,10 +60,6 @@ spec:
               mountPropagation: HostToContainer
               name: proc
               readOnly: true
-            - mountPath: /var/run/docker.sock
-              name: docker
-            - mountPath: /var/run/containerd/containerd.sock
-              name: containerd
       volumes:
         - name: device-plugin
           hostPath:
@@ -74,9 +70,3 @@ spec:
         - hostPath:
             path: /proc
           name: proc
-        - hostPath:
-            path: /var/run/docker.sock
-          name: docker
-        - hostPath:
-            path: /var/run/containerd/containerd.sock
-          name: containerd

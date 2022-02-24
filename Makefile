@@ -1,7 +1,7 @@
 #rsync -r /Users/dima/.go/src/github.com/AccessibleAI/metagpu-device-plugin/docs/* rancher@212.199.86.38:/tmp/docs
-# rsync -av  --exclude 'bin' --exclude '.git'  /Users/dima/.go/src/github.com/AccessibleAI/metagpu-device-plugin/* root@20.120.94.51:/root/.go/src/github.com/AccessibleAI/fractional-accelerator-device-plugin
-build-mac:
-	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=0.1.1'" -v -o bin/metagpu-dp-darwin-x86_64 main.go
+
+build:
+	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=0.1.1'" -v -o bin/mgdp cmd/metagpu-device-plugin/main.go
 
 debug-remote:
 	dlv debug --headless --listen=:2345 --api-version=2 --accept-multiclient  ./cmd/metagpu-device-plugin/main.go -- start
@@ -14,7 +14,7 @@ docker-build: build-proto
      -t docker.io/cnvrg/metagpu-device-plugin:$(shell git rev-parse --abbrev-ref HEAD) .
 
 build-mgctl:
-	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=0.1.1'" -v -o bin/mgctl-darwin-x86_64 cmd/metagpuctl/*.go
+	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=0.1.1'" -v -o bin/mgctl cmd/metagpuctl/*.go
 
 docker-push:
 	docker push docker.io/cnvrg/metagpu-device-plugin:$(shell git rev-parse --abbrev-ref HEAD)
@@ -37,3 +37,6 @@ generate-manifests:
 .PHONY: deploy
 deploy:
 	helm template chart/ --set tag=$(shell git rev-parse --abbrev-ref HEAD) | kubectl apply -f -
+
+dev-sync:
+	rsync -av  --exclude 'bin' --exclude '.git'  /Users/dima/.go/src/github.com/AccessibleAI/metagpu-device-plugin/* root@20.120.94.51:/root/.go/src/github.com/AccessibleAI/metagpu-device-plugin

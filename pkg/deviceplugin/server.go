@@ -80,7 +80,7 @@ func (p *MetaGpuDevicePlugin) GetDevicePluginOptions(ctx context.Context, empty 
 
 func (p *MetaGpuDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
 
-	if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.ListMetaDevices()}); err != nil {
+	if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.GetPluginDevices()}); err != nil {
 		log.Error(err)
 	}
 
@@ -89,7 +89,7 @@ func (p *MetaGpuDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.Devic
 		case <-p.stop:
 			return nil
 		case <-p.MetaGpuRecalculation:
-			if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.ListMetaDevices()}); err != nil {
+			if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.GetPluginDevices()}); err != nil {
 				log.Error(err)
 			}
 		}

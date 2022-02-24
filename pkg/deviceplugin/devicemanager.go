@@ -24,13 +24,20 @@ type MetaDevice struct {
 	Memory      *DeviceMemory
 }
 
+type MetaDeviceInfo struct {
+	Node     string
+	Metadata map[string]string
+	Devices  []*MetaDevice
+}
+
 type DeviceManager interface {
 	CacheDevices()
 	DiscoverDeviceProcesses()
-	ListDevices() map[string]*MetaDevice
-	ListMetaDevices() []*pluginapi.Device
+	GetMetaDeviceInfo() *MetaDeviceInfo
+	GetMetaDevices() map[string]*MetaDevice
+	GetPluginDevices() []*pluginapi.Device
 	GetGpuShareMemSize(uuid string) (shareSize uint64)
-	ListProcesses(podId string) []*DeviceProcess
+	GetProcesses(podId string) []*DeviceProcess
 	ParseRealDeviceId(metaDevicesIds []string) (realDeviceId []string)
 	MetagpuAllocation(allocationSize int, availableDevIds []string) ([]string, error)
 	KillGpuProcess(pid uint32) error

@@ -33,6 +33,7 @@ func copymgctlToContainer(containerId string) {
 		log.Error(err)
 		return
 	}
+	// TODO: create in-memory cache with tall the pods that's already has mgctl
 	if shouldCopyMgctl(pe) {
 		copyMgctl(pe)
 		makeMgctlExecutable(pe)
@@ -72,7 +73,7 @@ func shouldCopyMgctl(pe *podExec) bool {
 			return false
 		}
 	}
-	log.Infof("mgctl not found in %s, going to injecting the mgctl binary", pe.containerName)
+	log.Infof("mgctl not found in %s, injecting...", pe.containerName)
 	return true
 }
 

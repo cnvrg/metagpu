@@ -15,26 +15,49 @@ import (
 	"time"
 )
 
-var listCmd = &cobra.Command{
-	Use:     "list",
-	Aliases: []string{"l"},
-	Short:   "list resources",
+var getCmd = &cobra.Command{
+	Use:     "get",
+	Aliases: []string{"g"},
+	Short:   "get resources",
 }
 
-var processListParams = []param{
+var processGetParams = []param{
 	{name: "watch", shorthand: "w", value: false, usage: "watch for the changes"},
 }
 
-var processesListCmd = &cobra.Command{
-	Use:     "process",
-	Aliases: []string{"p"},
+var processesGetCmd = &cobra.Command{
+	Use:     "processes",
+	Aliases: []string{"p", "process"},
 	Short:   "list gpu processes and processes metadata",
 	Run: func(cmd *cobra.Command, args []string) {
-		listDevicesProcesses()
+		getDevicesProcesses()
 	},
 }
 
-func listDevicesProcesses() {
+var getDevicesCmd = &cobra.Command{
+	Use:     "devices",
+	Aliases: []string{"d", "device"},
+	Short:   "list gpu devices",
+	Run: func(cmd *cobra.Command, args []string) {
+		getDevices()
+	},
+}
+
+func getDevices() {
+	conn, err := GetGrpcMetaGpuSrvClientConn()
+	if err != nil {
+		log.Fatalf("can't initiate connection to metagpu server, %s", err)
+	}
+	device := pbdevice.NewDeviceServiceClient(conn)
+	resp, err := device.GetMetaDeviceInfo(authenticatedContext(), &pbdevice.GetMetaDeviceInfoRequest{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Info(resp)
+
+}
+
+func getDevicesProcesses() {
 
 	conn, err := GetGrpcMetaGpuSrvClientConn()
 	if err != nil {
@@ -81,7 +104,7 @@ func listDevicesProcesses() {
 				if err != nil {
 					log.Fatalf("error watching gpu processes, err: %s", err)
 				}
-				deviceResp, err := device.ListDevices(authenticatedContext(), &pbdevice.ListDevicesRequest{})
+				deviceResp, err := device.GetDevices(authenticatedContext(), &pbdevice.GetDevicesRequest{})
 				if err != nil {
 					log.Errorf("falid to list devices, err: %s ", err)
 					return
@@ -94,12 +117,12 @@ func listDevicesProcesses() {
 			}
 		}
 	} else {
-		processResp, err := device.ListProcesses(authenticatedContext(), &pbdevice.ListProcessesRequest{PodId: hostname})
+		processResp, err := device.GetProcesses(authenticatedContext(), &pbdevice.GetProcessesRequest{PodId: hostname})
 		if err != nil {
 			log.Errorf("falid to list device processes, err: %s ", err)
 			return
 		}
-		deviceResp, err := device.ListDevices(authenticatedContext(), &pbdevice.ListDevicesRequest{})
+		deviceResp, err := device.GetDevices(authenticatedContext(), &pbdevice.GetDevicesRequest{})
 		if err != nil {
 			log.Errorf("falid to list devices, err: %s ", err)
 			return

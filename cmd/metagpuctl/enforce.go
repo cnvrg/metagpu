@@ -66,7 +66,7 @@ func enforceMemoryLimits() {
 			if err != nil {
 				log.Fatalf("error watching gpu processes, err: %s", err)
 			}
-			deviceResp, err := device.ListDevices(authenticatedContext(), &pbdevice.ListDevicesRequest{})
+			deviceResp, err := device.GetDevices(authenticatedContext(), &pbdevice.GetDevicesRequest{})
 			if err != nil {
 				log.Errorf("falid to list devices, err: %s ", err)
 				return
