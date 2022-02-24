@@ -73,7 +73,7 @@ func shouldCopyMgctl(pe *podExec) bool {
 			return false
 		}
 	}
-	log.Infof("mgctl not found in %s, injecting...", pe.containerName)
+	log.Infof("injecting mgctl bin into %s", pe.containerName)
 	return true
 }
 

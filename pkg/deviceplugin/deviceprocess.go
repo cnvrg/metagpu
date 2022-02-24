@@ -78,7 +78,18 @@ func (p *DeviceProcess) SetProcessContainerId() {
 		if len(cgroups) == 0 {
 			log.Errorf("cgroups list for %d is empty", p.Pid)
 		}
-		p.ContainerId = filepath.Base(cgroups[0].Path)
+	ExitContainerIdSet:
+		if p.ContainerId == "" {
+			for _, g := range cgroups {
+				for _, c := range g.Controllers {
+					if c == "memory" {
+						p.ContainerId = filepath.Base(g.Path)
+						goto ExitContainerIdSet
+					}
+				}
+			}
+			log.Warnf("unable to set containerId for pid: %d", p.Pid)
+		}
 	}
 }
 
@@ -119,6 +130,15 @@ func (p *DeviceProcess) GetShortCmdLine() string {
 		return "error discovering process cmdline"
 	}
 	return p.Cmdline[0]
+}
+
+func (p *DeviceProcess) GetDevice(devices []*MetaDevice) *MetaDevice {
+	for _, device := range devices {
+		if device.UUID == p.DeviceUuid {
+			return device
+		}
+	}
+	return nil
 }
 
 func checkProcessDiscoveryError(e error) {

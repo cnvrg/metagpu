@@ -139,7 +139,7 @@ func (m *NvidiaDeviceManager) discoverGpuProcessesAndDevicesLoad() {
 }
 
 func (m *NvidiaDeviceManager) AutoGpuResharing() {
-	if !viper.GetBool("auto-reshare") {
+	if !viper.GetBool("autoReshare") {
 		log.Info("automatic GPU resharing disabled, skipping")
 		return
 	}
@@ -205,6 +205,33 @@ func (m *NvidiaDeviceManager) KillGpuProcess(pid uint32) error {
 	return p.Kill()
 }
 
+func (m *NvidiaDeviceManager) MemoryUsageLimitsEnforcer() {
+	if !viper.GetBool("memoryEnforcer") {
+		log.Info("GPU memory enforcer disabled")
+		return
+	}
+	go func() {
+		log.Info("enforcing GPU memory limits")
+		for {
+			for _, p := range m.Processes {
+				if d := p.GetDevice(m.Devices); d != nil {
+					maxMem := d.Memory.ShareSize * uint64(p.PodMetagpuRequest)
+					if maxMem > 0 && p.GpuMemory > maxMem {
+						log.Infof("pid: %d memory usage violation, %d/%d", p.Pid, p.GpuMemory, maxMem)
+						if err := p.Kill(); err != nil {
+							log.Error(err)
+						} else {
+							log.Infof("process: %d has been killed", p.Pid)
+						}
+					}
+				}
+			}
+			time.Sleep(time.Duration(viper.GetInt("processesDiscoveryPeriod")+2) * time.Second)
+		}
+	}()
+
+}
+
 func (m *NvidiaDeviceManager) MetagpuAllocation(allocationSize int, availableDevIds []string) ([]string, error) {
 	return NewDeviceAllocation(allocationSize, availableDevIds).MetagpusAllocations, nil
 }
@@ -227,7 +254,9 @@ func NewNvidiaDeviceManager() *NvidiaDeviceManager {
 	ndm.CacheDevices()
 	// start process discovery loop
 	ndm.DiscoverDeviceProcesses()
-	// if --auto-reshare is true, try to calculate automatically amount of shares
+	// if autoReshare is true, try to calculate automatically amount of shares
 	ndm.AutoGpuResharing()
+	// start memory usage  limits enforcers (if memoryEnforcer is true)
+	ndm.MemoryUsageLimitsEnforcer()
 	return ndm
 }

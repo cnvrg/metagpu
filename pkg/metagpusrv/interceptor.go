@@ -3,6 +3,7 @@ package metagpusrv
 import (
 	"context"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"time"
 )
@@ -49,7 +50,9 @@ func (s *MetaGpuServer) unaryServerInterceptor() grpc.UnaryServerInterceptor {
 		}
 		ctx = context.WithValue(ctx, "plugin", s.plugin)
 		h, err := handler(ctx, req)
-		log.Infof("[method: %s duration: %s]", info.FullMethod, time.Since(start))
+		if viper.GetBool("verbose") {
+			log.Infof("[method: %s duration: %s]", info.FullMethod, time.Since(start))
+		}
 		return h, err
 	}
 }

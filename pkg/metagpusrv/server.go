@@ -46,11 +46,11 @@ func NewMetaGpuServer(plugin *deviceplugin.MetaGpuDevicePlugin) *MetaGpuServer {
 func (s *MetaGpuServer) Start() {
 
 	go func() {
-		lis, err := net.Listen("tcp", fmt.Sprintf("%s", viper.GetString("metagpu-server-addr")))
+		lis, err := net.Listen("tcp", fmt.Sprintf("%s", viper.GetString("serverAddr")))
 		if err != nil {
 			log.Fatalf("failed to listen: %v", err)
 		}
-		log.Infof("grpc server listening on %s", viper.GetString("metagpu-server-addr"))
+		log.Infof("grpc server listening on %s", viper.GetString("serverAddr"))
 
 		opts := []grpc.ServerOption{
 			grpc.UnaryInterceptor(s.unaryServerInterceptor()),

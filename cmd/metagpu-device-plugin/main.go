@@ -32,8 +32,6 @@ var (
 		{name: "config", shorthand: "c", value: ".", usage: "path to configuration file"},
 		{name: "json-log", shorthand: "", value: false, usage: "output logs in json format"},
 		{name: "verbose", shorthand: "", value: false, usage: "enable verbose logs"},
-		{name: "metagpu-server-addr", shorthand: "", value: "0.0.0.0:50052", usage: "listening address for metagpu server "},
-		{name: "auto-reshare", shorthand: "a", value: false, usage: "automatically calc gpus shares (will make each share to be equal to 1gb)"},
 	}
 	metaGpuRecalc = make(chan bool)
 )

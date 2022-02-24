@@ -39,7 +39,7 @@ func (s *DeviceService) LoadContext(ctx context.Context) error {
 	return nil
 }
 
-func (s *DeviceService) ListProcesses(ctx context.Context, r *pb.GetProcessesRequest) (*pb.GetProcessesResponse, error) {
+func (s *DeviceService) GetProcesses(ctx context.Context, r *pb.GetProcessesRequest) (*pb.GetProcessesResponse, error) {
 
 	if err := s.LoadContext(ctx); err != nil {
 		return &pb.GetProcessesResponse{}, err
@@ -81,7 +81,7 @@ func (s *DeviceService) StreamProcesses(r *pb.StreamProcessesRequest, stream pb.
 
 }
 
-func (s *DeviceService) ListDevices(ctx context.Context, r *pb.GetDevicesRequest) (*pb.GetDevicesResponse, error) {
+func (s *DeviceService) GetDevices(ctx context.Context, r *pb.GetDevicesRequest) (*pb.GetDevicesResponse, error) {
 	response := &pb.GetDevicesResponse{}
 	if err := s.LoadContext(ctx); err != nil {
 		return response, err

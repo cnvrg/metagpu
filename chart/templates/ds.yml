@@ -37,7 +37,7 @@ spec:
             - start
             - -c
             - /etc/metagpu-device-plugin
-            - --auto-reshare
+            - --autoReshare
           ports:
             - containerPort: 50052
           securityContext:
