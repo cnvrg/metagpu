@@ -14,3 +14,6 @@ data:
     jwtSecret: topSecret
     mgctlTar: /tmp/mgctl
     mgctlAutoInject: true
+    autoReshare: true
+    serverAddr: 0.0.0.0:50052
+    memoryEnforcer: true
