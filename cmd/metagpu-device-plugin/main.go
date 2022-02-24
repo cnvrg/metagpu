@@ -65,7 +65,6 @@ var metaGpuStart = &cobra.Command{
 				f.Stop()
 				log.Info("bye bye 👋")
 				os.Exit(0)
-
 			}
 		}
 	},

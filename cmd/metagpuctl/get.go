@@ -37,7 +37,7 @@ var processesGetCmd = &cobra.Command{
 var getDevicesCmd = &cobra.Command{
 	Use:     "devices",
 	Aliases: []string{"d", "device"},
-	Short:   "list gpu devices",
+	Short:   "get gpu devices",
 	Run: func(cmd *cobra.Command, args []string) {
 		getDevices()
 	},
@@ -53,7 +53,11 @@ func getDevices() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Info(resp)
+	to := &TableOutput{}
+	to.header = table.Row{"Idx", "UUID", "Memory Total", "Gpu shares", "Share size"}
+	to.body, to.footer = buildDeviceInfoTableBody(resp.Devices)
+	to.buildTable()
+	to.print()
 
 }
 
@@ -110,8 +114,8 @@ func getDevicesProcesses() {
 					return
 				}
 
-				to.body = buildTableBody(processResp.DevicesProcesses, deviceResp.Device)
-				to.footer = buildTableFooter(processResp.DevicesProcesses, deviceResp.Device, processResp.VisibilityLevel)
+				to.body = buildDeviceProcessesTableBody(processResp.DevicesProcesses, deviceResp.Device)
+				to.footer = buildDeviceProcessesTableFooter(processResp.DevicesProcesses, deviceResp.Device, processResp.VisibilityLevel)
 				to.buildTable()
 				to.print()
 			}
@@ -127,14 +131,32 @@ func getDevicesProcesses() {
 			log.Errorf("falid to list devices, err: %s ", err)
 			return
 		}
-		to.body = buildTableBody(processResp.DevicesProcesses, deviceResp.Device)
-		to.footer = buildTableFooter(processResp.DevicesProcesses, deviceResp.Device, processResp.VisibilityLevel)
+		to.body = buildDeviceProcessesTableBody(processResp.DevicesProcesses, deviceResp.Device)
+		to.footer = buildDeviceProcessesTableFooter(processResp.DevicesProcesses, deviceResp.Device, processResp.VisibilityLevel)
 		to.buildTable()
 		to.print()
 	}
 }
 
-func buildTableBody(processes []*pbdevice.DeviceProcess, devices map[string]*pbdevice.Device) (body []table.Row) {
+func buildDeviceInfoTableBody(devices []*pbdevice.Device) (body []table.Row, footer table.Row) {
+	var totMem uint64
+	var shares uint32
+	for _, d := range devices {
+		shares = d.Shares
+		totMem += d.MemoryTotal
+		body = append(body, table.Row{
+			d.Index,
+			d.Uuid,
+			d.MemoryTotal,
+			d.Shares,
+			d.MemoryShareSize,
+		})
+	}
+	footer = table.Row{len(devices), "", fmt.Sprintf("%dMB", totMem), uint32(len(devices)) * shares, ""}
+	return body, footer
+}
+
+func buildDeviceProcessesTableBody(processes []*pbdevice.DeviceProcess, devices map[string]*pbdevice.Device) (body []table.Row) {
 	for _, p := range processes {
 		d := devices[p.Uuid]
 		maxMem := d.MemoryShareSize * uint64(p.MetagpuRequests)
@@ -156,7 +178,7 @@ func buildTableBody(processes []*pbdevice.DeviceProcess, devices map[string]*pbd
 	return
 }
 
-func buildTableFooter(processes []*pbdevice.DeviceProcess, devices map[string]*pbdevice.Device, vl string) (footer table.Row) {
+func buildDeviceProcessesTableFooter(processes []*pbdevice.DeviceProcess, devices map[string]*pbdevice.Device, vl string) (footer table.Row) {
 	metaGpuSummary := fmt.Sprintf("%d", getTotalRequests(processes))
 	// TODO: fix this, the vl should be taken from directly form the  package
 	// to problem is that package now includes the nvidia linux native stuff

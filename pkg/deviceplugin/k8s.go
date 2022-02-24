@@ -32,13 +32,14 @@ func UpdatePersistentConfigs(metaGpus int32) {
 	log.Info("updating persistent configs")
 	c, err := GetK8sClient()
 	if err != nil {
-		log.Error(err)
+		log.Errorf("unable to write persistent configs, err: %s", err)
 		return
 	}
 	name := types.NamespacedName{Namespace: "kube-system", Name: "metagpu-device-plugin-config"}
 	metaGpuCm := &corev1.ConfigMap{}
 	if err := c.Get(context.Background(), name, metaGpuCm); err != nil {
-		log.Error(err)
+		log.Errorf("unable to write persistent configs, err: %s", err)
+		return
 	}
 
 	var updatedConfigs []string
