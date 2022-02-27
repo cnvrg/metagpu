@@ -103,12 +103,14 @@ func (m *NvidiaDeviceManager) setDevices() {
 	count, ret := nvml.DeviceGetCount()
 	log.Infof("refreshing nvidia devices cache (total: %d)", count)
 	nvmlErrorCheck(ret)
+	var devices []*MetaDevice
 	for i := 0; i < count; i++ {
 		device, ret := nvml.DeviceGetHandleByIndex(i)
 		uuid, ret := device.GetUUID()
 		nvmlErrorCheck(ret)
-		m.Devices = append(m.Devices, &MetaDevice{UUID: uuid, Index: i})
+		devices = append(devices, &MetaDevice{UUID: uuid, Index: i})
 	}
+	m.Devices = devices
 }
 
 func (m *NvidiaDeviceManager) discoverGpuProcessesAndDevicesLoad() {

@@ -1,27 +1,20 @@
 package main
 
 import (
-	"context"
-	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/utils"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
+	"github.com/spf13/viper"
 )
 
 var pingCmd = &cobra.Command{
 	Use:   "ping",
 	Short: "ping server to check connectivity",
 	Run: func(cmd *cobra.Command, args []string) {
-		_, _ = GetGrpcMetaGpuSrvClientConn()
+		conn := utils.GetGrpcMetaGpuSrvClientConn(viper.GetString("addr"))
+		if conn == nil {
+			log.Fatalf("can't initiate connection to metagpu server")
+		}
+		defer conn.Close()
 	},
-}
-
-func pingServer(conn *grpc.ClientConn) error {
-	deviceSvc := pbdevice.NewDeviceServiceClient(conn)
-	_, err := deviceSvc.PingServer(context.Background(), &pbdevice.PingServerRequest{})
-	if err != nil {
-		return err
-	} else {
-		return nil
-	}
-
 }

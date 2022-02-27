@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/utils"
 	"github.com/atomicgo/cursor"
 	"github.com/jedib0t/go-pretty/v6/table"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"io"
 	"os"
 	"os/signal"
@@ -23,17 +25,18 @@ var enforceCmd = &cobra.Command{
 }
 
 func enforceMemoryLimits() {
-	conn, err := GetGrpcMetaGpuSrvClientConn()
-	if err != nil {
-		log.Fatalf("can't initiate connection to metagpu server, %s", err)
+	conn := utils.GetGrpcMetaGpuSrvClientConn(viper.GetString("addr"))
+	if conn == nil {
+		log.Fatalf("can't initiate connection to metagpu server")
 	}
+	defer conn.Close()
 	device := pbdevice.NewDeviceServiceClient(conn)
 	hostname, err := os.Hostname()
 	if err != nil {
 		log.Errorf("faild to detect podId, err: %s", err)
 	}
 	request := &pbdevice.StreamProcessesRequest{PodId: hostname}
-	stream, err := device.StreamProcesses(authenticatedContext(), request)
+	stream, err := device.StreamProcesses(utils.AuthenticatedContext(viper.GetString("token")), request)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -66,7 +69,7 @@ func enforceMemoryLimits() {
 			if err != nil {
 				log.Fatalf("error watching gpu processes, err: %s", err)
 			}
-			deviceResp, err := device.GetDevices(authenticatedContext(), &pbdevice.GetDevicesRequest{})
+			deviceResp, err := device.GetDevices(utils.AuthenticatedContext(viper.GetString("token")), &pbdevice.GetDevicesRequest{})
 			if err != nil {
 				log.Errorf("falid to list devices, err: %s ", err)
 				return
@@ -79,7 +82,7 @@ func enforceMemoryLimits() {
 				d := deviceResp.Device[p.Uuid]
 				if p.Memory > d.MemoryShareSize*uint64(p.MetagpuRequests) {
 					killRequest := &pbdevice.KillGpuProcessRequest{Pid: p.Pid}
-					_, _ = device.KillGpuProcess(authenticatedContext(), killRequest)
+					_, _ = device.KillGpuProcess(utils.AuthenticatedContext(viper.GetString("token")), killRequest)
 				}
 			}
 		}

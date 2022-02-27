@@ -154,7 +154,7 @@ func (p *MetaGpuDevicePlugin) Serve() error {
 
 	go func() {
 		if err := p.server.Serve(sock); err != nil {
-			log.Errorf("GRPC server craeshed, %s", err)
+			log.Errorf("gRPC server craeshed, %s", err)
 		}
 	}()
 

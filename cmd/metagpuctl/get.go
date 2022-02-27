@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/utils"
 	"github.com/atomicgo/cursor"
 	"github.com/jedib0t/go-pretty/v6/table"
 	log "github.com/sirupsen/logrus"
@@ -44,12 +45,13 @@ var getDevicesCmd = &cobra.Command{
 }
 
 func getDevices() {
-	conn, err := GetGrpcMetaGpuSrvClientConn()
-	if err != nil {
-		log.Fatalf("can't initiate connection to metagpu server, %s", err)
+	conn := utils.GetGrpcMetaGpuSrvClientConn(viper.GetString("addr"))
+	if conn == nil {
+		log.Fatalf("can't initiate connection to metagpu server")
 	}
+	defer conn.Close()
 	device := pbdevice.NewDeviceServiceClient(conn)
-	resp, err := device.GetMetaDeviceInfo(authenticatedContext(), &pbdevice.GetMetaDeviceInfoRequest{})
+	resp, err := device.GetMetaDeviceInfo(utils.AuthenticatedContext(viper.GetString("token")), &pbdevice.GetMetaDeviceInfoRequest{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,10 +65,11 @@ func getDevices() {
 
 func getDevicesProcesses() {
 
-	conn, err := GetGrpcMetaGpuSrvClientConn()
-	if err != nil {
-		log.Fatalf("can't initiate connection to metagpu server, %s", err)
+	conn := utils.GetGrpcMetaGpuSrvClientConn(viper.GetString("addr"))
+	if conn == nil {
+		log.Fatalf("can't initiate connection to metagpu server")
 	}
+	defer conn.Close()
 	device := pbdevice.NewDeviceServiceClient(conn)
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -78,7 +81,7 @@ func getDevicesProcesses() {
 
 	if viper.GetBool("watch") {
 		request := &pbdevice.StreamProcessesRequest{PodId: hostname}
-		stream, err := device.StreamProcesses(authenticatedContext(), request)
+		stream, err := device.StreamProcesses(utils.AuthenticatedContext(viper.GetString("token")), request)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -108,7 +111,7 @@ func getDevicesProcesses() {
 				if err != nil {
 					log.Fatalf("error watching gpu processes, err: %s", err)
 				}
-				deviceResp, err := device.GetDevices(authenticatedContext(), &pbdevice.GetDevicesRequest{})
+				deviceResp, err := device.GetDevices(utils.AuthenticatedContext(viper.GetString("token")), &pbdevice.GetDevicesRequest{})
 				if err != nil {
 					log.Errorf("falid to list devices, err: %s ", err)
 					return
@@ -121,12 +124,12 @@ func getDevicesProcesses() {
 			}
 		}
 	} else {
-		processResp, err := device.GetProcesses(authenticatedContext(), &pbdevice.GetProcessesRequest{PodId: hostname})
+		processResp, err := device.GetProcesses(utils.AuthenticatedContext(viper.GetString("token")), &pbdevice.GetProcessesRequest{PodId: hostname})
 		if err != nil {
 			log.Errorf("falid to list device processes, err: %s ", err)
 			return
 		}
-		deviceResp, err := device.GetDevices(authenticatedContext(), &pbdevice.GetDevicesRequest{})
+		deviceResp, err := device.GetDevices(utils.AuthenticatedContext(viper.GetString("token")), &pbdevice.GetDevicesRequest{})
 		if err != nil {
 			log.Errorf("falid to list devices, err: %s ", err)
 			return

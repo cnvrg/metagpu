@@ -1,16 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
 	"github.com/atomicgo/cursor"
 	"github.com/jedib0t/go-pretty/v6/table"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
-	"os"
 )
 
 type TableOutput struct {
@@ -50,28 +44,6 @@ func (o *TableOutput) buildTable() {
 	t.SetColumnConfigs([]table.ColumnConfig{{Number: 1, AutoMerge: true}})
 	t.SortBy([]table.SortBy{{Name: "Device UUID", Mode: table.Asc}})
 	t.Render()
-}
-
-func GetGrpcMetaGpuSrvClientConn() (*grpc.ClientConn, error) {
-	log.Infof("initiating gRPC connection to %s", viper.GetString("addr"))
-	opts := []grpc.DialOption{grpc.WithInsecure()}
-	conn, err := grpc.Dial(viper.GetString("addr"), opts...)
-	if err != nil {
-		return nil, err
-	}
-	if err := pingServer(conn); err != nil {
-		log.Errorf("failed to connect to server 🙀, err: %s", err)
-		os.Exit(1)
-	} else {
-		log.Infof("connected to %s", viper.GetString("addr"))
-	}
-	return conn, nil
-}
-
-func authenticatedContext() context.Context {
-	ctx := context.Background()
-	md := metadata.Pairs("Authorization", viper.GetString("token"))
-	return metadata.NewOutgoingContext(ctx, md)
 }
 
 func getTotalRequests(processes []*pbdevice.DeviceProcess) (totalRequest int) {
