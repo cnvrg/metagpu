@@ -22,6 +22,9 @@ data:
     jwtSecret: topSecret
     mgctlTar: /tmp/mgctl
     mgctlAutoInject: true
+    autoReshare: true
+    serverAddr: 0.0.0.0:50052
+    memoryEnforcer: true
 ---
 # Source: metagpu-device-plugin/templates/rbac.yml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -34,10 +37,14 @@ rules:
       - ""
     resources:
       - pods
-      - pods/exec
     verbs:
       - list
       - get
+  - apiGroups:
+      - ""
+    resources:
+      - pods/exec
+    verbs:
       - create
   - apiGroups:
       - ""
@@ -110,14 +117,13 @@ spec:
         accelerator: nvidia
       containers:
         - name: metagpu-device-plugin
-          image: "docker.io/cnvrg/metagpu-device-plugin:containerd-support"
+          image: "docker.io/cnvrg/metagpu-device-plugin:main"
           imagePullPolicy: Always
           command:
             - /usr/bin/metagpu-device-plugin
             - start
             - -c
             - /etc/metagpu-device-plugin
-            - --autoReshare
           ports:
             - containerPort: 50052
           securityContext:
@@ -140,10 +146,6 @@ spec:
               mountPropagation: HostToContainer
               name: proc
               readOnly: true
-            - mountPath: /var/run/docker.sock
-              name: docker
-            - mountPath: /var/run/containerd/containerd.sock
-              name: containerd
       volumes:
         - name: device-plugin
           hostPath:
@@ -154,9 +156,3 @@ spec:
         - hostPath:
             path: /proc
           name: proc
-        - hostPath:
-            path: /var/run/docker.sock
-          name: docker
-        - hostPath:
-            path: /var/run/containerd/containerd.sock
-          name: containerd

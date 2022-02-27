@@ -190,7 +190,7 @@ func (m *NvidiaDeviceManager) GetMetaDeviceInfo() *MetaDeviceInfo {
 		log.Errorf("faild to detect hostname, err: %s", err)
 	}
 	info := make(map[string]string)
-	cudaVersion, ret := nvml.SystemGetCudaDriverVersion_v2()
+	cudaVersion, ret := nvml.SystemGetCudaDriverVersion()
 	nvmlErrorCheck(ret)
 	info["cudaVersion"] = fmt.Sprintf("%d", cudaVersion)
 	driver, ret := nvml.SystemGetDriverVersion()
