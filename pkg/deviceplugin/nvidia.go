@@ -107,7 +107,16 @@ func (m *NvidiaDeviceManager) setDevices() {
 	for i := 0; i < count; i++ {
 		device, ret := nvml.DeviceGetHandleByIndex(i)
 		uuid, ret := device.GetUUID()
+		// enable accounting mode
 		nvmlErrorCheck(ret)
+		ret = device.SetAccountingMode(nvml.FEATURE_ENABLED)
+		nvmlErrorCheck(ret)
+		// verify accounting mode is on,
+		// seems like for MIG-enabled devices we can't enable accounting mode?
+		// https://github.com/NVIDIA/nvidia-settings/blob/main/src/nvml.h#L5717
+		state, ret := device.GetAccountingMode()
+		nvmlErrorCheck(ret)
+		log.Infof("accounting mode for device: %s is %d: ", uuid, state)
 		devices = append(devices, &MetaDevice{UUID: uuid, Index: i})
 	}
 	m.Devices = devices
@@ -124,10 +133,12 @@ func (m *NvidiaDeviceManager) discoverGpuProcessesAndDevicesLoad() {
 		nvmlErrorCheck(ret)
 		processes, ret := nvidiaDevice.GetComputeRunningProcesses()
 		nvmlErrorCheck(ret)
+
 		for _, nvmlProcessInfo := range processes {
+
 			stats, ret := nvidiaDevice.GetAccountingStats(nvmlProcessInfo.Pid)
 			nvmlErrorCheck(ret)
-			log.Info(stats.Reserved)
+
 			discoveredDevicesProcesses = append(discoveredDevicesProcesses,
 				NewDeviceProcess(nvmlProcessInfo.Pid, stats.GpuUtilization, nvmlProcessInfo.UsedGpuMemory/MB, device.UUID))
 		}
@@ -242,6 +253,13 @@ func (m *NvidiaDeviceManager) MetagpuAllocation(allocationSize int, availableDev
 }
 
 func nvmlErrorCheck(ret nvml.Return) {
+	if ret == nvml.ERROR_NOT_FOUND {
+		log.Warnf("nvml error: ERROR_NOT_FOUND: [a query to find an object was unsuccessful]")
+		return
+	}
+	if ret == nvml.ERROR_NOT_SUPPORTED {
+		log.Warnf("nvml error: ERROR_NOT_SUPPORTED: [device doesn't support this feature]")
+	}
 	if ret != nvml.SUCCESS {
 		log.Fatalf("fatal error during nvml operation: %s", nvml.ErrorString(ret))
 	}
