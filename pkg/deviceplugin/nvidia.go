@@ -125,8 +125,11 @@ func (m *NvidiaDeviceManager) discoverGpuProcessesAndDevicesLoad() {
 		processes, ret := nvidiaDevice.GetComputeRunningProcesses()
 		nvmlErrorCheck(ret)
 		for _, nvmlProcessInfo := range processes {
+			stats, ret := nvidiaDevice.GetAccountingStats(nvmlProcessInfo.Pid)
+			nvmlErrorCheck(ret)
+			log.Info(stats.Reserved)
 			discoveredDevicesProcesses = append(discoveredDevicesProcesses,
-				NewDeviceProcess(nvmlProcessInfo.Pid, nvmlProcessInfo.UsedGpuMemory/MB, device.UUID))
+				NewDeviceProcess(nvmlProcessInfo.Pid, stats.GpuUtilization, nvmlProcessInfo.UsedGpuMemory/MB, device.UUID))
 		}
 		device.Utilization = &DeviceUtilization{Gpu: utilization.Gpu, Memory: utilization.Memory / uint32(MB)}
 		device.Memory = &DeviceMemory{
@@ -203,7 +206,7 @@ func (m *NvidiaDeviceManager) GetMetaDeviceInfo() *MetaDeviceInfo {
 }
 
 func (m *NvidiaDeviceManager) KillGpuProcess(pid uint32) error {
-	p := NewDeviceProcess(pid, 0, "")
+	p := NewDeviceProcess(pid, 0, 0, "")
 	return p.Kill()
 }
 

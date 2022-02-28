@@ -18,6 +18,7 @@ func listDeviceProcesses(podId string, p *deviceplugin.MetaGpuDevicePlugin) (dev
 			PodName:         process.PodId,
 			PodNamespace:    process.PodNamespace,
 			MetagpuRequests: process.PodMetagpuRequest,
+			GpuUtilization:  process.GpuUtilization,
 		})
 	}
 	return

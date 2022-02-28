@@ -14,6 +14,7 @@ import (
 type DeviceProcess struct {
 	Pid               uint32
 	DeviceUuid        string
+	GpuUtilization    uint32
 	GpuMemory         uint64
 	Cmdline           []string
 	User              string
@@ -23,11 +24,12 @@ type DeviceProcess struct {
 	PodMetagpuRequest int64
 }
 
-func NewDeviceProcess(pid uint32, gpuMem uint64, devUuid string) *DeviceProcess {
+func NewDeviceProcess(pid, gpuUtil uint32, gpuMem uint64, devUuid string) *DeviceProcess {
 	dp := &DeviceProcess{
-		Pid:        pid,
-		GpuMemory:  gpuMem,
-		DeviceUuid: devUuid,
+		Pid:            pid,
+		GpuUtilization: gpuUtil,
+		GpuMemory:      gpuMem,
+		DeviceUuid:     devUuid,
 	}
 	dp.SetProcessUsername()
 	dp.SetProcessCmdline()
