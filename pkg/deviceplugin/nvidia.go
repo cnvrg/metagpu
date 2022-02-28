@@ -116,7 +116,7 @@ func (m *NvidiaDeviceManager) setDevices() {
 		// https://github.com/NVIDIA/nvidia-settings/blob/main/src/nvml.h#L5717
 		state, ret := device.GetAccountingMode()
 		nvmlErrorCheck(ret)
-		log.Infof("accounting mode for device: %s is %d: ", uuid, state)
+		log.Infof("accounting mode for device: %s is: %d ", uuid, state)
 		devices = append(devices, &MetaDevice{UUID: uuid, Index: i})
 	}
 	m.Devices = devices
@@ -259,6 +259,11 @@ func nvmlErrorCheck(ret nvml.Return) {
 	}
 	if ret == nvml.ERROR_NOT_SUPPORTED {
 		log.Warnf("nvml error: ERROR_NOT_SUPPORTED: [device doesn't support this feature]")
+		return
+	}
+	if ret == nvml.ERROR_NO_PERMISSION {
+		log.Warnf("nvml error: ERROR_NO_PERMISSION: [user doesn't have permission to perform this operation]")
+		return
 	}
 	if ret != nvml.SUCCESS {
 		log.Fatalf("fatal error during nvml operation: %s", nvml.ErrorString(ret))

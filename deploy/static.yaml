@@ -112,6 +112,7 @@ spec:
         - name: regcred
       hostPID: true
       hostNetwork: true
+
       serviceAccountName: metagpu-device-plugin
       nodeSelector:
         accelerator: nvidia
@@ -127,9 +128,7 @@ spec:
           ports:
             - containerPort: 50052
           securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: [ "ALL" ]
+            privileged: true
           env:
           - name: POD_IP
             valueFrom:
