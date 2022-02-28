@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 	"net"
 	"os"
@@ -61,7 +62,7 @@ func (s *MetaGpuServer) Start() {
 
 		dp := devicevapi.DeviceService{}
 		devicevpb.RegisterDeviceServiceServer(grpcServer, &dp)
-
+		reflection.Register(grpcServer)
 		if err := grpcServer.Serve(lis); err != nil {
 			log.Fatal(err)
 		}
