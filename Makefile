@@ -47,5 +47,5 @@ deploy:
 dev-sync-azure:
 	rsync -av  --exclude 'bin' --exclude '.git'  /Users/dima/.go/src/github.com/AccessibleAI/metagpu-device-plugin/* root@20.120.94.51:/root/.go/src/github.com/AccessibleAI/metagpu-device-plugin
 
-dev-sync-trex:
+dev-sync-terex:
 	rsync -av  --exclude 'bin' --exclude '.git'  /Users/dima/.go/src/github.com/AccessibleAI/metagpu-device-plugin/* root@212.199.86.38:/root/.go/src/github.com/AccessibleAI/metagpu-device-plugin

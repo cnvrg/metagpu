@@ -4,6 +4,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type MetaDevice struct {
+	Node        string `json:"node"`
+	UUID        string `json:"uuid"`
+	DeviceIndex uint   `json:"deviceIndex"`
+	MetaGpus    uint   `json:"slices"`
+}
+
+type MetaResource struct {
+	ResourceName string        `json:"resourceName"`
+	MetaDevices  []*MetaDevice `json:"metaDevices"`
+}
+
 type MetaDeviceConfiguration struct {
 	ID          string `json:"id"`
 	DeviceIndex uint   `json:"deviceIndex"`
@@ -12,7 +24,8 @@ type MetaDeviceConfiguration struct {
 }
 
 type MetaGpuSpec struct {
-	MetaDevice []*MetaDeviceConfiguration `json:"metaDevices"`
+	DiscoveryMode string        `json:"discoveryMode"`
+	MetaResources []*MetaDevice `json:"metaResources"`
 }
 
 type MetaGpuStatus struct {

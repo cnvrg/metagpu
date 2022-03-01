@@ -25,7 +25,6 @@ spec:
         - name: regcred
       hostPID: true
       hostNetwork: true
-
       serviceAccountName: metagpu-device-plugin
       nodeSelector:
         accelerator: nvidia
