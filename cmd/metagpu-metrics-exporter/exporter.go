@@ -210,7 +210,7 @@ func recordMetrics() {
 			conn.Close()
 			// clear the cache
 			clearGpuDevicesCache()
-			time.Sleep(1 * time.Second)
+			time.Sleep(15 * time.Second)
 		}
 	}()
 }

@@ -2,9 +2,10 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: metagpu-exporter
-  namespace: kube-system
+  namespace: cnvrg
   labels:
     app: "metagpu-exporter"
+    cnvrg-infra-prometheus: cnvrg-infra-cnvrg
 spec:
   selector:
     matchLabels:

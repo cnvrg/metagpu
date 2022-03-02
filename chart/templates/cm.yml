@@ -3,7 +3,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: metagpu-device-plugin-config
-  namespace: kube-system
+  namespace: cnvrg
 data:
   config.yaml: |
     metaGpus: 2

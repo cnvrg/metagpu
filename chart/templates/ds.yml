@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: metagpu-device-plugin
-  namespace: kube-system
+  namespace: cnvrg
 spec:
   selector:
     matchLabels:

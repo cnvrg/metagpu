@@ -3,7 +3,9 @@ kind: Service
 apiVersion: v1
 metadata:
   name: metagpu-device-plugin
-  namespace: kube-system
+  namespace: cnvrg
+  labels:
+    app: "metagpu-exporter"
 spec:
   selector:
     name: metagpu-device-plugin
