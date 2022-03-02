@@ -15,6 +15,9 @@ RUN go build \
 RUN go build \
      -ldflags="-X 'main.Build=${BUILD_SHA}' -X 'main.Version=${BUILD_VERSION}'" \
      -o mgctl cmd/metagpuctl/*.go
+RUN go build \
+     -ldflags="-X 'main.Build=${BUILD_SHA}' -X 'main.Version=${BUILD_VERSION}'" \
+     -o mgexporter cmd/metagpu-metrics-exporter/*.go
 
 FROM nvidia/cuda:11.6.0-base-ubuntu20.04
 
@@ -35,4 +38,5 @@ RUN apt update -y \
     && apt install -y vim
 COPY --from=builder /root/.go/src/metagpu/metagpu-device-plugin /usr/bin/metagpu-device-plugin
 COPY --from=builder /root/.go/src/metagpu/mgctl /usr/bin/mgctl
-RUN cp /usr/bin/mgctl /tmp
+COPY --from=builder /root/.go/src/metagpu/mgexporter /usr/bin/mgexporter
+RUN cp /usr/bin/mgexporter /tmp

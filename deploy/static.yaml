@@ -83,6 +83,10 @@ spec:
   ports:
     - protocol: TCP
       port: 50052
+      name: grcp
+    - protocol: TCP
+      port: 2112
+      name: metrics
 ---
 # Source: metagpu-device-plugin/templates/ds.yml
 apiVersion: apps/v1
@@ -144,6 +148,16 @@ spec:
               mountPropagation: HostToContainer
               name: proc
               readOnly: true
+        - name: metagpu-exporter
+          image: "docker.io/cnvrg/metagpu-device-plugin:main"
+          imagePullPolicy: Always
+          command:
+            - /usr/bin/mgexporter
+            - start
+            - -t
+            - eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1ldGFncHVAaW5zdGFuY2UiLCJ2aXNpYmlsaXR5TGV2ZWwiOiJsMCJ9.2rHykHFcHoIr-OCoPA5Am4ubf31-RJcayZnOTK6db94
+          ports:
+            - containerPort: 2112
       volumes:
         - name: device-plugin
           hostPath:
@@ -154,3 +168,23 @@ spec:
         - hostPath:
             path: /proc
           name: proc
+---
+# Source: metagpu-device-plugin/templates/servicemonitor.yml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: metagpu-exporter
+  namespace: kube-system
+  labels:
+    app: "metagpu-exporter"
+spec:
+  selector:
+    matchLabels:
+      app: "metagpu-exporter"
+  namespaceSelector:
+    matchNames:
+      - cnvrg
+  endpoints:
+    - port: "metrics"
+      path: "/metrics"
+      interval: "15s"

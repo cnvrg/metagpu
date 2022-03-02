@@ -57,6 +57,16 @@ spec:
               mountPropagation: HostToContainer
               name: proc
               readOnly: true
+        - name: metagpu-exporter
+          image: "docker.io/cnvrg/metagpu-device-plugin:{{ .Values.tag }}"
+          imagePullPolicy: Always
+          command:
+            - /usr/bin/mgexporter
+            - start
+            - -t
+            - eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1ldGFncHVAaW5zdGFuY2UiLCJ2aXNpYmlsaXR5TGV2ZWwiOiJsMCJ9.2rHykHFcHoIr-OCoPA5Am4ubf31-RJcayZnOTK6db94
+          ports:
+            - containerPort: 2112
       volumes:
         - name: device-plugin
           hostPath:

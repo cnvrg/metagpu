@@ -10,3 +10,7 @@ spec:
   ports:
     - protocol: TCP
       port: 50052
+      name: grcp
+    - protocol: TCP
+      port: 2112
+      name: metrics
