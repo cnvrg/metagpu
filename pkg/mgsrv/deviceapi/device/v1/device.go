@@ -29,7 +29,7 @@ func (s *DeviceService) LoadContext(ctx context.Context) error {
 	s.dvl = ctx.Value("deviceVl").(string)
 	// stop execution if visibility level is empty
 	if s.vl == "" {
-		return status.Errorf(codes.Aborted, "can't detect visibility level for request", s.vl)
+		return status.Errorf(codes.Aborted, "can't detect visibility level for request: %s", s.vl)
 	}
 	// stop executing if container or device visibility level is empty
 	if s.cvl == "" || s.dvl == "" {
@@ -122,7 +122,7 @@ func (s *DeviceService) GetMetaDeviceInfo(ctx context.Context, r *pb.GetMetaDevi
 		return resp, err
 	}
 	if s.vl != s.dvl {
-		return resp, status.Errorf(codes.PermissionDenied, "wrong visibility level", s.vl)
+		return resp, status.Errorf(codes.PermissionDenied, "wrong visibility level: %s", s.vl)
 	}
 	deviceInfo := s.gpuMgr.GetDeviceInfo()
 	resp.Node = deviceInfo.Node

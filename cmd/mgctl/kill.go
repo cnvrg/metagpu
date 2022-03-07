@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
-	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/utils"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/ctlutils"
 	"github.com/manifoldco/promptui"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -20,7 +20,7 @@ var killCmd = &cobra.Command{
 }
 
 func killGpuProcess() {
-	conn := utils.GetGrpcMetaGpuSrvClientConn(viper.GetString("addr"))
+	conn := ctlutils.GetGrpcMetaGpuSrvClientConn(viper.GetString("addr"))
 	if conn == nil {
 		log.Fatalf("can't initiate connection to metagpu server")
 	}
@@ -31,7 +31,7 @@ func killGpuProcess() {
 		log.Errorf("faild to detect podId, err: %s", err)
 	}
 	ldr := &pbdevice.GetProcessesRequest{PodId: hostname}
-	resp, err := device.GetProcesses(utils.AuthenticatedContext(viper.GetString("token")), ldr)
+	resp, err := device.GetProcesses(ctlutils.AuthenticatedContext(viper.GetString("token")), ldr)
 	if err != nil {
 		log.Errorf("falid to list device processes, err: %s ", err)
 		return
@@ -81,11 +81,10 @@ func killGpuProcess() {
 
 	if confirm == "Yes" {
 		killRequest := &pbdevice.KillGpuProcessRequest{Pid: process.Pid}
-		if _, err := device.KillGpuProcess(utils.AuthenticatedContext(viper.GetString("token")), killRequest); err != nil {
+		if _, err := device.KillGpuProcess(ctlutils.AuthenticatedContext(viper.GetString("token")), killRequest); err != nil {
 			log.Fatalf("error killing process, err: %s", err)
 		} else {
 			log.Infof("%d killed", process.Pid)
 		}
 	}
-
 }

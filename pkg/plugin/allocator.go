@@ -1,4 +1,4 @@
-package deviceplugin
+package plugin
 
 import (
 	log "github.com/sirupsen/logrus"

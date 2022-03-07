@@ -1,4 +1,4 @@
-package deviceplugin
+package plugin
 
 import (
 	"context"
@@ -61,7 +61,7 @@ func (p *MetaGpuDevicePlugin) GetDevicePluginOptions(ctx context.Context, empty 
 
 func (p *MetaGpuDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
 
-	if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.GetPluginDevices()}); err != nil {
+	if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.GetPluginDevices(p.totalShares)}); err != nil {
 		log.Error(err)
 	}
 
@@ -70,7 +70,7 @@ func (p *MetaGpuDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.Devic
 		case <-p.stop:
 			return nil
 		case <-p.MetaGpuRecalculation:
-			if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.GetPluginDevices()}); err != nil {
+			if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.GetPluginDevices(p.totalShares)}); err != nil {
 				log.Error(err)
 			}
 		}
@@ -112,7 +112,7 @@ func (p *MetaGpuDevicePlugin) Allocate(ctx context.Context, request *pluginapi.A
 			"NVIDIA_VISIBLE_DEVICES": strings.Join(realDevices, ","),
 			"METAGPU_MAX_MEM":        metaGpuMaxMem,
 			"MG_CTL_ADDR":            fmt.Sprintf("%s:50052", os.Getenv("POD_IP")),
-			"MG_CTL_TOKEN":           "", // TODO: fix this
+			"MG_CTL_TOKEN":           viper.GetString("containerToken"),
 		}
 		allocResponse.ContainerResponses = append(allocResponse.ContainerResponses, &response)
 	}

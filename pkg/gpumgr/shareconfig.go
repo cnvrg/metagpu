@@ -17,18 +17,28 @@ type DevicesSharingConfigs struct {
 }
 
 func NewDeviceSharingConfig() *DevicesSharingConfigs {
+
 	var cfg []*DeviceSharingConfig
-	if err := viper.UnmarshalKey("deviceSharing", cfg); err != nil {
-		log.Fatal(err)
+	if err := viper.UnmarshalKey("deviceSharing", &cfg); err != nil {
+		log.Fatal(err) // TODO: add context to logs!!!!
+	}
+	if len(cfg) > 1 {
+		for _, devCfg := range cfg {
+			for _, uuid := range devCfg.Uuid {
+				if uuid == "*" {
+					log.Fatalf("wrong gpu sharing configuration, "+
+						"'deviceSharing' with uuid: [ * ] must have sinlge (1) entry, but have: %d", len(cfg))
+				}
+			}
+		}
 	}
 	return &DevicesSharingConfigs{Configs: cfg}
 }
 
 func (c *DevicesSharingConfigs) getDeviceSharingConfigs(devUuid string) (*DeviceSharingConfig, error) {
-	// TODO: add support for wildcard
 	for _, devCfg := range c.Configs {
 		for _, uuid := range devCfg.Uuid {
-			if uuid == devUuid {
+			if uuid == devUuid || uuid == "*" {
 				return devCfg, nil
 			}
 		}

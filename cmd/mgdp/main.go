@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/deviceplugin"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/gpumgr"
-	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/metagpusrv"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/mgsrv"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/plugin"
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -45,19 +45,19 @@ var (
 		Use:   "start",
 		Short: "Start metagpu device plugin",
 		Run: func(cmd *cobra.Command, args []string) {
-
+			var plugins []*plugin.MetaGpuDevicePlugin
+			// load gpu shares configuration
 			shareConfigs := gpumgr.NewDeviceSharingConfig()
-			var plugins []*deviceplugin.MetaGpuDevicePlugin
 			// init plugins
 			for _, c := range shareConfigs.Configs {
-				plugins = append(plugins, deviceplugin.NewMetaGpuDevicePlugin(metaGpuRecalc, c.Uuid, c.ResourceName, c.MetaGpus))
+				plugins = append(plugins, plugin.NewMetaGpuDevicePlugin(metaGpuRecalc, c.Uuid, c.ResourceName, c.MetaGpus))
 			}
 			// start plugins
 			for _, p := range plugins {
 				p.Start()
 			}
 			// start grpc server
-			metagpusrv.NewMetaGpuServer(gpumgr.NewGpuManager()).Start()
+			mgsrv.NewMetaGpuServer().Start()
 			// handle interrupts
 			sigCh := make(chan os.Signal, 1)
 			signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)

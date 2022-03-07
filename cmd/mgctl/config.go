@@ -2,7 +2,7 @@ package main
 
 import (
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
-	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/utils"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/ctlutils"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -27,7 +27,7 @@ func patchConfigs() {
 	if viper.GetInt32("metagpu") != 0 {
 		metaGpus := viper.GetInt32("metagpu")
 		log.Info(metaGpus)
-		conn := utils.GetGrpcMetaGpuSrvClientConn(viper.GetString("addr"))
+		conn := ctlutils.GetGrpcMetaGpuSrvClientConn(viper.GetString("addr"))
 		if conn == nil {
 			log.Fatalf("can't initiate connection to metagpu server")
 		}
@@ -35,7 +35,7 @@ func patchConfigs() {
 		device := pbdevice.NewDeviceServiceClient(conn)
 
 		request := &pbdevice.PatchConfigsRequest{MetaGpus: metaGpus}
-		if _, err := device.PatchConfigs(utils.AuthenticatedContext(viper.GetString("token")), request); err != nil {
+		if _, err := device.PatchConfigs(ctlutils.AuthenticatedContext(viper.GetString("token")), request); err != nil {
 			log.Error(err)
 		}
 	}

@@ -1,4 +1,4 @@
-package metagpusrv
+package mgsrv
 
 import (
 	"context"
@@ -28,7 +28,7 @@ func (s *MetaGpuServer) streamServerInterceptor() grpc.StreamServerInterceptor {
 			wrapper.ctx = context.WithValue(ss.Context(), TokenVisibilityClaimName, visibility)
 			wrapper.ctx = context.WithValue(wrapper.ctx, "containerVl", string(ContainerVisibility))
 			wrapper.ctx = context.WithValue(wrapper.ctx, "deviceVl", string(DeviceVisibility))
-			wrapper.ctx = context.WithValue(wrapper.ctx, "plugin", s.plugin)
+			wrapper.ctx = context.WithValue(wrapper.ctx, "gpuMgr", s.gpuMgr)
 
 		}
 		return handler(srv, wrapper)
@@ -48,7 +48,7 @@ func (s *MetaGpuServer) unaryServerInterceptor() grpc.UnaryServerInterceptor {
 			ctx = context.WithValue(ctx, "containerVl", string(ContainerVisibility))
 			ctx = context.WithValue(ctx, "deviceVl", string(DeviceVisibility))
 		}
-		ctx = context.WithValue(ctx, "plugin", s.plugin)
+		ctx = context.WithValue(ctx, "gpuMgr", s.gpuMgr)
 		h, err := handler(ctx, req)
 		if viper.GetBool("verbose") {
 			log.Infof("[method: %s duration: %s]", info.FullMethod, time.Since(start))

@@ -40,7 +40,7 @@ func CopymgctlToContainer(containerId string) {
 		log.Error(err)
 		return
 	}
-	// TODO: create in-memory cache with tall the pods that's already has mgctl
+	// TODO: create in-memory cache with tell the pods that's already has mgctl
 	if shouldCopyMgctl(pe) {
 		copyMgctl(pe)
 		makeMgctlExecutable(pe)

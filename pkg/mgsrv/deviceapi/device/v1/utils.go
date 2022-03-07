@@ -2,9 +2,10 @@ package v1
 
 import (
 	pb "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/gpumgr"
 )
 
-func listDeviceProcesses(podId string, gpuStatus *gpumgr.GpuStatus) (devProc []*pb.DeviceProcess) {
+func listDeviceProcesses(podId string, gpuStatus *gpumgr.GpuMgr) (devProc []*pb.DeviceProcess) {
 
 	for _, process := range gpuStatus.GetProcesses(podId) {
 		devProc = append(devProc, &pb.DeviceProcess{

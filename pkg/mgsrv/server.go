@@ -1,4 +1,4 @@
-package metagpusrv
+package mgsrv
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"fmt"
 	devicevpb "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/gpumgr"
-	devicevapi "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/metagpusrv/deviceapi/device/v1"
+	devicevapi "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/mgsrv/deviceapi/device/v1"
 	"github.com/golang-jwt/jwt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -16,14 +16,12 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 	"net"
-	"os"
-	"path/filepath"
 )
 
 type VisibilityLevel string
 
 type MetaGpuServer struct {
-	gpuStatus                     *gpumgr.GpuMgr
+	gpuMgr                        *gpumgr.GpuMgr
 	ContainerLevelVisibilityToken string
 	DeviceLevelVisibilityToken    string
 }
@@ -34,14 +32,8 @@ var (
 	TokenVisibilityClaimName                 = "visibilityLevel"
 )
 
-func NewMetaGpuServer(gs *gpumgr.GpuMgr) *MetaGpuServer {
-	s := &MetaGpuServer{gpuStatus: gs}
-	s.ContainerLevelVisibilityToken = s.GenerateAuthTokens(ContainerVisibility)
-	s.DeviceLevelVisibilityToken = s.GenerateAuthTokens(DeviceVisibility)
-	s.gpuStatus.SetContainerLevelVisibilityToken(s.ContainerLevelVisibilityToken)
-	s.gpuStatus.SetDeviceLevelVisibilityToken(s.DeviceLevelVisibilityToken)
-	s.SaveTokensOnLocalStorage()
-	return s
+func NewMetaGpuServer() *MetaGpuServer {
+	return &MetaGpuServer{gpuMgr: gpumgr.NewGpuManager()}
 }
 
 func (s *MetaGpuServer) Start() {
@@ -51,7 +43,7 @@ func (s *MetaGpuServer) Start() {
 		if err != nil {
 			log.Fatalf("failed to listen: %v", err)
 		}
-		log.Infof("grpc server listening on %s", viper.GetString("serverAddr"))
+		log.Infof("metagpu gRPC management server listening on %s", viper.GetString("serverAddr"))
 
 		opts := []grpc.ServerOption{
 			grpc.UnaryInterceptor(s.unaryServerInterceptor()),
@@ -78,28 +70,6 @@ func (s *MetaGpuServer) GenerateAuthTokens(visibility VisibilityLevel) string {
 		log.Error(err)
 	}
 	return tokenString
-}
-
-func (s *MetaGpuServer) SaveTokensOnLocalStorage() {
-	ex, err := os.Executable()
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	exPath := filepath.Dir(ex)
-	filePath := exPath + "/.mgsrvtokens"
-	f, err := os.Create(filePath)
-	defer f.Close()
-	if err != nil {
-		log.Error("unable write tokens to local storage")
-	}
-	tokensStr := fmt.Sprintf("containerVl: %s\ndeviceVl:%s\n", s.ContainerLevelVisibilityToken, s.DeviceLevelVisibilityToken)
-	_, err = f.WriteString(tokensStr)
-	if err != nil {
-		log.Error("failed to write tokens to .mgsrvtokens file")
-	}
-	log.Infof("tokens saved in %s", filePath)
-
 }
 
 func (s *MetaGpuServer) IsMethodPublic(fullMethod string) bool {

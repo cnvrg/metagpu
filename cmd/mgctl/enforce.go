@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
-	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/utils"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/ctlutils"
 	"github.com/atomicgo/cursor"
 	"github.com/jedib0t/go-pretty/v6/table"
 	log "github.com/sirupsen/logrus"
@@ -25,7 +25,7 @@ var enforceCmd = &cobra.Command{
 }
 
 func enforceMemoryLimits() {
-	conn := utils.GetGrpcMetaGpuSrvClientConn(viper.GetString("addr"))
+	conn := ctlutils.GetGrpcMetaGpuSrvClientConn(viper.GetString("addr"))
 	if conn == nil {
 		log.Fatalf("can't initiate connection to metagpu server")
 	}
@@ -36,7 +36,7 @@ func enforceMemoryLimits() {
 		log.Errorf("faild to detect podId, err: %s", err)
 	}
 	request := &pbdevice.StreamProcessesRequest{PodId: hostname}
-	stream, err := device.StreamProcesses(utils.AuthenticatedContext(viper.GetString("token")), request)
+	stream, err := device.StreamProcesses(ctlutils.AuthenticatedContext(viper.GetString("token")), request)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func enforceMemoryLimits() {
 			if err != nil {
 				log.Fatalf("error watching gpu processes, err: %s", err)
 			}
-			deviceResp, err := device.GetDevices(utils.AuthenticatedContext(viper.GetString("token")), &pbdevice.GetDevicesRequest{})
+			deviceResp, err := device.GetDevices(ctlutils.AuthenticatedContext(viper.GetString("token")), &pbdevice.GetDevicesRequest{})
 			if err != nil {
 				log.Errorf("falid to list devices, err: %s ", err)
 				return
@@ -82,7 +82,7 @@ func enforceMemoryLimits() {
 				d := deviceResp.Device[p.Uuid]
 				if p.Memory > d.MemoryShareSize*uint64(p.MetagpuRequests) {
 					killRequest := &pbdevice.KillGpuProcessRequest{Pid: p.Pid}
-					_, _ = device.KillGpuProcess(utils.AuthenticatedContext(viper.GetString("token")), killRequest)
+					_, _ = device.KillGpuProcess(ctlutils.AuthenticatedContext(viper.GetString("token")), killRequest)
 				}
 			}
 		}

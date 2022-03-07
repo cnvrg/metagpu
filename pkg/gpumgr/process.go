@@ -98,14 +98,14 @@ func (p *GpuProcess) EnrichProcessK8sInfo() {
 		for _, cStatus := range pod.Status.ContainerStatuses {
 			cId := strings.Split(cStatus.ContainerID, "//")
 			if len(cId) < 2 {
-				log.Error("can't detect containerName id form k8s pod")
+				log.Error("can't detect container ID form k8s pod")
 				return
 			}
 			if cId[1] == p.ContainerId {
 				p.PodId = pod.Name
 				p.PodNamespace = pod.Namespace
 				for _, container := range pod.Spec.Containers {
-					resourceName := v1core.ResourceName(viper.GetString("resourceName"))
+					resourceName := v1core.ResourceName(p.GetResourceName())
 					if quantity, ok := container.Resources.Limits[resourceName]; ok {
 						p.PodMetagpuRequest = quantity.Value()
 					}
@@ -129,6 +129,17 @@ func (p *GpuProcess) GetDevice(devices []*GpuDevice) *GpuDevice {
 		}
 	}
 	return nil
+}
+
+func (p *GpuProcess) GetResourceName() string {
+	for _, cfg := range NewDeviceSharingConfig().Configs {
+		for _, uuid := range cfg.Uuid {
+			if p.DeviceUuid == uuid || uuid == "*" {
+				return cfg.ResourceName
+			}
+		}
+	}
+	return ""
 }
 
 func NewGpuProcess(pid, gpuUtil uint32, gpuMem uint64, devUuid string) *GpuProcess {

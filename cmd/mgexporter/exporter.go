@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
-	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/utils"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/ctlutils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -106,7 +106,7 @@ var (
 func getGpuProcesses() []*pbdevice.DeviceProcess {
 	devices := pbdevice.NewDeviceServiceClient(conn)
 	req := &pbdevice.GetProcessesRequest{}
-	ctx := utils.AuthenticatedContext(viper.GetString("token"))
+	ctx := ctlutils.AuthenticatedContext(viper.GetString("token"))
 	resp, err := devices.GetProcesses(ctx, req)
 	if err != nil {
 		log.Error(err)
@@ -117,7 +117,7 @@ func getGpuProcesses() []*pbdevice.DeviceProcess {
 func getGpuDevicesInfo() []*pbdevice.Device {
 	devices := pbdevice.NewDeviceServiceClient(conn)
 	req := &pbdevice.GetMetaDeviceInfoRequest{}
-	ctx := utils.AuthenticatedContext(viper.GetString("token"))
+	ctx := ctlutils.AuthenticatedContext(viper.GetString("token"))
 	resp, err := devices.GetMetaDeviceInfo(ctx, req)
 	if err != nil {
 		log.Error(err)
@@ -132,7 +132,7 @@ func setGpuDevicesCache() map[string]*pbdevice.Device {
 	devicesCache = make(map[string]*pbdevice.Device)
 	devices := pbdevice.NewDeviceServiceClient(conn)
 	req := &pbdevice.GetDevicesRequest{}
-	ctx := utils.AuthenticatedContext(viper.GetString("token"))
+	ctx := ctlutils.AuthenticatedContext(viper.GetString("token"))
 	resp, err := devices.GetDevices(ctx, req)
 	if err != nil {
 		log.Error(err)
@@ -195,7 +195,7 @@ func setProcessesMetrics() {
 func recordMetrics() {
 	go func() {
 		for {
-			conn = utils.GetGrpcMetaGpuSrvClientConn(viper.GetString("mgsrv"))
+			conn = ctlutils.GetGrpcMetaGpuSrvClientConn(viper.GetString("mgsrv"))
 			if conn == nil {
 				log.Fatal("connection is nil, can't continue")
 				continue
