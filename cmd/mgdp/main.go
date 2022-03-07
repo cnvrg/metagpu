@@ -48,8 +48,20 @@ var metaGpuStart = &cobra.Command{
 	Use:   "start",
 	Short: "Start metagpu device plugin",
 	Run: func(cmd *cobra.Command, args []string) {
-		f := deviceplugin.NewMetaGpuDevicePlugin(metaGpuRecalc)
-		f.Start()
+		type deviceConfig struct {
+			uuid         string
+			resourceName string
+			metaGpus     int
+		}
+		var devConfig []deviceConfig
+		if err := viper.UnmarshalKey("deviceIds", devConfig); err != nil {
+			log.Error(err, "bad configs")
+			os.Exit(1)
+		}
+		for _, device := range devConfig {
+			f := deviceplugin.NewMetaGpuDevicePlugin(metaGpuRecalc)
+			f.Start()
+		}
 
 		metagpusrv.NewMetaGpuServer(f).Start()
 

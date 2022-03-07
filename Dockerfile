@@ -11,13 +11,13 @@ COPY gen gen
 RUN go mod tidy
 RUN go build \
     -ldflags="-extldflags=-Wl,-z,lazy -s -w -X 'main.Build=${BUILD_SHA}' -X 'main.Version=${BUILD_VERSION}'" \
-    -o metagpu-device-plugin cmd/metagpu-device-plugin/main.go
+    -o mgdp cmd/mgdp/main.go
 RUN go build \
      -ldflags="-X 'main.Build=${BUILD_SHA}' -X 'main.Version=${BUILD_VERSION}'" \
-     -o mgctl cmd/metagpuctl/*.go
+     -o mgctl cmd/mgctl/*.go
 RUN go build \
      -ldflags="-X 'main.Build=${BUILD_SHA}' -X 'main.Version=${BUILD_VERSION}'" \
-     -o mgexporter cmd/metagpu-metrics-exporter/*.go
+     -o mgexporter cmd/mgexporter/*.go
 
 FROM nvidia/cuda:11.6.0-base-ubuntu20.04
 
@@ -36,7 +36,7 @@ LABEL summary="cnvrg.io device plugin for Kubernetes"
 LABEL description="See summary"
 RUN apt update -y \
     && apt install -y vim
-COPY --from=builder /root/.go/src/metagpu/metagpu-device-plugin /usr/bin/metagpu-device-plugin
+COPY --from=builder /root/.go/src/metagpu/mgdp /usr/bin/mgdp
 COPY --from=builder /root/.go/src/metagpu/mgctl /usr/bin/mgctl
 COPY --from=builder /root/.go/src/metagpu/mgexporter /usr/bin/mgexporter
-RUN cp /usr/bin/mgexporter /tmp
+RUN cp /usr/bin/mgctl /tmp

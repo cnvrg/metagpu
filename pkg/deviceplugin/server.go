@@ -19,17 +19,6 @@ var (
 	UnixSocket = "metagpu.sock"
 )
 
-type MetaGpuDevicePlugin struct {
-	DeviceManager
-	server                        *grpc.Server
-	socket                        string
-	resourceName                  string
-	containerLevelVisibilityToken string
-	deviceLevelVisibilityToken    string
-	stop                          chan interface{}
-	MetaGpuRecalculation          chan bool
-}
-
 func (p *MetaGpuDevicePlugin) SetDeviceLevelVisibilityToken(token string) {
 	p.deviceLevelVisibilityToken = token
 }
@@ -101,7 +90,7 @@ func (p *MetaGpuDevicePlugin) GetPreferredAllocation(ctx context.Context, reques
 	allocResponse := &pluginapi.PreferredAllocationResponse{}
 	for _, req := range request.ContainerRequests {
 		allocContainerResponse := &pluginapi.ContainerPreferredAllocationResponse{}
-		allocContainerResponse.DeviceIDs, _ = p.MetagpuAllocation(int(req.AllocationSize), req.GetAvailableDeviceIDs())
+		allocContainerResponse.DeviceIDs, _ = p.MetagpuAllocation(int(req.AllocationSize), p.totalShares, req.GetAvailableDeviceIDs())
 		log.Info("preferred devices ids:")
 		for _, devId := range allocContainerResponse.DeviceIDs {
 			log.Info(devId)
@@ -124,7 +113,7 @@ func (p *MetaGpuDevicePlugin) Allocate(ctx context.Context, request *pluginapi.A
 		metaGpuMaxMem := ""
 		realDevices := p.ParseRealDeviceId(req.DevicesIDs)
 		if len(realDevices) > 0 {
-			metaGpuMaxMem = fmt.Sprintf("%d", p.GetGpuShareMemSize(realDevices[0])*uint64(len(req.DevicesIDs)))
+			metaGpuMaxMem = fmt.Sprintf("%d", p.totalShares*(len(req.DevicesIDs)))
 		}
 		response.Envs = map[string]string{
 			"CNVRG_META_GPU_DEVICES": strings.Join(req.DevicesIDs, ","),
@@ -192,16 +181,18 @@ func (p *MetaGpuDevicePlugin) Stop() {
 	close(p.MetaGpuRecalculation)
 }
 
-func NewMetaGpuDevicePlugin(metaGpuRecalculation chan bool) *MetaGpuDevicePlugin {
+func NewMetaGpuDevicePlugin(metaGpuRecalculation chan bool, deviceUuids []string, resourceName string, gpuShares int) *MetaGpuDevicePlugin {
 	if viper.GetString("accelerator") != "nvidia" {
 		log.Fatal("accelerator not supported, currently only nvidia is supported")
 	}
 	return &MetaGpuDevicePlugin{
 		server:               grpc.NewServer([]grpc.ServerOption{}...),
 		socket:               fmt.Sprintf("%s%s", pluginapi.DevicePluginPath, UnixSocket),
-		resourceName:         viper.GetString("resourceName"),
+		resourceName:         resourceName,
 		DeviceManager:        NewNvidiaDeviceManager(),
 		stop:                 make(chan interface{}),
 		MetaGpuRecalculation: metaGpuRecalculation,
+		deviceUuids:          deviceUuids,
+		totalShares:          gpuShares,
 	}
 }

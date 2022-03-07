@@ -7,7 +7,7 @@ mgctlAutoInject: true
 autoReshare: true
 serverAddr: 0.0.0.0:50052
 memoryEnforcer: true
-deviceSharing:
+deviceIds:
   - uuid: *
     resourceName: cnvrg.io/metagpu
     metaGpus: 2

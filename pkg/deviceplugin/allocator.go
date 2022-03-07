@@ -2,33 +2,18 @@ package deviceplugin
 
 import (
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 )
 
-type DeviceUuid string
-
-type DeviceLoad struct {
-	Metagpus []string
-}
-
-type DeviceAllocation struct {
-	LoadMap             []*DeviceLoad
-	AvailableDevIds     []string
-	AllocationSize      int
-	TotalSharesPerGPU   int
-	MetagpusAllocations []string
-}
-
-func NewDeviceAllocation(allocationSize int, availableDevIds []string) *DeviceAllocation {
+func NewDeviceAllocation(allocationSize, totalShares int, availableDevIds []string) *DeviceAllocation {
 	sort.Strings(availableDevIds)
 	devAlloc := &DeviceAllocation{
-		AvailableDevIds:   availableDevIds,
-		AllocationSize:    allocationSize,
-		TotalSharesPerGPU: viper.GetInt("metaGpus"),
+		AvailableDevIds: availableDevIds,
+		AllocationSize:  allocationSize,
+		TotalShares:     totalShares,
 	}
 	devAlloc.PrintAvailableDevIds()
 	devAlloc.InitLoadMap()
@@ -77,14 +62,14 @@ func (a *DeviceAllocation) MetaDeviceIdsToRealDeviceIds() (realDeviceIds []strin
 }
 
 func (a *DeviceAllocation) SetAllocations() {
-	entireGpusRequest := a.AllocationSize / a.TotalSharesPerGPU
-	gpuFractionsRequest := a.AllocationSize % a.TotalSharesPerGPU
+	entireGpusRequest := a.AllocationSize / a.TotalShares
+	gpuFractionsRequest := a.AllocationSize % a.TotalShares
 	log.Infof("metagpu allocation request: %d.%d", entireGpusRequest, gpuFractionsRequest)
 
 	// first try to allocate entire gpus if requested
 	for i := 0; i < entireGpusRequest; i++ {
 		for _, devLoad := range a.LoadMap {
-			if devLoad.getFreeShares() == a.TotalSharesPerGPU {
+			if devLoad.getFreeShares() == a.TotalShares {
 				a.MetagpusAllocations = append(a.MetagpusAllocations, devLoad.Metagpus...)
 				devLoad.Metagpus = nil
 			}

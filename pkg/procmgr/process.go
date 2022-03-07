@@ -1,7 +1,8 @@
-package deviceplugin
+package procmgr
 
 import (
 	"context"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/podexec"
 	"github.com/prometheus/procfs"
 	"github.com/shirou/gopsutil/v3/process"
 	log "github.com/sirupsen/logrus"
@@ -11,7 +12,7 @@ import (
 	"strings"
 )
 
-type DeviceProcess struct {
+type GpuProcess struct {
 	Pid               uint32
 	DeviceUuid        string
 	GpuUtilization    uint32
@@ -24,44 +25,31 @@ type DeviceProcess struct {
 	PodMetagpuRequest int64
 }
 
-func NewDeviceProcess(pid, gpuUtil uint32, gpuMem uint64, devUuid string) *DeviceProcess {
-	dp := &DeviceProcess{
-		Pid:            pid,
-		GpuUtilization: gpuUtil,
-		GpuMemory:      gpuMem,
-		DeviceUuid:     devUuid,
-	}
-	dp.SetProcessUsername()
-	dp.SetProcessCmdline()
-	dp.SetProcessContainerId()
-	dp.EnrichProcessK8sInfo()
-	if viper.GetBool("mgctlAutoInject") {
-		copymgctlToContainer(dp.ContainerId)
-	}
-	return dp
-}
-
-func (p *DeviceProcess) SetProcessCmdline() {
+func (p *GpuProcess) SetProcessCmdline() {
 	if pr, err := process.NewProcess(int32(p.Pid)); err == nil {
 		var e error
 		p.Cmdline, e = pr.CmdlineSlice()
-		checkProcessDiscoveryError(e)
+		if e != nil {
+			log.Error(e)
+		}
 	} else {
 		log.Error(err)
 	}
 }
 
-func (p *DeviceProcess) SetProcessUsername() {
+func (p *GpuProcess) SetProcessUsername() {
 	if pr, err := process.NewProcess(int32(p.Pid)); err == nil {
 		var e error
 		p.User, e = pr.Username()
-		checkProcessDiscoveryError(e)
+		if e != nil {
+			log.Error(e)
+		}
 	} else {
 		log.Error(err)
 	}
 }
 
-func (p *DeviceProcess) Kill() error {
+func (p *GpuProcess) Kill() error {
 	if pr, err := process.NewProcess(int32(p.Pid)); err == nil {
 		return pr.Kill()
 	} else {
@@ -69,7 +57,7 @@ func (p *DeviceProcess) Kill() error {
 	}
 }
 
-func (p *DeviceProcess) SetProcessContainerId() {
+func (p *GpuProcess) SetProcessContainerId() {
 	if proc, err := procfs.NewProc(int(p.Pid)); err == nil {
 		var e error
 		var cgroups []procfs.Cgroup
@@ -95,8 +83,8 @@ func (p *DeviceProcess) SetProcessContainerId() {
 	}
 }
 
-func (p *DeviceProcess) EnrichProcessK8sInfo() {
-	c, err := GetK8sClient()
+func (p *GpuProcess) EnrichProcessK8sInfo() {
+	c, err := podexec.GetK8sClient()
 	if err != nil {
 		log.Error(err)
 		return
@@ -127,14 +115,14 @@ func (p *DeviceProcess) EnrichProcessK8sInfo() {
 	}
 }
 
-func (p *DeviceProcess) GetShortCmdLine() string {
+func (p *GpuProcess) GetShortCmdLine() string {
 	if len(p.Cmdline) == 0 {
 		return "error discovering process cmdline"
 	}
 	return p.Cmdline[0]
 }
 
-func (p *DeviceProcess) GetDevice(devices []*MetaDevice) *MetaDevice {
+func (p *GpuProcess) GetDevice(devices []*GpuDevice) *GpuDevice {
 	for _, device := range devices {
 		if device.UUID == p.DeviceUuid {
 			return device
@@ -143,8 +131,19 @@ func (p *DeviceProcess) GetDevice(devices []*MetaDevice) *MetaDevice {
 	return nil
 }
 
-func checkProcessDiscoveryError(e error) {
-	if e != nil {
-		log.Error(e)
+func NewGpuProcess(pid, gpuUtil uint32, gpuMem uint64, devUuid string) *GpuProcess {
+	dp := &GpuProcess{
+		Pid:            pid,
+		GpuUtilization: gpuUtil,
+		GpuMemory:      gpuMem,
+		DeviceUuid:     devUuid,
 	}
+	dp.SetProcessUsername()
+	dp.SetProcessCmdline()
+	dp.SetProcessContainerId()
+	dp.EnrichProcessK8sInfo()
+	if viper.GetBool("mgctlAutoInject") {
+		podexec.CopymgctlToContainer(dp.ContainerId)
+	}
+	return dp
 }

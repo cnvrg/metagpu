@@ -1,4 +1,4 @@
-package deviceplugin
+package podexec
 
 import (
 	"bytes"
@@ -7,7 +7,6 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"io"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -18,15 +17,23 @@ import (
 	"strings"
 )
 
-type podExec struct {
-	pod           *corev1.Pod
-	containerName string
-	cmd           []string
-	stdin         io.Reader
-	stdout        *bytes.Buffer
+func GetK8sClient() (client.Client, error) {
+	l := log.WithFields(log.Fields{"context": "getK8sClient"})
+	rc := k8sClientConfig.GetConfigOrDie()
+	scheme := runtime.NewScheme()
+	if err := corev1.AddToScheme(scheme); err != nil {
+		log.Fatalf("error adding to scheme, err: %s ", err)
+	}
+	controllerClient, err := client.New(rc, client.Options{Scheme: scheme})
+	if err != nil {
+		l.Errorf("error creating new client, err: %s", err)
+		return nil, err
+	}
+
+	return controllerClient, nil
 }
 
-func copymgctlToContainer(containerId string) {
+func CopymgctlToContainer(containerId string) {
 
 	pe, err := getPodByContainerId(containerId)
 	if err != nil {

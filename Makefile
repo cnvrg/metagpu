@@ -1,14 +1,13 @@
 #rsync -r /Users/dima/.go/src/github.com/AccessibleAI/metagpu-device-plugin/docs/* rancher@212.199.86.38:/tmp/docs
 
 build:
-	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=0.1.1'" -v -o bin/mgdp cmd/metagpu-device-plugin/main.go
+	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=0.1.1'" -v -o bin/mgdp cmd/mgdp/main.go
 
 build-exporter:
-	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=0.1.1'" -v -o bin/mgexporter cmd/metagpu-metrics-exporter/*.go
-
+	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=0.1.1'" -v -o bin/mgexporter cmd/mgexporter/*.go
 
 debug-remote:
-	dlv debug --headless --listen=:2345 --api-version=2 --accept-multiclient  ./cmd/metagpu-device-plugin/main.go -- start
+	dlv debug --headless --listen=:2345 --api-version=2 --accept-multiclient  ./cmd/mgdp/main.go -- start
 
 docker-build: build-proto
 	docker build \
@@ -18,18 +17,10 @@ docker-build: build-proto
      -t docker.io/cnvrg/metagpu-device-plugin:$(shell git rev-parse --abbrev-ref HEAD) .
 
 build-mgctl:
-	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=0.1.1'" -v -o bin/mgctl cmd/metagpuctl/*.go
+	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=0.1.1'" -v -o bin/mgctl cmd/mgctl/*.go
 
 docker-push:
 	docker push docker.io/cnvrg/metagpu-device-plugin:$(shell git rev-parse --abbrev-ref HEAD)
-
-controller-generate:
-	 controller-gen-v0.8.0 object paths=./cmd/metagpu-controller/api/...
-
-controller-manifests:
-	controller-gen-v0.8.0 crd paths=./cmd/metagpu-controller/api/... output:artifacts:config=./config/crd/bases
-
-
 
 build-proto:
 	buf mod update pkg/metagpusrv/deviceapi

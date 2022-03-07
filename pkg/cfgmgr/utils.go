@@ -1,36 +1,18 @@
-package deviceplugin
+package cfgmgr
 
 import (
 	"context"
 	"fmt"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/podexec"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	k8sClientConfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"strings"
 )
 
-func GetK8sClient() (client.Client, error) {
-	l := log.WithFields(log.Fields{"context": "getK8sClient"})
-	rc := k8sClientConfig.GetConfigOrDie()
-	scheme := runtime.NewScheme()
-	if err := corev1.AddToScheme(scheme); err != nil {
-		log.Fatalf("error adding to scheme, err: %s ", err)
-	}
-	controllerClient, err := client.New(rc, client.Options{Scheme: scheme})
-	if err != nil {
-		l.Errorf("error creating new client, err: %s", err)
-		return nil, err
-	}
-
-	return controllerClient, nil
-}
-
 func UpdatePersistentConfigs(metaGpus int32) {
 	log.Info("updating persistent configs")
-	c, err := GetK8sClient()
+	c, err := podexec.GetK8sClient()
 	if err != nil {
 		log.Errorf("unable to write persistent configs, err: %s", err)
 		return
