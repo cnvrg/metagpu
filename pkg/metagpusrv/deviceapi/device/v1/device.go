@@ -3,9 +3,8 @@ package v1
 import (
 	"context"
 	pb "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
-	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/deviceplugin"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/gpumgr"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"time"
@@ -13,7 +12,7 @@ import (
 
 type DeviceService struct {
 	pb.UnimplementedDeviceServiceServer
-	plugin *deviceplugin.MetaGpuDevicePlugin
+	gpuMgr *gpumgr.GpuMgr
 	vl     string // visibility level
 	cvl    string // container visibility level ID
 	dvl    string // device visibility level ID
@@ -21,9 +20,9 @@ type DeviceService struct {
 
 func (s *DeviceService) LoadContext(ctx context.Context) error {
 
-	s.plugin = ctx.Value("plugin").(*deviceplugin.MetaGpuDevicePlugin)
-	if s.plugin == nil {
-		log.Fatalf("plugin instance not set in context")
+	s.gpuMgr = ctx.Value("gpuMgr").(*gpumgr.GpuMgr)
+	if s.gpuMgr == nil {
+		log.Fatalf("gpuMgr instance not set in context")
 	}
 	s.vl = ctx.Value("visibilityLevel").(string)
 	s.cvl = ctx.Value("containerVl").(string)
@@ -52,7 +51,7 @@ func (s *DeviceService) GetProcesses(ctx context.Context, r *pb.GetProcessesRequ
 	if s.vl == s.dvl {
 		r.PodId = "" // for deviceVisibilityLevel server should return all running process on all containers
 	}
-	response.DevicesProcesses = listDeviceProcesses(r.PodId, s.plugin)
+	response.DevicesProcesses = listDeviceProcesses(r.PodId, s.gpuMgr)
 	return response, nil
 }
 
@@ -71,7 +70,7 @@ func (s *DeviceService) StreamProcesses(r *pb.StreamProcessesRequest, stream pb.
 			r.PodId = "" // for deviceVisibilityLevel server should return all running process on all containers
 		}
 		response := &pb.StreamProcessesResponse{VisibilityLevel: s.vl}
-		response.DevicesProcesses = listDeviceProcesses(r.PodId, s.plugin)
+		response.DevicesProcesses = listDeviceProcesses(r.PodId, s.gpuMgr)
 		if err := stream.Send(response); err != nil {
 			return err
 		}
@@ -87,7 +86,7 @@ func (s *DeviceService) GetDevices(ctx context.Context, r *pb.GetDevicesRequest)
 		return response, err
 	}
 	response.Device = make(map[string]*pb.Device)
-	for _, device := range s.plugin.GetMetaDevices() {
+	for _, device := range s.gpuMgr.GetMetaDevices() {
 		d := &pb.Device{
 			Uuid:              device.UUID,
 			Index:             uint32(device.Index),
@@ -111,7 +110,7 @@ func (s *DeviceService) KillGpuProcess(ctx context.Context, r *pb.KillGpuProcess
 	if err := s.LoadContext(ctx); err != nil {
 		return response, err
 	}
-	if err := s.plugin.KillGpuProcess(r.Pid); err != nil {
+	if err := s.gpuMgr.KillGpuProcess(r.Pid); err != nil {
 		return response, status.Errorf(codes.Internal, "error killing GPU process, err: %s", err)
 	}
 	return response, nil
@@ -125,7 +124,7 @@ func (s *DeviceService) GetMetaDeviceInfo(ctx context.Context, r *pb.GetMetaDevi
 	if s.vl != s.dvl {
 		return resp, status.Errorf(codes.PermissionDenied, "wrong visibility level", s.vl)
 	}
-	deviceInfo := s.plugin.GetMetaDeviceInfo()
+	deviceInfo := s.gpuMgr.GetDeviceInfo()
 	resp.Node = deviceInfo.Node
 	resp.Metadata = deviceInfo.Metadata
 	for _, device := range deviceInfo.Devices {
@@ -145,15 +144,15 @@ func (s *DeviceService) GetMetaDeviceInfo(ctx context.Context, r *pb.GetMetaDevi
 }
 
 func (s *DeviceService) PatchConfigs(ctx context.Context, r *pb.PatchConfigsRequest) (*pb.PatchConfigsResponse, error) {
-	if err := s.LoadContext(ctx); err != nil {
-		return &pb.PatchConfigsResponse{}, err
-	}
-	if s.vl != s.dvl {
-		return &pb.PatchConfigsResponse{}, status.Errorf(codes.PermissionDenied, "visibility level too high", s.vl)
-	}
-	deviceplugin.UpdatePersistentConfigs(r.MetaGpus)
-	viper.Set("metaGpus", r.MetaGpus)
-	s.plugin.MetaGpuRecalculation <- true
+	//if err := s.LoadContext(ctx); err != nil {
+	//	return &pb.PatchConfigsResponse{}, err
+	//}
+	//if s.vl != s.dvl {
+	//	return &pb.PatchConfigsResponse{}, status.Errorf(codes.PermissionDenied, "visibility level too high", s.vl)
+	//}
+	//deviceplugin.UpdatePersistentConfigs(r.MetaGpus)
+	//viper.Set("metaGpus", r.MetaGpus)
+	//s.gpuMgr.MetaGpuRecalculation <- true
 	return &pb.PatchConfigsResponse{}, nil
 
 }

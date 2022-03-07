@@ -1,4 +1,4 @@
-package procmgr
+package gpumgr
 
 import (
 	"context"

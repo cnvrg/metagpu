@@ -19,14 +19,6 @@ var (
 	UnixSocket = "metagpu.sock"
 )
 
-func (p *MetaGpuDevicePlugin) SetDeviceLevelVisibilityToken(token string) {
-	p.deviceLevelVisibilityToken = token
-}
-
-func (p *MetaGpuDevicePlugin) SetContainerLevelVisibilityToken(token string) {
-	p.containerLevelVisibilityToken = token
-}
-
 func (p *MetaGpuDevicePlugin) dial(socket string, timeout time.Duration) (*grpc.ClientConn, error) {
 	c, err := grpc.Dial(socket, grpc.WithInsecure(), grpc.WithBlock(),
 		grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
@@ -120,7 +112,7 @@ func (p *MetaGpuDevicePlugin) Allocate(ctx context.Context, request *pluginapi.A
 			"NVIDIA_VISIBLE_DEVICES": strings.Join(realDevices, ","),
 			"METAGPU_MAX_MEM":        metaGpuMaxMem,
 			"MG_CTL_ADDR":            fmt.Sprintf("%s:50052", os.Getenv("POD_IP")),
-			"MG_CTL_TOKEN":           p.containerLevelVisibilityToken,
+			"MG_CTL_TOKEN":           "", // TODO: fix this
 		}
 		allocResponse.ContainerResponses = append(allocResponse.ContainerResponses, &response)
 	}

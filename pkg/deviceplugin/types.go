@@ -7,15 +7,15 @@ import (
 
 type MetaGpuDevicePlugin struct {
 	DeviceManager
-	server                        *grpc.Server
-	socket                        string
-	resourceName                  string
-	deviceUuids                   []string
-	totalShares                   int
-	containerLevelVisibilityToken string
-	deviceLevelVisibilityToken    string
-	stop                          chan interface{}
-	MetaGpuRecalculation          chan bool
+	server       *grpc.Server
+	socket       string
+	resourceName string
+	deviceUuids  []string
+	totalShares  int
+	//containerLevelVisibilityToken string
+	//deviceLevelVisibilityToken    string
+	stop                 chan interface{}
+	MetaGpuRecalculation chan bool
 }
 
 type NvidiaDeviceManager struct {

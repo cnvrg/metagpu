@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	devicevpb "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
-	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/deviceplugin"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/gpumgr"
 	devicevapi "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/metagpusrv/deviceapi/device/v1"
 	"github.com/golang-jwt/jwt"
 	log "github.com/sirupsen/logrus"
@@ -23,7 +23,7 @@ import (
 type VisibilityLevel string
 
 type MetaGpuServer struct {
-	plugin                        *deviceplugin.MetaGpuDevicePlugin
+	gpuStatus                     *gpumgr.GpuMgr
 	ContainerLevelVisibilityToken string
 	DeviceLevelVisibilityToken    string
 }
@@ -34,12 +34,12 @@ var (
 	TokenVisibilityClaimName                 = "visibilityLevel"
 )
 
-func NewMetaGpuServer(plugin *deviceplugin.MetaGpuDevicePlugin) *MetaGpuServer {
-	s := &MetaGpuServer{plugin: plugin}
+func NewMetaGpuServer(gs *gpumgr.GpuMgr) *MetaGpuServer {
+	s := &MetaGpuServer{gpuStatus: gs}
 	s.ContainerLevelVisibilityToken = s.GenerateAuthTokens(ContainerVisibility)
 	s.DeviceLevelVisibilityToken = s.GenerateAuthTokens(DeviceVisibility)
-	plugin.SetContainerLevelVisibilityToken(s.ContainerLevelVisibilityToken)
-	plugin.SetDeviceLevelVisibilityToken(s.DeviceLevelVisibilityToken)
+	s.gpuStatus.SetContainerLevelVisibilityToken(s.ContainerLevelVisibilityToken)
+	s.gpuStatus.SetDeviceLevelVisibilityToken(s.DeviceLevelVisibilityToken)
 	s.SaveTokensOnLocalStorage()
 	return s
 }

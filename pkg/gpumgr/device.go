@@ -1,4 +1,4 @@
-package procmgr
+package gpumgr
 
 import (
 	"github.com/NVIDIA/go-nvml/pkg/nvml"

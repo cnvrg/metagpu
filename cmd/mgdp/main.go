@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/deviceplugin"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/gpumgr"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/metagpusrv"
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
@@ -33,64 +34,58 @@ var (
 		{name: "json-log", shorthand: "", value: false, usage: "output logs in json format"},
 		{name: "verbose", shorthand: "", value: false, usage: "enable verbose logs"},
 	}
-	metaGpuRecalc = make(chan bool)
-)
+	metaGpuRecalc              = make(chan bool)
+	metaGpuDevicePluginVersion = &cobra.Command{
+		Use:   "version",
+		Short: "Print metagpu-device-plugin version and build sha",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("🐾 version: %s build: %s \n", Version, Build)
+		}}
+	metaGpuStart = &cobra.Command{
+		Use:   "start",
+		Short: "Start metagpu device plugin",
+		Run: func(cmd *cobra.Command, args []string) {
 
-var metaGpuDevicePluginVersion = &cobra.Command{
-	Use:   "version",
-	Short: "Print metagpu-device-plugin version and build sha",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("🐾 version: %s build: %s \n", Version, Build)
-	},
-}
-
-var metaGpuStart = &cobra.Command{
-	Use:   "start",
-	Short: "Start metagpu device plugin",
-	Run: func(cmd *cobra.Command, args []string) {
-		type deviceConfig struct {
-			uuid         string
-			resourceName string
-			metaGpus     int
-		}
-		var devConfig []deviceConfig
-		if err := viper.UnmarshalKey("deviceIds", devConfig); err != nil {
-			log.Error(err, "bad configs")
-			os.Exit(1)
-		}
-		for _, device := range devConfig {
-			f := deviceplugin.NewMetaGpuDevicePlugin(metaGpuRecalc)
-			f.Start()
-		}
-
-		metagpusrv.NewMetaGpuServer(f).Start()
-
-		sigCh := make(chan os.Signal, 1)
-		signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-
-		for {
-			select {
-			case s := <-sigCh:
-				log.Infof("signal: %s, shutting down", s)
-				f.Stop()
-				log.Info("bye bye 👋")
-				os.Exit(0)
+			shareConfigs := gpumgr.NewDeviceSharingConfig()
+			var plugins []*deviceplugin.MetaGpuDevicePlugin
+			// init plugins
+			for _, c := range shareConfigs.Configs {
+				plugins = append(plugins, deviceplugin.NewMetaGpuDevicePlugin(metaGpuRecalc, c.Uuid, c.ResourceName, c.MetaGpus))
 			}
-		}
-	},
-}
-
-var rootCmd = &cobra.Command{
-	Use:   "metagpu",
-	Short: "Metagpu - fractional accelerator device plugin",
-}
+			// start plugins
+			for _, p := range plugins {
+				p.Start()
+			}
+			// start grpc server
+			metagpusrv.NewMetaGpuServer(gpumgr.NewGpuManager()).Start()
+			// handle interrupts
+			sigCh := make(chan os.Signal, 1)
+			signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+			for {
+				select {
+				case s := <-sigCh:
+					log.Infof("signal: %s, shutting down", s)
+					// stop all plugins
+					for _, p := range plugins {
+						p.Stop()
+					}
+					log.Info("bye bye 👋")
+					os.Exit(0)
+				}
+			}
+		},
+	}
+	rootCmd = &cobra.Command{
+		Use:   "metagpu",
+		Short: "Metagpu - fractional accelerator device plugin",
+	}
+)
 
 func init() {
 	cobra.OnInitialize(initConfig)
 	setParams(rootParams, rootCmd)
 	rootCmd.AddCommand(metaGpuDevicePluginVersion)
 	rootCmd.AddCommand(metaGpuStart)
-
 }
 
 func initConfig() {

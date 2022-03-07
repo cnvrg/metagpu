@@ -8,6 +8,6 @@ autoReshare: true
 serverAddr: 0.0.0.0:50052
 memoryEnforcer: true
 deviceSharing:
-  - uuid: *
-    resourceName: cnvrg.io/metagpu
+  - resourceName: cnvrg.io/metagpu
     metaGpus: 2
+    uuid: [ "*" ]
