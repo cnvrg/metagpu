@@ -15,10 +15,6 @@ import (
 	"time"
 )
 
-var (
-	UnixSocket = "metagpu.sock"
-)
-
 func (p *MetaGpuDevicePlugin) dial(socket string, timeout time.Duration) (*grpc.ClientConn, error) {
 	c, err := grpc.Dial(socket, grpc.WithInsecure(), grpc.WithBlock(),
 		grpc.WithContextDialer(func(ctx context.Context, s string) (net.Conn, error) {
@@ -44,7 +40,7 @@ func (p *MetaGpuDevicePlugin) Register() error {
 	req := &pluginapi.RegisterRequest{
 		Version:      pluginapi.Version,
 		Endpoint:     path.Base(p.socket),
-		ResourceName: p.resourceName,
+		ResourceName: p.GetDeviceSharingConfig().ResourceName,
 		Options: &pluginapi.DevicePluginOptions{
 			GetPreferredAllocationAvailable: true,
 		},
@@ -61,7 +57,7 @@ func (p *MetaGpuDevicePlugin) GetDevicePluginOptions(ctx context.Context, empty 
 
 func (p *MetaGpuDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
 
-	if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.GetPluginDevices(p.totalShares)}); err != nil {
+	if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.GetPluginDevices()}); err != nil {
 		log.Error(err)
 	}
 
@@ -70,7 +66,7 @@ func (p *MetaGpuDevicePlugin) ListAndWatch(e *pluginapi.Empty, s pluginapi.Devic
 		case <-p.stop:
 			return nil
 		case <-p.MetaGpuRecalculation:
-			if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.GetPluginDevices(p.totalShares)}); err != nil {
+			if err := s.Send(&pluginapi.ListAndWatchResponse{Devices: p.GetPluginDevices()}); err != nil {
 				log.Error(err)
 			}
 		}
@@ -82,7 +78,7 @@ func (p *MetaGpuDevicePlugin) GetPreferredAllocation(ctx context.Context, reques
 	allocResponse := &pluginapi.PreferredAllocationResponse{}
 	for _, req := range request.ContainerRequests {
 		allocContainerResponse := &pluginapi.ContainerPreferredAllocationResponse{}
-		allocContainerResponse.DeviceIDs, _ = p.MetagpuAllocation(int(req.AllocationSize), p.totalShares, req.GetAvailableDeviceIDs())
+		allocContainerResponse.DeviceIDs, _ = p.MetagpuAllocation(int(req.AllocationSize), req.GetAvailableDeviceIDs())
 		log.Info("preferred devices ids:")
 		for _, devId := range allocContainerResponse.DeviceIDs {
 			log.Info(devId)
@@ -102,11 +98,11 @@ func (p *MetaGpuDevicePlugin) Allocate(ctx context.Context, request *pluginapi.A
 		for _, dev := range req.DevicesIDs {
 			log.Info(dev)
 		}
-		metaGpuMaxMem := ""
+		metaGpuMaxMem := "" // TODO: fix this
 		realDevices := p.ParseRealDeviceId(req.DevicesIDs)
-		if len(realDevices) > 0 {
-			metaGpuMaxMem = fmt.Sprintf("%d", p.totalShares*(len(req.DevicesIDs)))
-		}
+		//if len(realDevices) > 0 {
+		//	metaGpuMaxMem = fmt.Sprintf("%d", p.shareCfg.MetaGpus*(len(req.DevicesIDs)))
+		//}
 		response.Envs = map[string]string{
 			"CNVRG_META_GPU_DEVICES": strings.Join(req.DevicesIDs, ","),
 			"NVIDIA_VISIBLE_DEVICES": strings.Join(realDevices, ","),
@@ -173,18 +169,15 @@ func (p *MetaGpuDevicePlugin) Stop() {
 	close(p.MetaGpuRecalculation)
 }
 
-func NewMetaGpuDevicePlugin(metaGpuRecalculation chan bool, deviceUuids []string, resourceName string, gpuShares int) *MetaGpuDevicePlugin {
+func NewMetaGpuDevicePlugin(metaGpuRecalculation chan bool, deviceMgr DeviceManager) *MetaGpuDevicePlugin {
 	if viper.GetString("accelerator") != "nvidia" {
 		log.Fatal("accelerator not supported, currently only nvidia is supported")
 	}
 	return &MetaGpuDevicePlugin{
 		server:               grpc.NewServer([]grpc.ServerOption{}...),
-		socket:               fmt.Sprintf("%s%s", pluginapi.DevicePluginPath, UnixSocket),
-		resourceName:         resourceName,
-		DeviceManager:        NewNvidiaDeviceManager(),
+		socket:               fmt.Sprintf("%s%s", pluginapi.DevicePluginPath, deviceMgr.GetUnixSocket()),
+		DeviceManager:        deviceMgr,
 		stop:                 make(chan interface{}),
 		MetaGpuRecalculation: metaGpuRecalculation,
-		deviceUuids:          deviceUuids,
-		totalShares:          gpuShares,
 	}
 }

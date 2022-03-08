@@ -1,8 +1,11 @@
 package plugin
 
 import (
+	b64 "encoding/base64"
+
 	"fmt"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/nvmlutils"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/sharecfg"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -55,11 +58,11 @@ func (m *NvidiaDeviceManager) DeviceExists(deviceId string) bool {
 	return false
 }
 
-func (m *NvidiaDeviceManager) GetPluginDevices(metaGpusQuantity int) []*pluginapi.Device {
+func (m *NvidiaDeviceManager) GetPluginDevices() []*pluginapi.Device {
 	var metaGpus []*pluginapi.Device
-	log.Infof("generating meta gpu devices (total: %d)", len(m.Devices)*metaGpusQuantity)
+	log.Infof("generating meta gpu devices (total: %d)", len(m.Devices)*m.shareCfg.MetaGpus)
 	for _, d := range m.Devices {
-		for j := 0; j < metaGpusQuantity; j++ {
+		for j := 0; j < m.shareCfg.MetaGpus; j++ {
 			metaGpus = append(metaGpus, &pluginapi.Device{
 				ID:     fmt.Sprintf("cnvrg-meta-%d-%d-%s", d.Index, j, d.UUID),
 				Health: pluginapi.Healthy,
@@ -79,31 +82,75 @@ func (m *NvidiaDeviceManager) setDevices() {
 	for i := 0; i < count; i++ {
 		device, ret := nvml.DeviceGetHandleByIndex(i)
 		uuid, ret := device.GetUUID()
-		// enable accounting mode
-		nvmlutils.ErrorCheck(ret)
-		ret = device.SetAccountingMode(nvml.FEATURE_ENABLED)
-		nvmlutils.ErrorCheck(ret)
-		// verify accounting mode is on,
-		// seems like for MIG-enabled devices we can't enable accounting mode?
-		// https://github.com/NVIDIA/nvidia-settings/blob/main/src/nvml.h#L5717
-		state, ret := device.GetAccountingMode()
-		nvmlutils.ErrorCheck(ret)
-		log.Infof("accounting mode for device: %s is: %d", uuid, state)
-		devices = append(devices, &MetaDevice{UUID: uuid, Index: i})
+		if m.isManagedDevice(uuid) {
+			// enable accounting mode
+			nvmlutils.ErrorCheck(ret)
+			ret = device.SetAccountingMode(nvml.FEATURE_ENABLED)
+			nvmlutils.ErrorCheck(ret)
+			// verify accounting mode is on,
+			// seems like for MIG-enabled devices we can't enable accounting mode?
+			// https://github.com/NVIDIA/nvidia-settings/blob/main/src/nvml.h#L5717
+			state, ret := device.GetAccountingMode()
+			nvmlutils.ErrorCheck(ret)
+			log.Infof("accounting mode for device: %s is: %d", uuid, state)
+			devices = append(devices, &MetaDevice{UUID: uuid, Index: i})
+		}
 	}
 	m.Devices = devices
 }
 
-func (m *NvidiaDeviceManager) MetagpuAllocation(allocationSize, totalShares int, availableDevIds []string) ([]string, error) {
-	return NewDeviceAllocation(allocationSize, totalShares, availableDevIds).MetagpusAllocations, nil
+func (m *NvidiaDeviceManager) isManagedDevice(deviceUuid string) bool {
+	for _, uuid := range m.shareCfg.Uuid {
+		if uuid == deviceUuid || uuid == "*" {
+			return true
+		}
+	}
+	return false
 }
 
-func NewNvidiaDeviceManager() *NvidiaDeviceManager {
+func (m *NvidiaDeviceManager) GetDeviceSharingConfig() *sharecfg.DeviceSharingConfig {
+	return m.shareCfg
+}
+
+func (m *NvidiaDeviceManager) GetUnixSocket() string {
+	return b64.StdEncoding.EncodeToString([]byte(m.shareCfg.ResourceName))
+}
+
+//func (m *NvidiaDeviceManager) AutoGpuResharing() {
+//	if !viper.GetBool("autoReshare") {
+//		log.Info("automatic GPU resharing disabled, skipping")
+//		return
+//	}
+//	m.discoverGpuProcessesAndDevicesLoad()
+//	if len(m.Devices) == 0 {
+//		log.Warn("devices list is empty")
+//		return
+//	}
+//	// assuming each device will have the same amount of gpu memory
+//	if m.Devices[0].Memory.Total > 0 {
+//		metaGpus := int32(m.Devices[0].Memory.Total / 1024)
+//		log.Infof("single gpu mem: %d, going to split each gpu to %d shares", m.Devices[0].Memory.Total, metaGpus)
+//		// update persistent configs
+//		UpdatePersistentConfigs(metaGpus)
+//		// update runtime configs
+//		viper.Set("metaGpus", metaGpus)
+//	} else {
+//		log.Error("error automatically resharing gpus, the device mem is 0!")
+//	}
+//
+//}
+
+func (m *NvidiaDeviceManager) MetagpuAllocation(allocationSize int, availableDevIds []string) ([]string, error) {
+	return NewDeviceAllocation(allocationSize, m.shareCfg.MetaGpus, availableDevIds).MetagpusAllocations, nil
+}
+
+func NewNvidiaDeviceManager(shareCfg *sharecfg.DeviceSharingConfig) *NvidiaDeviceManager {
 	ret := nvml.Init()
 	nvmlutils.ErrorCheck(ret)
 	ndm := &NvidiaDeviceManager{
 		cacheTTL:                 time.Second * time.Duration(viper.GetInt("deviceCacheTTL")),
 		processesDiscoveryPeriod: time.Second * time.Duration(viper.GetInt("processesDiscoveryPeriod")),
+		shareCfg:                 shareCfg,
 	}
 	// start cache devices loop
 	ndm.CacheDevices()

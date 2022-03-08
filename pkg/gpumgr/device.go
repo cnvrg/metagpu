@@ -1,6 +1,7 @@
 package gpumgr
 
 import (
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/sharecfg"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	log "github.com/sirupsen/logrus"
 )
@@ -40,8 +41,8 @@ func NewGpuDevice(uuid string, index int, utilization nvml.Utilization, memory n
 }
 
 func (d *GpuDevice) setGpuShareConfigs() {
-	deviceSharingConfigs := NewDeviceSharingConfig()
-	if deviceSharing, err := deviceSharingConfigs.getDeviceSharingConfigs(d.UUID); err != nil {
+	deviceSharingConfigs := sharecfg.NewDeviceSharingConfig()
+	if deviceSharing, err := deviceSharingConfigs.GetDeviceSharingConfigs(d.UUID); err != nil {
 		log.Fatalf("bad configs, unable to find sharing configs for device: %s", d.UUID)
 	} else {
 		d.Shares = deviceSharing.MetaGpus

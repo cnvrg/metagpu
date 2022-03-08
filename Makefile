@@ -23,7 +23,7 @@ docker-push:
 	docker push docker.io/cnvrg/metagpu-device-plugin:$(shell git rev-parse --abbrev-ref HEAD)
 
 build-proto:
-	buf mod update pkg/metagpusrv/deviceapi
+	buf mod update pkg/mgsrv/deviceapi
 	buf lint
 	buf build
 	buf generate

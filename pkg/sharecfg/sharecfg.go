@@ -1,4 +1,4 @@
-package gpumgr
+package sharecfg
 
 import (
 	"fmt"
@@ -35,7 +35,7 @@ func NewDeviceSharingConfig() *DevicesSharingConfigs {
 	return &DevicesSharingConfigs{Configs: cfg}
 }
 
-func (c *DevicesSharingConfigs) getDeviceSharingConfigs(devUuid string) (*DeviceSharingConfig, error) {
+func (c *DevicesSharingConfigs) GetDeviceSharingConfigs(devUuid string) (*DeviceSharingConfig, error) {
 	for _, devCfg := range c.Configs {
 		for _, uuid := range devCfg.Uuid {
 			if uuid == devUuid || uuid == "*" {

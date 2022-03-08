@@ -23,84 +23,84 @@ var (
 		Subsystem: "device",
 		Name:      "shares",
 		Help:      "total shares for single gpu unit",
-	}, []string{"device_uuid", "device_index"})
+	}, []string{"device_uuid", "device_index", "resource_name"})
 
 	deviceMemTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
 		Subsystem: "device",
 		Name:      "memory_total",
 		Help:      "total memory per device",
-	}, []string{"device_uuid", "device_index"})
+	}, []string{"device_uuid", "device_index", "resource_name"})
 
 	deviceMemFree = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
 		Subsystem: "device",
 		Name:      "memory_free",
 		Help:      "free memory per device",
-	}, []string{"device_uuid", "device_index"})
+	}, []string{"device_uuid", "device_index", "resource_name"})
 
 	deviceMemUsed = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
 		Subsystem: "device",
 		Name:      "memory_used",
 		Help:      "used memory per device",
-	}, []string{"device_uuid", "device_index"})
+	}, []string{"device_uuid", "device_index", "resource_name"})
 
 	deviceMemShareSize = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
 		Subsystem: "device",
 		Name:      "memory_share_size",
 		Help:      "metagpu memory share size",
-	}, []string{"device_uuid", "device_index"})
+	}, []string{"device_uuid", "device_index", "resource_name"})
 
 	deviceProcessGpuUtilization = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
 		Subsystem: "process",
 		Name:      "gpu_utilization",
 		Help:      "gpu process utilization in percentage",
-	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace"})
+	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name"})
 
 	deviceProcessMemoryUsage = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
 		Subsystem: "process",
 		Name:      "memory_usage",
 		Help:      "process gpu-memory usage",
-	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace"})
+	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name"})
 
 	deviceProcessMetagpuRequests = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
 		Subsystem: "process",
 		Name:      "metagpu_requests",
 		Help:      "total metagpu requests in deployment spec",
-	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace"})
+	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name"})
 
 	deviceProcessMaxAllowedMetagpuGPUUtilization = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
 		Subsystem: "process",
 		Name:      "max_allowed_metagpu_gpu_utilization",
 		Help:      "max allowed metagpu gpu utilization",
-	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace"})
+	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name"})
 
 	deviceProcessMetagpuCurrentGPUUtilization = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
 		Subsystem: "process",
 		Name:      "metagpu_current_gpu_utilization",
 		Help:      "current metagpu gpu utilization",
-	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace"})
+	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name"})
 
 	deviceProcessMaxAllowedMetaGpuMemory = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
 		Subsystem: "process",
 		Name:      "max_allowed_metagpu_memory",
 		Help:      "max allowed metagpu memory usage",
-	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace"})
+	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name"})
 
 	deviceProcessMetagpuCurrentMemoryUtilization = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
 		Subsystem: "process",
 		Name:      "metagpu_current_memory_utilization",
 		Help:      "current metagpu memory utilization",
-	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace"})
+	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name"})
 )
 
 func getGpuProcesses() []*pbdevice.DeviceProcess {
@@ -148,7 +148,7 @@ func clearGpuDevicesCache() {
 func setDevicesMetrics() {
 	// GPU device metrics
 	for _, d := range getGpuDevicesInfo() {
-		labels := []string{d.Uuid, fmt.Sprintf("%d", d.Index)}
+		labels := []string{d.Uuid, fmt.Sprintf("%d", d.Index), d.ResourceName}
 		deviceShares.WithLabelValues(labels...).Set(float64(d.Shares))
 		deviceMemTotal.WithLabelValues(labels...).Set(float64(d.MemoryTotal))
 		deviceMemFree.WithLabelValues(labels...).Set(float64(d.MemoryFree))
@@ -164,7 +164,7 @@ func setProcessesMetrics() {
 			log.Warnf("process's device uuid: %s doesn not exists ", p.Uuid)
 			continue
 		}
-		labels := []string{p.Uuid, fmt.Sprintf("%d", p.Pid), p.Cmdline, p.User, p.PodName, p.PodNamespace}
+		labels := []string{p.Uuid, fmt.Sprintf("%d", p.Pid), p.Cmdline, p.User, p.PodName, p.PodNamespace, p.ResourceName}
 		// process gpu utilization
 		deviceProcessGpuUtilization.WithLabelValues(labels...).Set(float64(p.GpuUtilization))
 		// process memory usage

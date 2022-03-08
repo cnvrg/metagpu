@@ -3,6 +3,7 @@ package gpumgr
 import (
 	"context"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/podexec"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/sharecfg"
 	"github.com/prometheus/procfs"
 	"github.com/shirou/gopsutil/v3/process"
 	log "github.com/sirupsen/logrus"
@@ -23,6 +24,7 @@ type GpuProcess struct {
 	PodId             string
 	PodNamespace      string
 	PodMetagpuRequest int64
+	ResourceName      string
 }
 
 func (p *GpuProcess) SetProcessCmdline() {
@@ -105,7 +107,7 @@ func (p *GpuProcess) EnrichProcessK8sInfo() {
 				p.PodId = pod.Name
 				p.PodNamespace = pod.Namespace
 				for _, container := range pod.Spec.Containers {
-					resourceName := v1core.ResourceName(p.GetResourceName())
+					resourceName := v1core.ResourceName(p.ResourceName)
 					if quantity, ok := container.Resources.Limits[resourceName]; ok {
 						p.PodMetagpuRequest = quantity.Value()
 					}
@@ -131,15 +133,15 @@ func (p *GpuProcess) GetDevice(devices []*GpuDevice) *GpuDevice {
 	return nil
 }
 
-func (p *GpuProcess) GetResourceName() string {
-	for _, cfg := range NewDeviceSharingConfig().Configs {
+func (p *GpuProcess) SetResourceName() {
+	for _, cfg := range sharecfg.NewDeviceSharingConfig().Configs {
 		for _, uuid := range cfg.Uuid {
 			if p.DeviceUuid == uuid || uuid == "*" {
-				return cfg.ResourceName
+				p.ResourceName = cfg.ResourceName
+				return
 			}
 		}
 	}
-	return ""
 }
 
 func NewGpuProcess(pid, gpuUtil uint32, gpuMem uint64, devUuid string) *GpuProcess {
@@ -152,6 +154,7 @@ func NewGpuProcess(pid, gpuUtil uint32, gpuMem uint64, devUuid string) *GpuProce
 	dp.SetProcessUsername()
 	dp.SetProcessCmdline()
 	dp.SetProcessContainerId()
+	dp.SetResourceName()
 	dp.EnrichProcessK8sInfo()
 	if viper.GetBool("mgctlAutoInject") {
 		podexec.CopymgctlToContainer(dp.ContainerId)

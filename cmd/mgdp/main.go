@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/gpumgr"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/mgsrv"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/plugin"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/sharecfg"
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -47,10 +47,10 @@ var (
 		Run: func(cmd *cobra.Command, args []string) {
 			var plugins []*plugin.MetaGpuDevicePlugin
 			// load gpu shares configuration
-			shareConfigs := gpumgr.NewDeviceSharingConfig()
+			shareConfigs := sharecfg.NewDeviceSharingConfig()
 			// init plugins
 			for _, c := range shareConfigs.Configs {
-				plugins = append(plugins, plugin.NewMetaGpuDevicePlugin(metaGpuRecalc, c.Uuid, c.ResourceName, c.MetaGpus))
+				plugins = append(plugins, plugin.NewMetaGpuDevicePlugin(metaGpuRecalc, plugin.NewNvidiaDeviceManager(c)))
 			}
 			// start plugins
 			for _, p := range plugins {
