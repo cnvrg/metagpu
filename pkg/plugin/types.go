@@ -45,6 +45,6 @@ type DeviceAllocation struct {
 	LoadMap             []*DeviceLoad
 	AvailableDevIds     []string
 	AllocationSize      int
-	TotalShares         int
+	TotalSharesPerGpu   int
 	MetagpusAllocations []string
 }

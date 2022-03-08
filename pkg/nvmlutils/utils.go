@@ -11,14 +11,19 @@ func init() {
 }
 
 func GetDevices() (devices []*nvml.Device) {
-	count, ret := nvml.DeviceGetCount()
-	ErrorCheck(ret)
-	for i := 0; i < count; i++ {
+
+	for i := 0; i < GetTotalDevices(); i++ {
 		device, ret := nvml.DeviceGetHandleByIndex(i)
 		ErrorCheck(ret)
 		devices = append(devices, &device)
 	}
 	return
+}
+
+func GetTotalDevices() int {
+	count, ret := nvml.DeviceGetCount()
+	ErrorCheck(ret)
+	return count
 }
 
 func GetComputeRunningProcesses(deviceIdx int) []nvml.ProcessInfo {

@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/nvmlutils"
 	log "github.com/sirupsen/logrus"
 	"regexp"
 	"sort"
@@ -11,9 +12,9 @@ import (
 func NewDeviceAllocation(allocationSize, totalShares int, availableDevIds []string) *DeviceAllocation {
 	sort.Strings(availableDevIds)
 	devAlloc := &DeviceAllocation{
-		AvailableDevIds: availableDevIds,
-		AllocationSize:  allocationSize,
-		TotalShares:     totalShares,
+		AvailableDevIds:   availableDevIds,
+		AllocationSize:    allocationSize,
+		TotalSharesPerGpu: totalShares,
 	}
 	devAlloc.PrintAvailableDevIds()
 	devAlloc.InitLoadMap()
@@ -22,7 +23,7 @@ func NewDeviceAllocation(allocationSize, totalShares int, availableDevIds []stri
 }
 
 func (a *DeviceAllocation) InitLoadMap() {
-	a.LoadMap = make([]*DeviceLoad, len(a.MetaDeviceIdsToRealDeviceIds()))
+	a.LoadMap = make([]*DeviceLoad, nvmlutils.GetTotalDevices())
 	// build a map of real device id to meta device id
 	for _, deviceId := range a.MetaDeviceIdsToRealDeviceIds() {
 		for _, availableDevId := range a.AvailableDevIds {
@@ -39,7 +40,7 @@ func (a *DeviceAllocation) InitLoadMap() {
 }
 
 func (a *DeviceAllocation) PrintAvailableDevIds() {
-	log.Info("[preferred-allocation] available devices IDs")
+	log.Infof("[preferred-allocation] available (%d) devices IDs:", len(a.AvailableDevIds))
 	for _, devId := range a.AvailableDevIds {
 		log.Info(devId)
 	}
@@ -62,14 +63,17 @@ func (a *DeviceAllocation) MetaDeviceIdsToRealDeviceIds() (realDeviceIds []strin
 }
 
 func (a *DeviceAllocation) SetAllocations() {
-	entireGpusRequest := a.AllocationSize / a.TotalShares
-	gpuFractionsRequest := a.AllocationSize % a.TotalShares
+	entireGpusRequest := a.AllocationSize / a.TotalSharesPerGpu
+	gpuFractionsRequest := a.AllocationSize % a.TotalSharesPerGpu
 	log.Infof("metagpu allocation request: %d.%d", entireGpusRequest, gpuFractionsRequest)
 
 	// first try to allocate entire gpus if requested
 	for i := 0; i < entireGpusRequest; i++ {
 		for _, devLoad := range a.LoadMap {
-			if devLoad.getFreeShares() == a.TotalShares {
+			if devLoad == nil {
+				continue
+			}
+			if devLoad.getFreeShares() == a.TotalSharesPerGpu {
 				a.MetagpusAllocations = append(a.MetagpusAllocations, devLoad.Metagpus...)
 				devLoad.Metagpus = nil
 			}
@@ -78,6 +82,9 @@ func (a *DeviceAllocation) SetAllocations() {
 
 	if gpuFractionsRequest > 0 {
 		for _, devLoad := range a.LoadMap {
+			if devLoad == nil {
+				continue
+			}
 			if devLoad.getFreeShares() >= gpuFractionsRequest {
 				var devicesToAdd []string
 				for i, device := range devLoad.Metagpus {
@@ -99,6 +106,9 @@ func (a *DeviceAllocation) SetAllocations() {
 		ExitMultiGpuFractionAlloc:
 			if allocationsLeft > 0 {
 				for _, devLoad := range a.LoadMap {
+					if devLoad == nil {
+						continue
+					}
 					for _, device := range devLoad.Metagpus {
 						a.MetagpusAllocations = append(a.MetagpusAllocations, device)
 						allocationsLeft--
