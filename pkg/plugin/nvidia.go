@@ -2,7 +2,6 @@ package plugin
 
 import (
 	b64 "encoding/base64"
-
 	"fmt"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/nvmlutils"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/sharecfg"
@@ -75,12 +74,10 @@ func (m *NvidiaDeviceManager) GetPluginDevices() []*pluginapi.Device {
 
 func (m *NvidiaDeviceManager) setDevices() {
 
-	count, ret := nvml.DeviceGetCount()
-	log.Infof("refreshing nvidia devices cache (total: %d)", count)
-	nvmlutils.ErrorCheck(ret)
 	var devices []*MetaDevice
-	for i := 0; i < count; i++ {
-		device, ret := nvml.DeviceGetHandleByIndex(i)
+	nvmlDevices := nvmlutils.GetDevices()
+	log.Infof("refreshing nvidia devices cache (total: %d)", len(nvmlDevices))
+	for idx, device := range nvmlDevices {
 		uuid, ret := device.GetUUID()
 		if m.isManagedDevice(uuid) {
 			// enable accounting mode
@@ -93,9 +90,10 @@ func (m *NvidiaDeviceManager) setDevices() {
 			state, ret := device.GetAccountingMode()
 			nvmlutils.ErrorCheck(ret)
 			log.Infof("accounting mode for device: %s is: %d", uuid, state)
-			devices = append(devices, &MetaDevice{UUID: uuid, Index: i})
+			devices = append(devices, &MetaDevice{UUID: uuid, Index: idx})
 		}
 	}
+
 	m.Devices = devices
 }
 
@@ -145,8 +143,6 @@ func (m *NvidiaDeviceManager) MetagpuAllocation(allocationSize int, availableDev
 }
 
 func NewNvidiaDeviceManager(shareCfg *sharecfg.DeviceSharingConfig) *NvidiaDeviceManager {
-	ret := nvml.Init()
-	nvmlutils.ErrorCheck(ret)
 	ndm := &NvidiaDeviceManager{
 		cacheTTL:                 time.Second * time.Duration(viper.GetInt("deviceCacheTTL")),
 		processesDiscoveryPeriod: time.Second * time.Duration(viper.GetInt("processesDiscoveryPeriod")),

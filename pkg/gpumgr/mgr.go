@@ -3,7 +3,6 @@ package gpumgr
 import (
 	"fmt"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/nvmlutils"
-	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"time"
@@ -35,19 +34,15 @@ func (m *GpuMgr) startGpuStatusCache() {
 }
 
 func (m *GpuMgr) setGpuDevices() {
-	count, ret := nvml.DeviceGetCount()
-	nvmlutils.ErrorCheck(ret)
 	var gpuDevices []*GpuDevice
-	for i := 0; i < count; i++ {
-		nvidiaDevice, ret := nvml.DeviceGetHandleByIndex(i)
+	for idx, device := range nvmlutils.GetDevices() {
+		uuid, ret := device.GetUUID()
 		nvmlutils.ErrorCheck(ret)
-		uuid, ret := nvidiaDevice.GetUUID()
+		deviceMemory, ret := device.GetMemoryInfo()
 		nvmlutils.ErrorCheck(ret)
-		deviceMemory, ret := nvidiaDevice.GetMemoryInfo()
+		utilization, ret := device.GetUtilizationRates()
 		nvmlutils.ErrorCheck(ret)
-		utilization, ret := nvidiaDevice.GetUtilizationRates()
-		nvmlutils.ErrorCheck(ret)
-		gpuDevices = append(gpuDevices, NewGpuDevice(uuid, i, utilization, deviceMemory))
+		gpuDevices = append(gpuDevices, NewGpuDevice(uuid, idx, utilization, deviceMemory))
 	}
 	m.GpuDevices = gpuDevices
 }
@@ -55,13 +50,8 @@ func (m *GpuMgr) setGpuDevices() {
 func (m *GpuMgr) setGpuProcesses() {
 	var gpuProcesses []*GpuProcess
 	for _, device := range m.GpuDevices {
-		nvidiaDevice, ret := nvml.DeviceGetHandleByIndex(device.Index)
-		nvmlutils.ErrorCheck(ret)
-		processes, ret := nvidiaDevice.GetComputeRunningProcesses()
-		nvmlutils.ErrorCheck(ret)
-		for _, nvmlProcessInfo := range processes {
-			stats, ret := nvidiaDevice.GetAccountingStats(nvmlProcessInfo.Pid)
-			nvmlutils.ErrorCheck(ret)
+		for _, nvmlProcessInfo := range nvmlutils.GetComputeRunningProcesses(device.Index) {
+			stats := nvmlutils.GetAccountingStats(device.Index, nvmlProcessInfo.Pid)
 			gpuProc := NewGpuProcess(nvmlProcessInfo.Pid, stats.GpuUtilization, nvmlProcessInfo.UsedGpuMemory/MB, device.UUID)
 			gpuProcesses = append(gpuProcesses, gpuProc)
 		}
@@ -75,11 +65,9 @@ func (m *GpuMgr) GetDeviceInfo() *GpuDeviceInfo {
 		log.Errorf("failed to detect hostname, err: %s", err)
 	}
 	info := make(map[string]string)
-	cudaVersion, ret := nvml.SystemGetCudaDriverVersion()
-	nvmlutils.ErrorCheck(ret)
+	cudaVersion := nvmlutils.SystemGetCudaDriverVersion()
 	info["cudaVersion"] = fmt.Sprintf("%d", cudaVersion)
-	driver, ret := nvml.SystemGetDriverVersion()
-	nvmlutils.ErrorCheck(ret)
+	driver := nvmlutils.SystemGetDriverVersion()
 	info["driverVersion"] = driver
 	return &GpuDeviceInfo{Node: hostname, Metadata: info, Devices: m.GpuDevices}
 }

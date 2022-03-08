@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/viper"
 	"os"
 	"os/signal"
-	"path"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -129,16 +129,17 @@ func setupLogging() {
 	// Set log verbosity
 	if viper.GetBool("verbose") {
 		log.SetLevel(log.DebugLevel)
+	} else {
+		log.SetLevel(log.InfoLevel)
+		log.SetReportCaller(true)
 		log.SetFormatter(&log.TextFormatter{
 			FullTimestamp: true,
 			CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
-				fileName := fmt.Sprintf(" [%s]", path.Base(frame.Function)+":"+strconv.Itoa(frame.Line))
-				return "", fileName
+				fileName := strings.TrimSuffix(filepath.Base(frame.File), filepath.Ext(frame.File))
+				line := strconv.Itoa(frame.Line)
+				return "", fmt.Sprintf(" [%s:%s]", fileName, line)
 			},
 		})
-	} else {
-		log.SetLevel(log.InfoLevel)
-		log.SetFormatter(&log.TextFormatter{FullTimestamp: true})
 	}
 
 	// Set log format

@@ -3,6 +3,8 @@ package gpumgr
 import (
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/sharecfg"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
+
+	//"github.com/NVIDIA/go-nvml/pkg/nvml"
 	log "github.com/sirupsen/logrus"
 )
 
