@@ -170,10 +170,7 @@ func setHostname() {
 func setProcessesMetrics() {
 	// GPU processes metrics
 	for _, p := range getGpuProcesses() {
-		//if _, ok := devicesCache[p.Uuid]; !ok {
-		//	log.Warnf("process's device uuid: %s doesn not exists ", p.Uuid)
-		//	continue
-		//}
+
 		labels := []string{
 			p.Uuid, fmt.Sprintf("%d", p.Pid), p.Cmdline, p.User, p.PodName, p.PodNamespace, p.ResourceName, hostname}
 		// process gpu utilization
@@ -183,15 +180,14 @@ func setProcessesMetrics() {
 		// metagpu requests
 		deviceProcessMetagpuRequests.WithLabelValues(labels...).Set(float64(p.MetagpuRequests))
 		// max allowed gpu utilization (by metagpus)
-
 		if devicesCache[p.Uuid] != nil {
 			maxMetaGpuUtilization := (100 / devicesCache[p.Uuid].Shares) * uint32(p.MetagpuRequests)
-			deviceProcessMaxAllowedMetagpuGPUUtilization.WithLabelValues(labels...).Set(float64(maxMetaGpuUtilization))
 			// calculate gpu utilization relatively to the total metagpu requests
 			metaGpuUtilization := -1
 			if p.GpuUtilization > 0 && maxMetaGpuUtilization > 0 {
 				metaGpuUtilization = int((p.GpuUtilization * 100) / maxMetaGpuUtilization)
 			}
+			deviceProcessMaxAllowedMetagpuGPUUtilization.WithLabelValues(labels...).Set(float64(maxMetaGpuUtilization))
 			deviceProcessMetagpuCurrentGPUUtilization.WithLabelValues(labels...).Set(float64(metaGpuUtilization))
 		} else {
 			deviceProcessMaxAllowedMetagpuGPUUtilization.WithLabelValues(labels...).Set(-1)
@@ -199,15 +195,14 @@ func setProcessesMetrics() {
 		}
 
 		// max allowed memory usage (by metagpus)
-
 		if devicesCache[p.Uuid] != nil {
 			maxMetaMemory := int(uint64(p.MetagpuRequests) * devicesCache[p.Uuid].MemoryShareSize)
-			deviceProcessMaxAllowedMetaGpuMemory.WithLabelValues(labels...).Set(float64(maxMetaMemory))
 			// calculate gpu memory utilization relatively to the total metagpu requests
 			metaMemUtilization := -1
 			if maxMetaMemory > 0 {
 				metaMemUtilization = (int(p.Memory) * 100) / maxMetaMemory
 			}
+			deviceProcessMaxAllowedMetaGpuMemory.WithLabelValues(labels...).Set(float64(maxMetaMemory))
 			deviceProcessMetagpuCurrentMemoryUtilization.WithLabelValues(labels...).Set(float64(metaMemUtilization))
 		} else {
 			deviceProcessMaxAllowedMetaGpuMemory.WithLabelValues(labels...).Set(-1)
