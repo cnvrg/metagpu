@@ -19,6 +19,7 @@ func listDeviceProcesses(podId string, gpuStatus *gpumgr.GpuMgr) (devProc []*pb.
 			PodNamespace:    process.PodNamespace,
 			MetagpuRequests: process.PodMetagpuRequest,
 			GpuUtilization:  process.GpuUtilization,
+			ResourceName:    process.ResourceName,
 		})
 	}
 	return

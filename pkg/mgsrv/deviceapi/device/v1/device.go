@@ -94,6 +94,7 @@ func (s *DeviceService) GetDevices(ctx context.Context, r *pb.GetDevicesRequest)
 			GpuUtilization:    device.Utilization.Gpu,
 			MemoryUtilization: device.Utilization.Memory,
 			MemoryShareSize:   device.Memory.ShareSize,
+			ResourceName:      device.ResourceName,
 		}
 		if s.vl == s.dvl {
 			d.MemoryTotal = device.Memory.Total
@@ -138,6 +139,7 @@ func (s *DeviceService) GetMetaDeviceInfo(ctx context.Context, r *pb.GetMetaDevi
 			MemoryTotal:       device.Memory.Total,
 			MemoryFree:        device.Memory.Free,
 			MemoryUsed:        device.Memory.Used,
+			ResourceName:      device.ResourceName,
 		})
 	}
 	return resp, nil

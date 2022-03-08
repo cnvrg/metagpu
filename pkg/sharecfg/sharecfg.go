@@ -27,7 +27,7 @@ func NewDeviceSharingConfig() *DevicesSharingConfigs {
 	}
 	var cfg []*DeviceSharingConfig
 	if err := viper.UnmarshalKey("deviceSharing", &cfg); err != nil {
-		log.Fatal(err) // TODO: add context to logs!!!!
+		log.Fatal(err)
 	}
 	shareCfg = &DevicesSharingConfigs{Configs: cfg}
 	shareCfg.ValidateSharingConfiguration()
