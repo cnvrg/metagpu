@@ -14,17 +14,21 @@ metadata:
   namespace: cnvrg
 data:
   config.yaml: |
-    metaGpus: 2
     accelerator: nvidia
     processesDiscoveryPeriod: 5
     deviceCacheTTL: 3600
-    resourceName: cnvrg.io/metagpu
     jwtSecret: topSecret
     mgctlTar: /tmp/mgctl
     mgctlAutoInject: true
-    autoReshare: true
     serverAddr: 0.0.0.0:50052
     memoryEnforcer: true
+    deviceToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1ldGFncHVAaW5zdGFuY2UiLCJ2aXNpYmlsaXR5TGV2ZWwiOiJsMCJ9.2rHykHFcHoIr-OCoPA5Am4ubf31-RJcayZnOTK6db94
+    containerToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1ldGFncHVAaW5zdGFuY2UiLCJ2aXNpYmlsaXR5TGV2ZWwiOiJsMSJ9.o5v6Zdi1FKXQevRjuSbABBX1vIRYgN3Daz9iXabuFFA
+    deviceSharing:
+      - resourceName: cnvrg.io/metagpu
+        autoReshare: true
+        metaGpus: 2
+        uuid: [ "*" ]
 ---
 # Source: metagpu-device-plugin/templates/rbac.yml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -126,7 +130,7 @@ spec:
           image: "docker.io/cnvrg/metagpu-device-plugin:main"
           imagePullPolicy: Always
           command:
-            - /usr/bin/metagpu-device-plugin
+            - /usr/bin/mgdp
             - start
             - -c
             - /etc/metagpu-device-plugin
@@ -135,12 +139,12 @@ spec:
           securityContext:
             privileged: true
           env:
-          - name: POD_IP
-            valueFrom:
-              fieldRef:
-                fieldPath: status.podIP
-          - name: MG_CTL_TOKEN
-            value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1ldGFncHVAaW5zdGFuY2UiLCJ2aXNpYmlsaXR5TGV2ZWwiOiJsMCJ9.2rHykHFcHoIr-OCoPA5Am4ubf31-RJcayZnOTK6db94
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: MG_CTL_ADDR
+              value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1ldGFncHVAaW5zdGFuY2UiLCJ2aXNpYmlsaXR5TGV2ZWwiOiJsMCJ9.2rHykHFcHoIr-OCoPA5Am4ubf31-RJcayZnOTK6db94
           volumeMounts:
             - name: device-plugin
               mountPath: /var/lib/kubelet/device-plugins
@@ -171,7 +175,7 @@ spec:
             path: /proc
           name: proc
 ---
-# Source: metagpu-device-plugin/templates/servicemonitor.yml
+# Source: metagpu-device-plugin/templates/svcmon.yml
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:

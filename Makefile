@@ -29,7 +29,7 @@ build-proto:
 	buf generate
 
 generate-manifests:
-	helm template chart/ --set tag=$(shell git rev-parse --abbrev-ref HEAD) > deploy/static.yaml
+	helm template chart/ -n cnvrg --set tag=$(shell git rev-parse --abbrev-ref HEAD) > deploy/static.yaml
 
 .PHONY: deploy
 deploy:
@@ -38,5 +38,5 @@ deploy:
 dev-sync-azure:
 	rsync -av  --exclude 'bin' --exclude '.git'  /Users/dima/.go/src/github.com/AccessibleAI/metagpu-device-plugin/* root@20.120.94.51:/root/.go/src/github.com/AccessibleAI/metagpu-device-plugin
 
-dev-sync-terex:
+dev-sync-trex:
 	rsync -av  --exclude 'bin' --exclude '.git'  /Users/dima/.go/src/github.com/AccessibleAI/metagpu-device-plugin/* root@212.199.86.38:/root/.go/src/github.com/AccessibleAI/metagpu-device-plugin

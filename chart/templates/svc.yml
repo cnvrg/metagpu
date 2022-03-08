@@ -3,7 +3,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: metagpu-device-plugin
-  namespace: cnvrg
+  namespace: {{ .Release.Namespace }}
   labels:
     app: "metagpu-exporter"
 spec:

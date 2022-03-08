@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: metagpu-device-plugin
-  namespace: cnvrg
+  namespace: {{ .Release.Namespace }}
 spec:
   selector:
     matchLabels:
@@ -33,7 +33,7 @@ spec:
           image: "docker.io/cnvrg/metagpu-device-plugin:{{ .Values.tag }}"
           imagePullPolicy: Always
           command:
-            - /usr/bin/metagpu-device-plugin
+            - /usr/bin/mgdp
             - start
             - -c
             - /etc/metagpu-device-plugin

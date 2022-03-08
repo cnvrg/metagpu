@@ -137,7 +137,7 @@ func setupLogging() {
 			CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
 				fileName := strings.TrimSuffix(filepath.Base(frame.File), filepath.Ext(frame.File))
 				line := strconv.Itoa(frame.Line)
-				return "", fmt.Sprintf(" [%s:%s]", fileName, line)
+				return "", fmt.Sprintf("[%s:%s]", fileName, line)
 			},
 		})
 	}
