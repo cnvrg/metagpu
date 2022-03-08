@@ -199,7 +199,6 @@ func setProcessesMetrics() {
 		if devicesCache[p.Uuid] != nil {
 			maxMetaMemory = int(uint64(p.MetagpuRequests) * devicesCache[p.Uuid].MemoryShareSize)
 		}
-
 		deviceProcessMaxAllowedMetaGpuMemory.WithLabelValues(labels...).Set(float64(maxMetaMemory))
 		// calculate gpu memory utilization relatively to the total metagpu requests
 		metaMemUtilization := -1
