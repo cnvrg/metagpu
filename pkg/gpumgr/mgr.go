@@ -29,6 +29,7 @@ func (m *GpuMgr) startGpuStatusCache() {
 			time.Sleep(5 * time.Second)
 			m.setGpuDevices()
 			m.setGpuProcesses()
+			m.discoverAnonymousProcesses()
 		}
 	}()
 }

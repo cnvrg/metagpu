@@ -12,14 +12,14 @@ import (
 )
 
 func GetGrpcMetaGpuSrvClientConn(address string) *grpc.ClientConn {
-	log.Infof("initiating gRPC connection to %s", address)
+	log.Debugf("initiating gRPC connection to %s", address)
 
 	c, err := dial(address, 3*time.Second)
 	if err != nil {
 		log.Errorf("failed to connect to server 🙀, err: %s", err)
 		os.Exit(1)
 	}
-	log.Infof("connected to %s", address)
+	log.Debugf("connected to %s", address)
 	return c
 }
 

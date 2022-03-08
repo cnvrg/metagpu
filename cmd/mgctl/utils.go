@@ -72,6 +72,9 @@ func getTotalMemoryUsedByProcesses(processes []*pbdevice.DeviceProcess) (totalUs
 }
 
 func getDeviceLoad(device *pbdevice.Device) string {
+	if device == nil {
+		return ""
+	}
 	if device.MemoryTotal <= 0 {
 		return fmt.Sprintf("%d", device.Index)
 	}

@@ -162,10 +162,14 @@ func buildDeviceInfoTableBody(devices []*pbdevice.Device) (body []table.Row, foo
 func buildDeviceProcessesTableBody(processes []*pbdevice.DeviceProcess, devices map[string]*pbdevice.Device) (body []table.Row) {
 	for _, p := range processes {
 		d := devices[p.Uuid]
-		maxMem := d.MemoryShareSize * uint64(p.MetagpuRequests)
-		memUsage := fmt.Sprintf("\u001B[32m%d\u001B[0m/%d", p.Memory, maxMem)
-		if p.Memory > maxMem {
-			memUsage = fmt.Sprintf("\u001B[31m%d\u001B[0m/%d", p.Memory, maxMem)
+		maxMem := int64(-1)
+		memUsage := ""
+		if d != nil {
+			maxMem = int64(d.MemoryShareSize * uint64(p.MetagpuRequests))
+			memUsage = fmt.Sprintf("\u001B[32m%d\u001B[0m/%d", p.Memory, maxMem)
+			if int64(p.Memory) > maxMem {
+				memUsage = fmt.Sprintf("\u001B[31m%d\u001B[0m/%d", p.Memory, maxMem)
+			}
 		}
 
 		body = append(body, table.Row{
