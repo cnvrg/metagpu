@@ -55,10 +55,10 @@ var (
 		Help:      "metagpu memory share size",
 	}, []string{"device_uuid", "device_index", "resource_name", "node_name"})
 
-	deviceProcessGpuUtilization = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	deviceProcessAbsoluteGpuUtilization = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
 		Subsystem: "process",
-		Name:      "gpu_utilization",
+		Name:      "absolute_gpu_utilization",
 		Help:      "gpu process utilization in percentage",
 	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name", "node_name"})
 
@@ -83,11 +83,11 @@ var (
 		Help:      "max allowed metagpu gpu utilization",
 	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name", "node_name"})
 
-	deviceProcessMetagpuCurrentGPUUtilization = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	deviceProcessMetagpuRelativeGPUUtilization = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
 		Subsystem: "process",
-		Name:      "metagpu_current_gpu_utilization",
-		Help:      "current metagpu gpu utilization",
+		Name:      "metagpu_relative_gpu_utilization",
+		Help:      "relative to metagpu request gpu utilization",
 	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name", "node_name"})
 
 	deviceProcessMaxAllowedMetaGpuMemory = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -97,11 +97,11 @@ var (
 		Help:      "max allowed metagpu memory usage",
 	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name", "node_name"})
 
-	deviceProcessMetagpuCurrentMemoryUtilization = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	deviceProcessMetagpuRelativeMemoryUtilization = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
 		Subsystem: "process",
-		Name:      "metagpu_current_memory_utilization",
-		Help:      "current metagpu memory utilization",
+		Name:      "metagpu_relative_memory_utilization",
+		Help:      "relative to metagpus request memory utilization",
 	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name", "node_name"})
 )
 
@@ -173,42 +173,59 @@ func setProcessesMetrics() {
 
 		labels := []string{
 			p.Uuid, fmt.Sprintf("%d", p.Pid), p.Cmdline, p.User, p.PodName, p.PodNamespace, p.ResourceName, hostname}
-		// process gpu utilization
-		deviceProcessGpuUtilization.WithLabelValues(labels...).Set(float64(p.GpuUtilization))
-		// process memory usage
-		deviceProcessMemoryUsage.WithLabelValues(labels...).Set(float64(p.Memory))
+
 		// metagpu requests
 		deviceProcessMetagpuRequests.WithLabelValues(labels...).Set(float64(p.MetagpuRequests))
-		// max allowed gpu utilization (by metagpus)
-		if devicesCache[p.Uuid] != nil {
-			maxMetaGpuUtilization := (100 / devicesCache[p.Uuid].Shares) * uint32(p.MetagpuRequests)
-			// calculate gpu utilization relatively to the total metagpu requests
-			metaGpuUtilization := -1
-			if p.GpuUtilization > 0 && maxMetaGpuUtilization > 0 {
-				metaGpuUtilization = int((p.GpuUtilization * 100) / maxMetaGpuUtilization)
-			}
-			deviceProcessMaxAllowedMetagpuGPUUtilization.WithLabelValues(labels...).Set(float64(maxMetaGpuUtilization))
-			deviceProcessMetagpuCurrentGPUUtilization.WithLabelValues(labels...).Set(float64(metaGpuUtilization))
-		} else {
+		// if pid is 0 => pod running without GPU process within
+		if p.Pid == 0 {
+			// absolute memory and gpu usage
+			deviceProcessAbsoluteGpuUtilization.WithLabelValues(labels...).Set(-1)
+			deviceProcessMemoryUsage.WithLabelValues(labels...).Set(-1)
+			// max (relative to metagpus request) allowed gpu and memory utilization
 			deviceProcessMaxAllowedMetagpuGPUUtilization.WithLabelValues(labels...).Set(-1)
-			deviceProcessMetagpuCurrentGPUUtilization.WithLabelValues(labels...).Set(-1)
-		}
-
-		// max allowed memory usage (by metagpus)
-		if devicesCache[p.Uuid] != nil {
-			maxMetaMemory := int(uint64(p.MetagpuRequests) * devicesCache[p.Uuid].MemoryShareSize)
-			// calculate gpu memory utilization relatively to the total metagpu requests
-			metaMemUtilization := -1
-			if maxMetaMemory > 0 {
-				metaMemUtilization = (int(p.Memory) * 100) / maxMetaMemory
-			}
-			deviceProcessMaxAllowedMetaGpuMemory.WithLabelValues(labels...).Set(float64(maxMetaMemory))
-			deviceProcessMetagpuCurrentMemoryUtilization.WithLabelValues(labels...).Set(float64(metaMemUtilization))
-		} else {
 			deviceProcessMaxAllowedMetaGpuMemory.WithLabelValues(labels...).Set(-1)
-			deviceProcessMetagpuCurrentMemoryUtilization.WithLabelValues(labels...).Set(-1)
+			// relative gpu and memory utilization
+			deviceProcessMetagpuRelativeGPUUtilization.WithLabelValues(labels...).Set(-1)
+			deviceProcessMetagpuRelativeMemoryUtilization.WithLabelValues(labels...).Set(-1)
+		} else {
+			// absolute memory and gpu usage
+			deviceProcessAbsoluteGpuUtilization.WithLabelValues(labels...).Set(float64(p.GpuUtilization))
+			deviceProcessMemoryUsage.WithLabelValues(labels...).Set(float64(p.Memory))
+			// max (relative to metagpus request) allowed gpu and memory utilization
+			deviceProcessMaxAllowedMetagpuGPUUtilization.WithLabelValues(labels...).Set(getMaxAllowedMetagpuGPUUtilization(p))
+			deviceProcessMaxAllowedMetaGpuMemory.WithLabelValues(labels...).Set(getMaxAllowedMetaGpuMemory(p))
+			// relative gpu and memory utilization
+			deviceProcessMetagpuRelativeGPUUtilization.WithLabelValues(labels...).Set(getRelativeGPUUtilization(p))
+			deviceProcessMetagpuRelativeMemoryUtilization.WithLabelValues(labels...).Set(getRelativeMemoryUtilization(p))
+
 		}
 	}
+}
+
+func getMaxAllowedMetagpuGPUUtilization(p *pbdevice.DeviceProcess) float64 {
+	return float64((100 / devicesCache[p.Uuid].Shares) * uint32(p.MetagpuRequests))
+}
+
+func getMaxAllowedMetaGpuMemory(p *pbdevice.DeviceProcess) float64 {
+	return float64(uint64(p.MetagpuRequests) * devicesCache[p.Uuid].MemoryShareSize)
+}
+
+func getRelativeGPUUtilization(p *pbdevice.DeviceProcess) float64 {
+	maxMetaGpuUtilization := (100 / devicesCache[p.Uuid].Shares) * uint32(p.MetagpuRequests)
+	metaGpuUtilization := -1
+	if p.GpuUtilization > 0 && maxMetaGpuUtilization > 0 {
+		metaGpuUtilization = int((p.GpuUtilization * 100) / maxMetaGpuUtilization)
+	}
+	return float64(metaGpuUtilization)
+}
+
+func getRelativeMemoryUtilization(p *pbdevice.DeviceProcess) float64 {
+	maxMetaMemory := int(uint64(p.MetagpuRequests) * devicesCache[p.Uuid].MemoryShareSize)
+	metaMemUtilization := -1
+	if maxMetaMemory > 0 {
+		metaMemUtilization = (int(p.Memory) * 100) / maxMetaMemory
+	}
+	return float64(metaMemUtilization)
 }
 
 func recordMetrics() {
@@ -242,13 +259,13 @@ func startExporter() {
 	prometheus.MustRegister(deviceMemFree)
 	prometheus.MustRegister(deviceMemUsed)
 	prometheus.MustRegister(deviceMemShareSize)
-	prometheus.MustRegister(deviceProcessGpuUtilization)
+	prometheus.MustRegister(deviceProcessAbsoluteGpuUtilization)
 	prometheus.MustRegister(deviceProcessMemoryUsage)
 	prometheus.MustRegister(deviceProcessMetagpuRequests)
 	prometheus.MustRegister(deviceProcessMaxAllowedMetagpuGPUUtilization)
-	prometheus.MustRegister(deviceProcessMetagpuCurrentGPUUtilization)
+	prometheus.MustRegister(deviceProcessMetagpuRelativeGPUUtilization)
 	prometheus.MustRegister(deviceProcessMaxAllowedMetaGpuMemory)
-	prometheus.MustRegister(deviceProcessMetagpuCurrentMemoryUtilization)
+	prometheus.MustRegister(deviceProcessMetagpuRelativeMemoryUtilization)
 	setHostname()
 	recordMetrics()
 	addr := viper.GetString("metrics-addr")
