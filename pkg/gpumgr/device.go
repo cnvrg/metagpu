@@ -3,6 +3,7 @@ package gpumgr
 import (
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/sharecfg"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
+	"os"
 
 	//"github.com/NVIDIA/go-nvml/pkg/nvml"
 	log "github.com/sirupsen/logrus"
@@ -27,6 +28,7 @@ type GpuDevice struct {
 	ResourceName string
 	Utilization  *DeviceUtilization
 	Memory       *DeviceMemory
+	Nodename     string
 }
 
 func NewGpuDevice(uuid string, index int, utilization nvml.Utilization, memory nvml.Memory) *GpuDevice {
@@ -35,11 +37,22 @@ func NewGpuDevice(uuid string, index int, utilization nvml.Utilization, memory n
 		Index:       index,
 		Utilization: &DeviceUtilization{Gpu: utilization.Gpu, Memory: utilization.Memory / uint32(MB)},
 	}
+
 	// set gpu share configs
 	d.setGpuShareConfigs()
+	// set nodename
+	d.setNodename()
 	// set gpu memory usage
 	d.setGpuMemoryUsage(memory)
 	return d
+}
+
+func (d *GpuDevice) setNodename() {
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Errorf("failed to detect hostname, err: %s", err)
+	}
+	d.Nodename = hostname
 }
 
 func (d *GpuDevice) setGpuShareConfigs() {

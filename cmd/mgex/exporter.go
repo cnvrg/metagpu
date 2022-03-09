@@ -11,14 +11,12 @@ import (
 	"google.golang.org/grpc"
 	"net"
 	"net/http"
-	"os"
 	"time"
 )
 
 var (
 	conn         *grpc.ClientConn
 	devicesCache map[string]*pbdevice.Device
-	hostname     = ""
 
 	deviceShares = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
@@ -150,7 +148,7 @@ func clearGpuDevicesCache() {
 func setDevicesMetrics() {
 	// GPU device metrics
 	for _, d := range getGpuDevicesInfo() {
-		labels := []string{d.Uuid, fmt.Sprintf("%d", d.Index), d.ResourceName, hostname}
+		labels := []string{d.Uuid, fmt.Sprintf("%d", d.Index), d.ResourceName, d.NodeName}
 		deviceShares.WithLabelValues(labels...).Set(float64(d.Shares))
 		deviceMemTotal.WithLabelValues(labels...).Set(float64(d.MemoryTotal))
 		deviceMemFree.WithLabelValues(labels...).Set(float64(d.MemoryFree))
@@ -159,20 +157,12 @@ func setDevicesMetrics() {
 	}
 }
 
-func setHostname() {
-	hn, err := os.Hostname()
-	if err != nil {
-		log.Errorf("faild to detect podId, err: %s", err)
-	}
-	hostname = hn
-}
-
 func setProcessesMetrics() {
 	// GPU processes metrics
 	for _, p := range getGpuProcesses() {
 
 		labels := []string{
-			p.Uuid, fmt.Sprintf("%d", p.Pid), p.Cmdline, p.User, p.PodName, p.PodNamespace, p.ResourceName, hostname}
+			p.Uuid, fmt.Sprintf("%d", p.Pid), p.Cmdline, p.User, p.PodName, p.PodNamespace, p.ResourceName, p.NodeName}
 
 		// metagpu requests
 		deviceProcessMetagpuRequests.WithLabelValues(labels...).Set(float64(p.MetagpuRequests))
@@ -266,7 +256,6 @@ func startExporter() {
 	prometheus.MustRegister(deviceProcessMetagpuRelativeGPUUtilization)
 	prometheus.MustRegister(deviceProcessMaxAllowedMetaGpuMemory)
 	prometheus.MustRegister(deviceProcessMetagpuRelativeMemoryUtilization)
-	setHostname()
 	recordMetrics()
 	addr := viper.GetString("metrics-addr")
 	http.Handle("/metrics", promhttp.Handler())

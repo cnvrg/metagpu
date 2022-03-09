@@ -4,7 +4,7 @@ build:
 	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=0.1.1'" -v -o bin/mgdp cmd/mgdp/main.go
 
 build-exporter:
-	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=0.1.1'" -v -o bin/mgexporter cmd/mgexporter/*.go
+	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=0.1.1'" -v -o bin/mgex cmd/mgex/*.go
 
 debug-remote:
 	dlv debug --headless --listen=:2345 --api-version=2 --accept-multiclient  ./cmd/mgdp/main.go -- start

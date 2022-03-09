@@ -33,6 +33,7 @@ func (m *GpuMgr) discoverAnonymousProcesses() {
 						PodNamespace:      p.Namespace,
 						PodMetagpuRequest: quantity.Value(),
 						ResourceName:      config.ResourceName,
+						Nodename:          p.Spec.NodeName,
 					})
 				}
 			}

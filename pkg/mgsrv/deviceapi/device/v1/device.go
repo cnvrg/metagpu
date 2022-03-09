@@ -95,6 +95,7 @@ func (s *DeviceService) GetDevices(ctx context.Context, r *pb.GetDevicesRequest)
 			MemoryUtilization: device.Utilization.Memory,
 			MemoryShareSize:   device.Memory.ShareSize,
 			ResourceName:      device.ResourceName,
+			NodeName:          device.Nodename,
 		}
 		if s.vl == s.dvl {
 			d.MemoryTotal = device.Memory.Total

@@ -26,6 +26,7 @@ message DeviceProcess{
   int64 metagpu_requests = 9;
   uint32 gpu_utilization = 10;
   string resource_name = 11;
+  string node_name = 12;
 }
 message Device{
   string uuid = 1;
@@ -38,6 +39,7 @@ message Device{
   uint64 memory_used = 8;
   uint64 memory_share_size = 9;
   string resource_name = 10;
+  string node_name = 11;
 }
 message StreamProcessesRequest{
   string pod_id = 1;

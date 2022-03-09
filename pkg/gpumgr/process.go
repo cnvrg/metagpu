@@ -25,6 +25,7 @@ type GpuProcess struct {
 	PodNamespace      string
 	PodMetagpuRequest int64
 	ResourceName      string
+	Nodename          string
 }
 
 func (p *GpuProcess) SetProcessCmdline() {
@@ -110,6 +111,7 @@ func (p *GpuProcess) EnrichProcessK8sInfo() {
 					resourceName := v1core.ResourceName(p.ResourceName)
 					if quantity, ok := container.Resources.Limits[resourceName]; ok {
 						p.PodMetagpuRequest = quantity.Value()
+						p.Nodename = pod.Spec.NodeName
 					}
 				}
 			}

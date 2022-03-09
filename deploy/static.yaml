@@ -158,7 +158,7 @@ spec:
           image: "docker.io/cnvrg/metagpu-device-plugin:main"
           imagePullPolicy: Always
           command:
-            - /usr/bin/mgexporter
+            - /usr/bin/mgex
             - start
             - -t
             - eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1ldGFncHVAaW5zdGFuY2UiLCJ2aXNpYmlsaXR5TGV2ZWwiOiJsMCJ9.2rHykHFcHoIr-OCoPA5Am4ubf31-RJcayZnOTK6db94

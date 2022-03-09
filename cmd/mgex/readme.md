@@ -35,11 +35,11 @@ Each process metrics includes the following labels:
 6. device uuid 
 
 Process metrics:
-* `metagpu_process_gpu_utilization` process gpu utilization - calculated from device level totals
+* `metagpu_process_absolute_gpu_utilization` gpu utilization - calculated from device GPU totals
 
 * `metagpu_process_memory_usage` process memory usage
 
-* `metagpu_process_metagpu_requests` total quantity of metagpu requests
+* `metagpu_process_metagpu_requests` amount of metagpu requests
 
 * `metagpu_process_max_allowed_metagpu_gpu_utilization` 
 max allowed metagpu GPU utilization, calculated by: 
@@ -48,11 +48,11 @@ max allowed metagpu GPU utilization, calculated by:
 * `metagpu_process_max_allowed_metagpu_memory` max allowed metagpu memory usage
 calculated by: `metagpu_process_metagpu_requests` * `metagpu_device_memory_share_size` 
  
-* `metagpu_process_metagpu_current_gpu_utilization` current gpu utilization
+* `metagpu_process_metagpu_relative_gpu_utilization` current gpu utilization relative to the amount of metagpu requests
 calculated by: `metagpu_process_gpu_utilization` * 100 / `metagpu_process_max_allowed_metagpu_memory`
  
-* `metagpu_process_metagpu_current_memory_utilization` current memory utilization calculated by:
-`metagpu_process_memory_usage` * 100 / `metagpu_process_max_allowed_metagpu_memory`
+* `metagpu_process_metagpu_relative_memory_utilization` memory utilization relative to the amount of 
+metagpus requests calculated by: `metagpu_process_memory_usage` * 100 / `metagpu_process_max_allowed_metagpu_memory`
 
 Metrics example:
 ```bash

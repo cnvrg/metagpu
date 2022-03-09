@@ -5,9 +5,9 @@ import (
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/gpumgr"
 )
 
-func listDeviceProcesses(podId string, gpuStatus *gpumgr.GpuMgr) (devProc []*pb.DeviceProcess) {
+func listDeviceProcesses(podId string, gpuMgr *gpumgr.GpuMgr) (devProc []*pb.DeviceProcess) {
 
-	for _, process := range gpuStatus.GetProcesses(podId) {
+	for _, process := range gpuMgr.GetProcesses(podId) {
 		devProc = append(devProc, &pb.DeviceProcess{
 			Pid:             process.Pid,
 			Uuid:            process.DeviceUuid,
@@ -20,6 +20,7 @@ func listDeviceProcesses(podId string, gpuStatus *gpumgr.GpuMgr) (devProc []*pb.
 			MetagpuRequests: process.PodMetagpuRequest,
 			GpuUtilization:  process.GpuUtilization,
 			ResourceName:    process.ResourceName,
+			NodeName:        process.Nodename,
 		})
 	}
 	return

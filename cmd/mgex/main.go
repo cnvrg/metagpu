@@ -21,10 +21,9 @@ type param struct {
 }
 
 var (
-	Version    string
-	Build      string
-	rootParams = []param{}
-	rootCmd    = &cobra.Command{
+	Version string
+	Build   string
+	rootCmd = &cobra.Command{
 		Use:   "mgexporter",
 		Short: "mgexporter - Metagpu metrics exporter",
 	}
@@ -54,12 +53,11 @@ func init() {
 	setParams(startParams, start)
 	rootCmd.AddCommand(version)
 	rootCmd.AddCommand(start)
-	setParams(rootParams, rootCmd)
 }
 
 func initConfig() {
 	viper.AutomaticEnv()
-	viper.SetEnvPrefix("MG_EXPORTER")
+	viper.SetEnvPrefix("MG_EX")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	setupLogging()
 }
@@ -85,6 +83,7 @@ func setupLogging() {
 	// Set log verbosity
 	if viper.GetBool("verbose") {
 		log.SetLevel(log.DebugLevel)
+		log.SetReportCaller(true)
 		log.SetFormatter(&log.TextFormatter{
 			FullTimestamp: true,
 			CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
@@ -96,12 +95,10 @@ func setupLogging() {
 		log.SetLevel(log.InfoLevel)
 		log.SetFormatter(&log.TextFormatter{FullTimestamp: true})
 	}
-
 	// Set log format
 	if viper.GetBool("json-log") {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
-
 	// Logs are always goes to STDOUT
 	log.SetOutput(os.Stdout)
 }
