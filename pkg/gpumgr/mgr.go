@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/nvmlutils"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"os"
 	"time"
 )
@@ -108,12 +109,16 @@ func (m *GpuMgr) SetContainerLevelVisibilityToken(token string) {
 }
 
 func NewGpuManager() *GpuMgr {
-	status := &GpuMgr{}
+	mgr := &GpuMgr{}
 	// init gpu devices
-	status.setGpuDevices()
+	mgr.setGpuDevices()
 	// init gpu processes
-	status.setGpuProcesses()
+	mgr.setGpuProcesses()
 	// start gpu devices and processes cache
-	status.startGpuStatusCache()
-	return status
+	mgr.startGpuStatusCache()
+	// start mem enforcer
+	if viper.GetBool("memoryEnforcer") {
+		mgr.StartMemoryEnforcer()
+	}
+	return mgr
 }
