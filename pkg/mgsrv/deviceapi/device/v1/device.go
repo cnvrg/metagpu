@@ -141,6 +141,7 @@ func (s *DeviceService) GetMetaDeviceInfo(ctx context.Context, r *pb.GetMetaDevi
 			MemoryFree:        device.Memory.Free,
 			MemoryUsed:        device.Memory.Used,
 			ResourceName:      device.ResourceName,
+			NodeName:          device.Nodename,
 		})
 	}
 	return resp, nil

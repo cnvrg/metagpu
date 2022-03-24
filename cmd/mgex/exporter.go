@@ -157,13 +157,23 @@ func setDevicesMetrics() {
 	}
 }
 
+func resetProcessLevelMetrics() {
+	deviceProcessAbsoluteGpuUtilization.Reset()
+	deviceProcessMemoryUsage.Reset()
+	deviceProcessMetagpuRequests.Reset()
+	deviceProcessMaxAllowedMetagpuGPUUtilization.Reset()
+	deviceProcessMetagpuRelativeGPUUtilization.Reset()
+	deviceProcessMaxAllowedMetaGpuMemory.Reset()
+	deviceProcessMetagpuRelativeMemoryUtilization.Reset()
+}
+
 func setProcessesMetrics() {
 	// GPU processes metrics
 	for _, p := range getGpuProcesses() {
-
 		labels := []string{
 			p.Uuid, fmt.Sprintf("%d", p.Pid), p.Cmdline, p.User, p.PodName, p.PodNamespace, p.ResourceName, p.NodeName}
-
+		// reset metrics
+		resetProcessLevelMetrics()
 		// metagpu requests
 		deviceProcessMetagpuRequests.WithLabelValues(labels...).Set(float64(p.MetagpuRequests))
 		// if pid is 0 => pod running without GPU process within
