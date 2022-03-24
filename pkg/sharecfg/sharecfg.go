@@ -74,13 +74,19 @@ func (c *DevicesSharingConfigs) GetDeviceSharingConfigs(devUuid string) (*Device
 
 func (c *DeviceSharingConfig) GpuAutoResharing() {
 	log.Info("autoResharing enabled, re-configuring gpu shares")
-	nvmlDevice := c.getFirstDevice()
-	if nvmlDevice != nil {
-		mem := nvmlutils.GetDeviceMemory(nvmlDevice)
-		if mem.Total > 0 {
-			c.MetaGpus = int((mem.Total / (1024 * 1024)) / 1024)
-		}
-	}
+	c.MetaGpus = 100
+	// the following code is sharing GPU by memory,
+	// currently we are not using it, and I don't think we ever will
+	// but, never say never, thus it's here
+
+	//nvmlDevice := c.getFirstDevice()
+	//if nvmlDevice != nil {
+	//	mem := nvmlutils.GetDeviceMemory(nvmlDevice)
+	//	if mem.Total > 0 {
+	//		c.MetaGpus = int((mem.Total / (1024 * 1024)) / 1024)
+	//	}
+	//}
+
 	// TODO: make sharing configurations persistent
 }
 
