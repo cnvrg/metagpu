@@ -147,19 +147,33 @@ func (p *GpuProcess) SetResourceName() {
 }
 
 func NewGpuProcess(pid, gpuUtil uint32, gpuMem uint64, devUuid string) *GpuProcess {
-	dp := &GpuProcess{
+	p := &GpuProcess{
 		Pid:            pid,
 		GpuUtilization: gpuUtil,
 		GpuMemory:      gpuMem,
 		DeviceUuid:     devUuid,
 	}
-	dp.SetProcessUsername()
-	dp.SetProcessCmdline()
-	dp.SetProcessContainerId()
-	dp.SetResourceName()
-	dp.EnrichProcessK8sInfo()
+	p.SetProcessUsername()
+	p.SetProcessCmdline()
+	p.SetProcessContainerId()
+	p.SetResourceName()
+	p.EnrichProcessK8sInfo()
 	if viper.GetBool("mgctlAutoInject") {
-		podexec.CopymgctlToContainer(dp.ContainerId)
+		podexec.CopymgctlToContainer(p.ContainerId)
 	}
-	return dp
+	return p
+}
+
+func NewGpuPod(podId, ns, resourceName, nodename string, metagpuRequests int64) *GpuProcess {
+	p := &GpuProcess{
+		PodId:             podId,
+		PodNamespace:      ns,
+		PodMetagpuRequest: metagpuRequests,
+		ResourceName:      resourceName,
+		Nodename:          nodename,
+	}
+	if viper.GetBool("mgctlAutoInject") {
+		podexec.CopymgctlToContainer(p.ContainerId)
+	}
+	return p
 }
