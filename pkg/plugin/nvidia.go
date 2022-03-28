@@ -125,7 +125,7 @@ func NewNvidiaDeviceManager(shareCfg *sharecfg.DeviceSharingConfig) *NvidiaDevic
 		processesDiscoveryPeriod: time.Second * time.Duration(viper.GetInt("processesDiscoveryPeriod")),
 		shareCfg:                 shareCfg,
 	}
-	// start cache devices loop
+	// start devices cache loop
 	ndm.CacheDevices()
 	return ndm
 }

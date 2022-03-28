@@ -76,6 +76,7 @@ func (a *DeviceAllocation) allocate() {
 				a.MetagpusAllocations = append(a.MetagpusAllocations, devLoad.Metagpus...)
 				// remove current available metagpus from the device load map
 				devLoad.Metagpus = nil
+				// entire gpu allocated, continue to the next entire gpu if needed
 				break
 			}
 		}
