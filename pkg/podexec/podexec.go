@@ -68,10 +68,11 @@ func getPodByContainerId(containerId string) (podExec *podExec, err error) {
 }
 
 func shouldCopyMgctl(pe *podExec) bool {
+	l := log.WithField("containerName", pe.containerName)
 	pe.cmd = []string{"ls", "/usr/bin"}
 	pe.stdout = new(bytes.Buffer)
 	if err := pe.exec(); err != nil {
-		log.Error(err)
+		l.Error(err)
 		return false
 	}
 	files := strings.Split(pe.stdout.String(), "\n")
@@ -80,7 +81,7 @@ func shouldCopyMgctl(pe *podExec) bool {
 			return false
 		}
 	}
-	log.Infof("injecting mgctl bin into %s", pe.containerName)
+	l.Info("injecting mgctl bin")
 	return true
 }
 
@@ -88,20 +89,21 @@ func makeMgctlExecutable(pe *podExec) {
 	pe.cmd = []string{"chmod", "+x", "/usr/bin/mgctl"}
 	pe.stdout = new(bytes.Buffer)
 	if err := pe.exec(); err != nil {
-		log.Error(err)
+		log.WithField("containerName", pe.containerName).Error(err)
 	}
 }
 
 func copyMgctl(pe *podExec) {
+	l := log.WithField("containerName", pe.containerName)
 	var e error
 	pe.cmd = []string{"cp", "/dev/stdin", "/usr/bin/mgctl"}
 	pe.stdin, e = getmgctlBinFile()
 	if e != nil {
-		log.Error(e)
+		l.Error(e)
 		return
 	}
 	if err := pe.exec(); err != nil {
-		log.Error(err)
+		l.Error(e)
 		return
 	}
 }
