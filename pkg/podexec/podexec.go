@@ -68,7 +68,7 @@ func getPodByContainerId(containerId string) (podExec *podExec, err error) {
 }
 
 func shouldCopyMgctl(pe *podExec) bool {
-	l := log.WithField("containerName", pe.containerName)
+	l := log.WithFields(log.Fields{"containerName": pe.containerName, "podName": pe.pod})
 	pe.cmd = []string{"ls", "/usr/bin"}
 	pe.stdout = new(bytes.Buffer)
 	if err := pe.exec(); err != nil {
@@ -89,12 +89,12 @@ func makeMgctlExecutable(pe *podExec) {
 	pe.cmd = []string{"chmod", "+x", "/usr/bin/mgctl"}
 	pe.stdout = new(bytes.Buffer)
 	if err := pe.exec(); err != nil {
-		log.WithField("containerName", pe.containerName).Error(err)
+		log.WithFields(log.Fields{"containerName": pe.containerName, "podName": pe.pod}).Error(err)
 	}
 }
 
 func copyMgctl(pe *podExec) {
-	l := log.WithField("containerName", pe.containerName)
+	l := log.WithFields(log.Fields{"containerName": pe.containerName, "podName": pe.pod})
 	var e error
 	pe.cmd = []string{"cp", "/dev/stdin", "/usr/bin/mgctl"}
 	pe.stdin, e = getmgctlBinFile()
