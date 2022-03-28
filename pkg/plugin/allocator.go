@@ -1,7 +1,6 @@
 package plugin
 
 import (
-	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/nvmlutils"
 	log "github.com/sirupsen/logrus"
 	"regexp"
 	"sort"
@@ -9,21 +8,21 @@ import (
 	"strings"
 )
 
-func NewDeviceAllocation(allocationSize, totalShares int, availableDevIds []string) *DeviceAllocation {
+func NewDeviceAllocation(totalPhysicalDevices, allocationSize, totalShares int, availableDevIds []string) *DeviceAllocation {
 	sort.Strings(availableDevIds)
 	devAlloc := &DeviceAllocation{
-		AvailableDevIds:   availableDevIds,
-		AllocationSize:    allocationSize,
-		TotalSharesPerGpu: totalShares,
-	}
+		AvailableDevIds: availableDevIds, AllocationSize: allocationSize, TotalSharesPerGpu: totalShares}
+	// print available device ids
 	devAlloc.PrintAvailableDevIds()
+	// init load map
+	devAlloc.LoadMap = make([]*DeviceLoad, totalPhysicalDevices)
 	devAlloc.InitLoadMap()
+	// make allocations
 	devAlloc.SetAllocations()
 	return devAlloc
 }
 
 func (a *DeviceAllocation) InitLoadMap() {
-	a.LoadMap = make([]*DeviceLoad, nvmlutils.GetTotalDevices())
 	// build a map of real device id to meta device id
 	for _, deviceId := range a.MetaDeviceIdsToRealDeviceIds() {
 		for _, availableDevId := range a.AvailableDevIds {
@@ -75,7 +74,7 @@ func (a *DeviceAllocation) SetAllocations() {
 			}
 			if devLoad.getFreeShares() == a.TotalSharesPerGpu {
 				a.MetagpusAllocations = append(a.MetagpusAllocations, devLoad.Metagpus...)
-				devLoad.Metagpus = nil
+				devLoad.Metagpus = nil // all done, reset left metagpus requests
 			}
 		}
 	}

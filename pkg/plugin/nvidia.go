@@ -115,7 +115,7 @@ func (m *NvidiaDeviceManager) GetUnixSocket() string {
 }
 
 func (m *NvidiaDeviceManager) MetagpuAllocation(allocationSize int, availableDevIds []string) ([]string, error) {
-	return NewDeviceAllocation(allocationSize, m.shareCfg.MetaGpus, availableDevIds).MetagpusAllocations, nil
+	return NewDeviceAllocation(nvmlutils.GetTotalDevices(), allocationSize, m.shareCfg.MetaGpus, availableDevIds).MetagpusAllocations, nil
 }
 
 func NewNvidiaDeviceManager(shareCfg *sharecfg.DeviceSharingConfig) *NvidiaDeviceManager {
