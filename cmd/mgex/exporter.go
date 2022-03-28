@@ -179,14 +179,14 @@ func setProcessesMetrics() {
 		// if pid is 0 => pod running without GPU process within
 		if p.Pid == 0 {
 			// absolute memory and gpu usage
-			deviceProcessAbsoluteGpuUtilization.WithLabelValues(labels...).Set(-1)
-			deviceProcessMemoryUsage.WithLabelValues(labels...).Set(-1)
+			deviceProcessAbsoluteGpuUtilization.WithLabelValues(labels...).Set(0)
+			deviceProcessMemoryUsage.WithLabelValues(labels...).Set(0)
 			// max (relative to metagpus request) allowed gpu and memory utilization
-			deviceProcessMaxAllowedMetagpuGPUUtilization.WithLabelValues(labels...).Set(-1)
-			deviceProcessMaxAllowedMetaGpuMemory.WithLabelValues(labels...).Set(-1)
+			deviceProcessMaxAllowedMetagpuGPUUtilization.WithLabelValues(labels...).Set(0)
+			deviceProcessMaxAllowedMetaGpuMemory.WithLabelValues(labels...).Set(0)
 			// relative gpu and memory utilization
-			deviceProcessMetagpuRelativeGPUUtilization.WithLabelValues(labels...).Set(-1)
-			deviceProcessMetagpuRelativeMemoryUtilization.WithLabelValues(labels...).Set(-1)
+			deviceProcessMetagpuRelativeGPUUtilization.WithLabelValues(labels...).Set(0)
+			deviceProcessMetagpuRelativeMemoryUtilization.WithLabelValues(labels...).Set(0)
 		} else {
 			// absolute memory and gpu usage
 			deviceProcessAbsoluteGpuUtilization.WithLabelValues(labels...).Set(float64(p.GpuUtilization))
@@ -212,7 +212,7 @@ func getMaxAllowedMetaGpuMemory(p *pbdevice.DeviceProcess) float64 {
 
 func getRelativeGPUUtilization(p *pbdevice.DeviceProcess) float64 {
 	maxMetaGpuUtilization := (100 / devicesCache[p.Uuid].Shares) * uint32(p.MetagpuRequests)
-	metaGpuUtilization := -1
+	metaGpuUtilization := 0
 	if p.GpuUtilization > 0 && maxMetaGpuUtilization > 0 {
 		metaGpuUtilization = int((p.GpuUtilization * 100) / maxMetaGpuUtilization)
 	}
@@ -221,7 +221,7 @@ func getRelativeGPUUtilization(p *pbdevice.DeviceProcess) float64 {
 
 func getRelativeMemoryUtilization(p *pbdevice.DeviceProcess) float64 {
 	maxMetaMemory := int(uint64(p.MetagpuRequests) * devicesCache[p.Uuid].MemoryShareSize)
-	metaMemUtilization := -1
+	metaMemUtilization := 0
 	if maxMetaMemory > 0 {
 		metaMemUtilization = (int(p.Memory) * 100) / maxMetaMemory
 	}
