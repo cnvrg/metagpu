@@ -112,7 +112,7 @@ func (e *podExec) exec() error {
 	req := clientset.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(e.podName).
-		Namespace(e.podName).
+		Namespace(e.podNs).
 		SubResource("exec").
 		VersionedParams(&corev1.PodExecOptions{
 			Stdin:     e.stdin != nil,
