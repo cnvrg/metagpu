@@ -90,6 +90,17 @@ func (c *DeviceSharingConfig) GpuAutoResharing() {
 	// TODO: make sharing configurations persistent
 }
 
+func (c *DeviceSharingConfig) GetShareSize() int {
+	nvmlDevice := c.getFirstDevice()
+	if nvmlDevice != nil {
+		mem := nvmlutils.GetDeviceMemory(nvmlDevice)
+		if mem.Total > 0 {
+			return int(mem.Total / uint64(c.MetaGpus))
+		}
+	}
+	return 0
+}
+
 func (c *DeviceSharingConfig) getFirstDevice() *nvml.Device {
 	if c.isWildcardSharing() {
 		devices := nvmlutils.GetDevices()

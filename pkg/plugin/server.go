@@ -98,15 +98,11 @@ func (p *MetaGpuDevicePlugin) Allocate(ctx context.Context, request *pluginapi.A
 		for _, dev := range req.DevicesIDs {
 			log.Info(dev)
 		}
-		metaGpuMaxMem := "" // TODO: fix this
 		realDevices := p.ParseRealDeviceId(req.DevicesIDs)
-		//if len(realDevices) > 0 {
-		//	metaGpuMaxMem = fmt.Sprintf("%d", p.shareCfg.MetaGpus*(len(req.DevicesIDs)))
-		//}
 		response.Envs = map[string]string{
 			"CNVRG_META_GPU_DEVICES": strings.Join(req.DevicesIDs, ","),
 			"NVIDIA_VISIBLE_DEVICES": strings.Join(realDevices, ","),
-			"METAGPU_MAX_MEM":        metaGpuMaxMem,
+			"METAGPU_MAX_MEM":        fmt.Sprintf("%d", p.GetDeviceSharingConfig().GetShareSize()*len(req.DevicesIDs)),
 			"MG_CTL_ADDR":            fmt.Sprintf("%s:50052", os.Getenv("POD_IP")),
 			"MG_CTL_TOKEN":           viper.GetString("containerToken"),
 		}
