@@ -60,7 +60,7 @@ func (d *GpuDevice) setGpuShareConfigs() {
 	if deviceSharing, err := deviceSharingConfigs.GetDeviceSharingConfigs(d.UUID); err != nil {
 		log.Fatalf("bad configs, unable to find sharing configs for device: %s", d.UUID)
 	} else {
-		d.Shares = deviceSharing.MetaGpus
+		d.Shares = deviceSharing.MetagpusPerGpu
 		d.ResourceName = deviceSharing.ResourceName
 	}
 }

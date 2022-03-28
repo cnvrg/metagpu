@@ -3,6 +3,7 @@ package plugin
 import (
 	b64 "encoding/base64"
 	"fmt"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/allocator"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/nvmlutils"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/sharecfg"
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
@@ -59,9 +60,9 @@ func (m *NvidiaDeviceManager) DeviceExists(deviceId string) bool {
 
 func (m *NvidiaDeviceManager) GetPluginDevices() []*pluginapi.Device {
 	var metaGpus []*pluginapi.Device
-	log.Infof("generating meta gpu devices (total: %d)", len(m.Devices)*m.shareCfg.MetaGpus)
+	log.Infof("generating meta gpu devices (total: %d)", len(m.Devices)*m.shareCfg.MetagpusPerGpu)
 	for _, d := range m.Devices {
-		for j := 0; j < m.shareCfg.MetaGpus; j++ {
+		for j := 0; j < m.shareCfg.MetagpusPerGpu; j++ {
 			metaGpus = append(metaGpus, &pluginapi.Device{
 				ID:     fmt.Sprintf("cnvrg-meta-%d-%d-%s", d.Index, j, d.UUID),
 				Health: pluginapi.Healthy,
@@ -115,7 +116,7 @@ func (m *NvidiaDeviceManager) GetUnixSocket() string {
 }
 
 func (m *NvidiaDeviceManager) MetagpuAllocation(allocationSize int, availableDevIds []string) ([]string, error) {
-	return NewDeviceAllocation(nvmlutils.GetTotalDevices(), allocationSize, m.shareCfg.MetaGpus, availableDevIds).MetagpusAllocations, nil
+	return allocator.NewDeviceAllocation(nvmlutils.GetTotalDevices(), allocationSize, m.shareCfg.MetagpusPerGpu, availableDevIds).MetagpusAllocations, nil
 }
 
 func NewNvidiaDeviceManager(shareCfg *sharecfg.DeviceSharingConfig) *NvidiaDeviceManager {

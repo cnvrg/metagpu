@@ -1,4 +1,4 @@
-package plugin
+package allocator
 
 import (
 	log "github.com/sirupsen/logrus"
@@ -8,21 +8,21 @@ import (
 	"strings"
 )
 
-func NewDeviceAllocation(totalPhysicalDevices, allocationSize, totalShares int, availableDevIds []string) *DeviceAllocation {
+func NewDeviceAllocation(totalPhysicalDevices, allocationSize, totalSharesPerGpu int, availableDevIds []string) *DeviceAllocation {
 	sort.Strings(availableDevIds)
 	devAlloc := &DeviceAllocation{
-		AvailableDevIds: availableDevIds, AllocationSize: allocationSize, TotalSharesPerGpu: totalShares}
+		AvailableDevIds: availableDevIds, AllocationSize: allocationSize, TotalSharesPerGpu: totalSharesPerGpu}
 	// print available device ids
 	devAlloc.PrintAvailableDevIds()
 	// init load map
 	devAlloc.LoadMap = make([]*DeviceLoad, totalPhysicalDevices)
-	devAlloc.InitLoadMap()
+	devAlloc.initLoadMap()
 	// make allocations
-	devAlloc.SetAllocations()
+	devAlloc.allocate()
 	return devAlloc
 }
 
-func (a *DeviceAllocation) InitLoadMap() {
+func (a *DeviceAllocation) initLoadMap() {
 	// build a map of real device id to meta device id
 	for _, deviceId := range a.MetaDeviceIdsToRealDeviceIds() {
 		for _, availableDevId := range a.AvailableDevIds {
@@ -61,7 +61,7 @@ func (a *DeviceAllocation) MetaDeviceIdsToRealDeviceIds() (realDeviceIds []strin
 	return
 }
 
-func (a *DeviceAllocation) SetAllocations() {
+func (a *DeviceAllocation) allocate() {
 	entireGpusRequest := a.AllocationSize / a.TotalSharesPerGpu
 	gpuFractionsRequest := a.AllocationSize % a.TotalSharesPerGpu
 	log.Infof("metagpu allocation request: %d.%d", entireGpusRequest, gpuFractionsRequest)
@@ -74,7 +74,9 @@ func (a *DeviceAllocation) SetAllocations() {
 			}
 			if devLoad.getFreeShares() == a.TotalSharesPerGpu {
 				a.MetagpusAllocations = append(a.MetagpusAllocations, devLoad.Metagpus...)
-				devLoad.Metagpus = nil // all done, reset left metagpus requests
+				// remove current available metagpus from the device load map
+				devLoad.Metagpus = nil
+				break
 			}
 		}
 	}
@@ -143,7 +145,8 @@ func metaDeviceIdToDeviceIndex(metaDeviceId string) (deviceIndex int) {
 	s := strings.ReplaceAll(r.FindString(metaDeviceId), "-", "")
 	idx, err := strconv.Atoi(s)
 	if err != nil {
-		log.Error("can't detect physical device ID from meta device id, err: %s", err)
+		log.Errorf("can't detect physical device ID from meta device id, err: %s", err)
 	}
 	return idx
+
 }

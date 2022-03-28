@@ -40,3 +40,6 @@ dev-sync-azure:
 
 dev-sync-trex:
 	rsync -av  --exclude 'bin' --exclude '.git'  /Users/dima/.go/src/github.com/AccessibleAI/metagpu-device-plugin/* root@212.199.86.38:/root/.go/src/github.com/AccessibleAI/metagpu-device-plugin
+
+test:
+	go test ./pkg/allocator/... -v

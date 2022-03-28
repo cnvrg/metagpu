@@ -154,8 +154,8 @@ func (s *DeviceService) PatchConfigs(ctx context.Context, r *pb.PatchConfigsRequ
 	//if s.vl != s.dvl {
 	//	return &pb.PatchConfigsResponse{}, status.Errorf(codes.PermissionDenied, "visibility level too high", s.vl)
 	//}
-	//deviceplugin.UpdatePersistentConfigs(r.MetaGpus)
-	//viper.Set("metaGpus", r.MetaGpus)
+	//deviceplugin.UpdatePersistentConfigs(r.MetagpusPerGpu)
+	//viper.Set("metaGpus", r.MetagpusPerGpu)
 	//s.gpuMgr.MetaGpuRecalculation <- true
 	return &pb.PatchConfigsResponse{}, nil
 

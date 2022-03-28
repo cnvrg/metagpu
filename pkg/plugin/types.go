@@ -36,15 +36,3 @@ type MetaDevice struct {
 	UUID  string
 	Index int
 }
-
-type DeviceLoad struct {
-	Metagpus []string
-}
-
-type DeviceAllocation struct {
-	LoadMap             []*DeviceLoad
-	AvailableDevIds     []string
-	AllocationSize      int
-	TotalSharesPerGpu   int
-	MetagpusAllocations []string
-}
