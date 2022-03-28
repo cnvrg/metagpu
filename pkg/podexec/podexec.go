@@ -2,9 +2,7 @@ package podexec
 
 import (
 	"bytes"
-	"context"
 	"errors"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
@@ -33,49 +31,29 @@ func GetK8sClient() (client.Client, error) {
 	return controllerClient, nil
 }
 
-func CopymgctlToContainer(containerId string) {
+func CopymgctlToContainer(containerName, podId, ns string) {
 
-	pe, err := getPodByContainerId(containerId)
+	pe, err := newPodExec(containerName, podId, ns)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 	// TODO: create in-memory cache with tell the pods that's already has mgctl
-	if shouldCopyMgctl(pe) {
-		copyMgctl(pe)
-		makeMgctlExecutable(pe)
+	if pe.shouldCopyMgctl() {
+		pe.copyMgctl()
+		pe.makeMgctlExecutable()
 	}
 }
 
-func getPodByContainerId(containerId string) (podExec *podExec, err error) {
-	c, err := GetK8sClient()
-	if err != nil {
-		return nil, err
-	}
-
-	pl := &corev1.PodList{}
-	if err := c.List(context.Background(), pl, []client.ListOption{}...); err != nil {
-		return nil, err
-	}
-	for _, pod := range pl.Items {
-		for _, sc := range pod.Status.ContainerStatuses {
-			if strings.Contains(sc.ContainerID, containerId) {
-				return newPodExec(&pod, sc.Name), nil
-			}
-		}
-	}
-	return nil, errors.New(fmt.Sprintf("pod with containerId %s not found", containerId))
-}
-
-func shouldCopyMgctl(pe *podExec) bool {
-	l := log.WithFields(log.Fields{"containerName": pe.containerName, "podName": pe.pod})
-	pe.cmd = []string{"ls", "/usr/bin"}
-	pe.stdout = new(bytes.Buffer)
-	if err := pe.exec(); err != nil {
+func (e *podExec) shouldCopyMgctl() bool {
+	l := log.WithFields(log.Fields{"containerName": e.containerName, "podName": e.podName})
+	e.cmd = []string{"/usr/bin/ls", "/usr/bin"}
+	e.stdout = new(bytes.Buffer)
+	if err := e.exec(); err != nil {
 		l.Error(err)
 		return false
 	}
-	files := strings.Split(pe.stdout.String(), "\n")
+	files := strings.Split(e.stdout.String(), "\n")
 	for _, fileName := range files {
 		if fileName == "mgctl" {
 			return false
@@ -85,30 +63,30 @@ func shouldCopyMgctl(pe *podExec) bool {
 	return true
 }
 
-func makeMgctlExecutable(pe *podExec) {
-	pe.cmd = []string{"chmod", "+x", "/usr/bin/mgctl"}
-	pe.stdout = new(bytes.Buffer)
-	if err := pe.exec(); err != nil {
-		log.WithFields(log.Fields{"containerName": pe.containerName, "podName": pe.pod}).Error(err)
+func (e *podExec) makeMgctlExecutable() {
+	e.cmd = []string{"chmod", "+x", "/usr/bin/mgctl"}
+	e.stdout = new(bytes.Buffer)
+	if err := e.exec(); err != nil {
+		log.WithFields(log.Fields{"containerName": e.containerName, "podName": e.podName}).Error(err)
 	}
 }
 
-func copyMgctl(pe *podExec) {
-	l := log.WithFields(log.Fields{"containerName": pe.containerName, "podName": pe.pod})
-	var e error
-	pe.cmd = []string{"cp", "/dev/stdin", "/usr/bin/mgctl"}
-	pe.stdin, e = getmgctlBinFile()
-	if e != nil {
+func (e *podExec) copyMgctl() {
+	l := log.WithFields(log.Fields{"containerName": e.containerName, "podName": e.podName})
+	var err error
+	e.cmd = []string{"cp", "/dev/stdin", "/usr/bin/mgctl"}
+	e.stdin, err = e.getmgctlBinFile()
+	if err != nil {
 		l.Error(e)
 		return
 	}
-	if err := pe.exec(); err != nil {
+	if err := e.exec(); err != nil {
 		l.Error(e)
 		return
 	}
 }
 
-func getmgctlBinFile() (*os.File, error) {
+func (e *podExec) getmgctlBinFile() (*os.File, error) {
 	mgctlFile := viper.GetString("mgctlTar")
 	if _, err := os.Stat(mgctlFile); err == nil {
 		return os.Open(mgctlFile)
@@ -117,11 +95,11 @@ func getmgctlBinFile() (*os.File, error) {
 	}
 }
 
-func newPodExec(pod *corev1.Pod, container string) *podExec {
-	return &podExec{pod: pod, containerName: container}
+func newPodExec(containerName, podId, ns string) (*podExec, error) {
+	return &podExec{podName: podId, podNs: ns, containerName: containerName}, nil
 }
 
-func (p *podExec) exec() error {
+func (e *podExec) exec() error {
 	rc := k8sClientConfig.GetConfigOrDie()
 	clientset, err := kubernetes.NewForConfig(rc)
 	if err != nil {
@@ -133,29 +111,29 @@ func (p *podExec) exec() error {
 	}
 	req := clientset.CoreV1().RESTClient().Post().
 		Resource("pods").
-		Name(p.pod.Name).
-		Namespace(p.pod.Namespace).
+		Name(e.podName).
+		Namespace(e.podName).
 		SubResource("exec").
 		VersionedParams(&corev1.PodExecOptions{
-			Stdin:     p.stdin != nil,
-			Stdout:    p.stdout != nil,
+			Stdin:     e.stdin != nil,
+			Stdout:    e.stdout != nil,
 			Stderr:    true,
 			TTY:       false,
-			Container: p.containerName,
-			Command:   p.cmd,
+			Container: e.containerName,
+			Command:   e.cmd,
 		}, runtime.NewParameterCodec(scheme))
 	exec, err := remotecommand.NewSPDYExecutor(rc, "POST", req.URL())
 	if err != nil {
 		return err
 	}
 	var stderr bytes.Buffer
-	err = exec.Stream(remotecommand.StreamOptions{Stdin: p.stdin, Stdout: p.stdout, Stderr: &stderr, Tty: false})
+	err = exec.Stream(remotecommand.StreamOptions{Stdin: e.stdin, Stdout: e.stdout, Stderr: &stderr, Tty: false})
 	if err != nil {
 		return err
 	}
-	e := stderr.String()
-	if e != "" {
-		return errors.New(e)
+	stdError := stderr.String()
+	if stdError != "" {
+		return errors.New(stdError)
 	}
 	return nil
 }

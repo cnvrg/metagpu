@@ -24,12 +24,12 @@ func (m *GpuMgr) discoverAnonymousProcesses() {
 		if !m.isProcessAnonymouse(p.Name) {
 			continue
 		}
-		for _, c := range p.Spec.Containers {
+		for _, container := range p.Spec.Containers {
 			for _, config := range cfg.Configs {
 				resourceName := v1core.ResourceName(config.ResourceName)
-				if quantity, ok := c.Resources.Limits[resourceName]; ok {
+				if quantity, ok := container.Resources.Limits[resourceName]; ok {
 					m.GpuProcesses = append(m.GpuProcesses,
-						NewGpuPod(p.Name, p.Namespace, config.ResourceName, p.Spec.NodeName, quantity.Value()))
+						NewGpuPod(container.Name, p.Name, p.Namespace, config.ResourceName, p.Spec.NodeName, quantity.Value()))
 				}
 			}
 		}

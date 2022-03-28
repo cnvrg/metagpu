@@ -21,6 +21,7 @@ type GpuProcess struct {
 	Cmdline           []string
 	User              string
 	ContainerId       string
+	ContainerName     string
 	PodId             string
 	PodNamespace      string
 	PodMetagpuRequest int64
@@ -110,6 +111,7 @@ func (p *GpuProcess) EnrichProcessK8sInfo() {
 				for _, container := range pod.Spec.Containers {
 					resourceName := v1core.ResourceName(p.ResourceName)
 					if quantity, ok := container.Resources.Limits[resourceName]; ok {
+						p.ContainerName = container.Name
 						p.PodMetagpuRequest = quantity.Value()
 						p.Nodename = pod.Spec.NodeName
 					}
@@ -159,21 +161,22 @@ func NewGpuProcess(pid, gpuUtil uint32, gpuMem uint64, devUuid string) *GpuProce
 	p.SetResourceName()
 	p.EnrichProcessK8sInfo()
 	if viper.GetBool("mgctlAutoInject") {
-		podexec.CopymgctlToContainer(p.ContainerId)
+		podexec.CopymgctlToContainer(p.ContainerName, p.PodId, p.PodNamespace)
 	}
 	return p
 }
 
-func NewGpuPod(podId, ns, resourceName, nodename string, metagpuRequests int64) *GpuProcess {
+func NewGpuPod(containerName, podId, ns, resourceName, nodename string, metagpuRequests int64) *GpuProcess {
 	p := &GpuProcess{
 		PodId:             podId,
+		ContainerName:     containerName,
 		PodNamespace:      ns,
 		PodMetagpuRequest: metagpuRequests,
 		ResourceName:      resourceName,
 		Nodename:          nodename,
 	}
 	if viper.GetBool("mgctlAutoInject") {
-		podexec.CopymgctlToContainer(p.ContainerId)
+		podexec.CopymgctlToContainer(p.ContainerName, p.PodId, p.PodNamespace)
 	}
 	return p
 }
