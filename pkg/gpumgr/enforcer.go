@@ -9,18 +9,25 @@ func (m *GpuMgr) StartMemoryEnforcer() {
 	log.Info("starting gpu memory enforcer")
 	go func() {
 		for {
-			for _, p := range m.GpuProcesses {
-				if d := m.getGpuDeviceByUuid(p.DeviceUuid); d != nil {
-					maxAllowedMem := d.Memory.ShareSize * uint64(p.PodMetagpuRequest)
-					if p.GpuMemory > maxAllowedMem && p.Pid != 0 {
-						log.Infof("out of memory: %dMB/%dMB, pod: %s going to be terminated", p.GpuMemory, maxAllowedMem, p.PodId)
-						p.Kill()
-					}
-				}
+			for _, p := range m.enforce() {
+				p.Kill()
 			}
 			time.Sleep(5 * time.Second)
 		}
 	}()
+}
+
+func (m *GpuMgr) enforce() (gpuProcForKill []*GpuProcess) {
+	for _, p := range m.GpuProcesses {
+		if d := m.getGpuDeviceByUuid(p.DeviceUuid); d != nil {
+			maxAllowedMem := d.Memory.ShareSize * uint64(p.PodMetagpuRequest)
+			if p.GpuMemory > maxAllowedMem && p.Pid != 0 && maxAllowedMem > 0 {
+				log.Infof("out of memory: %dMB/%dMB, pod: %s going to be terminated", p.GpuMemory, maxAllowedMem, p.PodId)
+				gpuProcForKill = append(gpuProcForKill, p)
+			}
+		}
+	}
+	return
 }
 
 func (m *GpuMgr) getGpuDeviceByUuid(uuid string) *GpuDevice {

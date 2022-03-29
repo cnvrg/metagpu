@@ -12,7 +12,7 @@ func TestAllocator(t *testing.T) {
 	RunSpecs(t, "Allocation Suite")
 }
 
-var _ = Describe("Metagpu Allocation testing", func() {
+var _ = Describe("Metagpu allocations", func() {
 
 	Context("allocate", func() {
 
