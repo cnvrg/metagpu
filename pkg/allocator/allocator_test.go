@@ -15,6 +15,7 @@ func TestAllocator(t *testing.T) {
 var _ = Describe("Metagpu Allocation testing", func() {
 
 	Context("allocate", func() {
+
 		It("10% gpu", func() {
 			physDevs := 2
 			allocationSize := 1
@@ -25,6 +26,7 @@ var _ = Describe("Metagpu Allocation testing", func() {
 			expectedDevices := []string{"cnvrg-meta-0-0-test-device-0"}
 			Expect(alloc.MetagpusAllocations).To(Equal(expectedDevices))
 		})
+
 		It("50% gpu", func() {
 			physDevs := 2
 			sharesPerGpu := 10
@@ -34,6 +36,7 @@ var _ = Describe("Metagpu Allocation testing", func() {
 			Expect(len(alloc.MetagpusAllocations)).To(Equal(5))
 			Expect(alloc.MetagpusAllocations).To(Equal(getTestDevicesIds(1, 5)))
 		})
+
 		It("80% gpu", func() {
 			physDevs := 2
 			sharesPerGpu := 10
@@ -43,6 +46,7 @@ var _ = Describe("Metagpu Allocation testing", func() {
 			Expect(len(alloc.MetagpusAllocations)).To(Equal(8))
 			Expect(alloc.MetagpusAllocations).To(Equal(getTestDevicesIds(1, 8)))
 		})
+
 		It("100% gpu", func() {
 			physDevs := 2
 			allocationSize := 10
@@ -76,6 +80,93 @@ var _ = Describe("Metagpu Allocation testing", func() {
 			Expect(alloc.MetagpusAllocations).To(Equal(getTestDevicesIds(2, 10)))
 		})
 
+		It("single GPU -> 50% after 50% has been taken", func() {
+			devices := []string{
+				//"cnvrg-meta-0-0-test-device-0", -> already allocated by previous request
+				//"cnvrg-meta-0-1-test-device-0",  -> already allocated by previous request
+				"cnvrg-meta-0-2-test-device-0", // -> this should be allocated now
+				"cnvrg-meta-0-3-test-device-0", // -> this should be allocated now
+				"cnvrg-meta-1-0-test-device-1",
+				"cnvrg-meta-1-1-test-device-1",
+				"cnvrg-meta-1-2-test-device-1",
+				"cnvrg-meta-1-3-test-device-1",
+			}
+			physDevs := 2
+			allocationSize := 2
+			sharesPerGpu := 4
+			alloc := NewDeviceAllocation(physDevs, allocationSize, sharesPerGpu, devices)
+			Expect(len(alloc.MetagpusAllocations)).To(Equal(2))
+			Expect(alloc.MetagpusAllocations).To(Equal([]string{"cnvrg-meta-0-2-test-device-0", "cnvrg-meta-0-3-test-device-0"}))
+		})
+
+		It("single GPU -> 60% after 50% has been taken (jump to next device)", func() {
+			devices := []string{
+				//"cnvrg-meta-0-0-test-device-0", -> already allocated by previous request
+				//"cnvrg-meta-0-1-test-device-0",  -> already allocated by previous request
+				"cnvrg-meta-0-2-test-device-0",
+				"cnvrg-meta-0-3-test-device-0",
+				"cnvrg-meta-1-0-test-device-1", // -> this should be allocated now
+				"cnvrg-meta-1-1-test-device-1", // -> this should be allocated now
+				"cnvrg-meta-1-2-test-device-1", // -> this should be allocated now
+				"cnvrg-meta-1-3-test-device-1",
+			}
+			physDevs := 2
+			allocationSize := 3
+			sharesPerGpu := 4
+			alloc := NewDeviceAllocation(physDevs, allocationSize, sharesPerGpu, devices)
+			Expect(len(alloc.MetagpusAllocations)).To(Equal(3))
+			Expect(alloc.MetagpusAllocations).To(Equal([]string{
+				"cnvrg-meta-1-0-test-device-1",
+				"cnvrg-meta-1-1-test-device-1",
+				"cnvrg-meta-1-2-test-device-1",
+			}))
+		})
+
+		It("allocate fractions from 2 different physical gpus", func() {
+			devices := []string{
+				//"cnvrg-meta-0-0-test-device-0", -> already allocated by previous request
+				//"cnvrg-meta-0-1-test-device-0", -> already allocated by previous request
+				"cnvrg-meta-0-2-test-device-0", // -> this should be allocated now
+				"cnvrg-meta-0-3-test-device-0", // -> this should be allocated now
+				//"cnvrg-meta-1-0-test-device-1", -> already allocated by previous request
+				//"cnvrg-meta-1-1-test-device-1", -> already allocated by previous request
+				"cnvrg-meta-1-2-test-device-1", // -> this should be allocated now
+				"cnvrg-meta-1-3-test-device-1",
+			}
+			physDevs := 2
+			allocationSize := 3
+			sharesPerGpu := 4
+			alloc := NewDeviceAllocation(physDevs, allocationSize, sharesPerGpu, devices)
+			Expect(len(alloc.MetagpusAllocations)).To(Equal(3))
+			Expect(alloc.MetagpusAllocations).To(Equal([]string{
+				"cnvrg-meta-0-2-test-device-0",
+				"cnvrg-meta-0-3-test-device-0",
+				"cnvrg-meta-1-2-test-device-1",
+			}))
+		})
+		It("allocate full from 2 different physical gpus", func() {
+			devices := []string{
+				//"cnvrg-meta-0-0-test-device-0", -> already allocated by previous request
+				//"cnvrg-meta-0-1-test-device-0", -> already allocated by previous request
+				"cnvrg-meta-0-2-test-device-0", // -> this should be allocated now
+				"cnvrg-meta-0-3-test-device-0", // -> this should be allocated now
+				//"cnvrg-meta-1-0-test-device-1", -> already allocated by previous request
+				//"cnvrg-meta-1-1-test-device-1", -> already allocated by previous request
+				"cnvrg-meta-1-2-test-device-1", // -> this should be allocated now
+				"cnvrg-meta-1-3-test-device-1", // -> this should be allocated now
+			}
+			physDevs := 2
+			allocationSize := 4
+			sharesPerGpu := 4
+			alloc := NewDeviceAllocation(physDevs, allocationSize, sharesPerGpu, devices)
+			Expect(len(alloc.MetagpusAllocations)).To(Equal(4))
+			Expect(alloc.MetagpusAllocations).To(Equal([]string{
+				"cnvrg-meta-0-2-test-device-0",
+				"cnvrg-meta-0-3-test-device-0",
+				"cnvrg-meta-1-2-test-device-1",
+				"cnvrg-meta-1-3-test-device-1",
+			}))
+		})
 	})
 })
 

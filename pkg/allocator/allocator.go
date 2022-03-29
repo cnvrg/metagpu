@@ -64,7 +64,7 @@ func (a *DeviceAllocation) MetaDeviceIdsToRealDeviceIds() (realDeviceIds []strin
 func (a *DeviceAllocation) allocate() {
 	entireGpusRequest := a.AllocationSize / a.TotalSharesPerGpu
 	gpuFractionsRequest := a.AllocationSize % a.TotalSharesPerGpu
-	log.Infof("metagpu allocation request: %d.%d", entireGpusRequest, gpuFractionsRequest)
+	log.Infof("metagpu allocation request [full: %d fractions: %d]", entireGpusRequest, gpuFractionsRequest)
 
 	// first try to allocate entire gpus if requested
 	for i := 0; i < entireGpusRequest; i++ {
@@ -100,23 +100,23 @@ func (a *DeviceAllocation) allocate() {
 				break
 			}
 		}
-		// if still missing allocations,
-		// meaning wasn't able to allocate required fractions from the same GPU
-		// will try to allocate a fractions from different GPUs
-		if len(a.MetagpusAllocations) != a.AllocationSize {
-			allocationsLeft := a.AllocationSize
-		ExitMultiGpuFractionAlloc:
-			if allocationsLeft > 0 {
-				for _, devLoad := range a.LoadMap {
-					if devLoad == nil {
-						continue
-					}
-					for _, device := range devLoad.Metagpus {
-						a.MetagpusAllocations = append(a.MetagpusAllocations, device)
-						allocationsLeft--
-						if allocationsLeft == 0 {
-							goto ExitMultiGpuFractionAlloc
-						}
+	}
+	// if still missing allocations,
+	// meaning wasn't able to allocate required fractions from the same GPU
+	// will try to allocate a fractions from different GPUs
+	if len(a.MetagpusAllocations) != a.AllocationSize {
+		allocationsLeft := a.AllocationSize
+	ExitMultiGpuFractionAlloc:
+		if allocationsLeft > 0 {
+			for _, devLoad := range a.LoadMap {
+				if devLoad == nil {
+					continue
+				}
+				for _, device := range devLoad.Metagpus {
+					a.MetagpusAllocations = append(a.MetagpusAllocations, device)
+					allocationsLeft--
+					if allocationsLeft == 0 {
+						goto ExitMultiGpuFractionAlloc
 					}
 				}
 			}
