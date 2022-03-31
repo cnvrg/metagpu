@@ -75,6 +75,7 @@ func (m *GpuMgr) GetDeviceInfo() *GpuDeviceInfo {
 }
 
 func (m *GpuMgr) GetProcesses(podId string) []*GpuProcess {
+	// if podId is set, return single process
 	if podId != "" {
 		var podProcesses []*GpuProcess
 		for _, deviceProcess := range m.GpuProcesses {
@@ -84,6 +85,7 @@ func (m *GpuMgr) GetProcesses(podId string) []*GpuProcess {
 		}
 		return podProcesses
 	}
+	// return all processes
 	return m.GpuProcesses
 }
 
