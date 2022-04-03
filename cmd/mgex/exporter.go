@@ -110,6 +110,7 @@ func getGpuProcesses() []*pbdevice.DeviceProcess {
 	resp, err := devices.GetProcesses(ctx, req)
 	if err != nil {
 		log.Error(err)
+		return nil
 	}
 	return resp.DevicesProcesses
 }
@@ -121,6 +122,7 @@ func getGpuDevicesInfo() []*pbdevice.Device {
 	resp, err := devices.GetMetaDeviceInfo(ctx, req)
 	if err != nil {
 		log.Error(err)
+		return nil
 	}
 	return resp.Devices
 }
@@ -136,6 +138,7 @@ func setGpuDevicesCache() map[string]*pbdevice.Device {
 	resp, err := devices.GetDevices(ctx, req)
 	if err != nil {
 		log.Error(err)
+		return nil
 	}
 	devicesCache = resp.Device
 	return devicesCache
