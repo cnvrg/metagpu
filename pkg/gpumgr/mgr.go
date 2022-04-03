@@ -15,7 +15,10 @@ type GpuMgr struct {
 	ContainerLevelVisibilityToken string
 	DeviceLevelVisibilityToken    string
 	GpuDevices                    []*GpuDevice
-	GpuProcesses                  []*GpuProcess
+	// final list of gpu processes
+	GpuProcesses []*GpuProcess
+	// collection of the gpu processes: the anonymouse and active running
+	gpuProcessCollector []*GpuProcess
 }
 
 type GpuDeviceInfo struct {
@@ -29,8 +32,9 @@ func (m *GpuMgr) startGpuStatusCache() {
 		for {
 			time.Sleep(5 * time.Second)
 			m.setGpuDevices()
+			m.discoverActiveGpuProcesses()
+			m.discoverAnonymousGpuProcesses()
 			m.setGpuProcesses()
-			m.discoverAnonymousProcesses()
 		}
 	}()
 }
@@ -49,7 +53,7 @@ func (m *GpuMgr) setGpuDevices() {
 	m.GpuDevices = gpuDevices
 }
 
-func (m *GpuMgr) setGpuProcesses() {
+func (m *GpuMgr) discoverActiveGpuProcesses() {
 	var gpuProcesses []*GpuProcess
 	for _, device := range m.GpuDevices {
 		for _, nvmlProcessInfo := range nvmlutils.GetComputeRunningProcesses(device.Index) {
@@ -58,7 +62,12 @@ func (m *GpuMgr) setGpuProcesses() {
 			gpuProcesses = append(gpuProcesses, gpuProc)
 		}
 	}
-	m.GpuProcesses = gpuProcesses
+	m.gpuProcessCollector = gpuProcesses
+}
+
+func (m *GpuMgr) setGpuProcesses() {
+	m.GpuProcesses = m.gpuProcessCollector
+	log.Infof("discovered %d gpu processes", len(m.GpuProcesses))
 }
 
 func (m *GpuMgr) GetDeviceInfo() *GpuDeviceInfo {
@@ -114,7 +123,11 @@ func NewGpuManager() *GpuMgr {
 	mgr := &GpuMgr{}
 	// init gpu devices
 	mgr.setGpuDevices()
-	// init gpu processes
+	// init active gpu processes
+	mgr.discoverActiveGpuProcesses()
+	// init anonymouse gpu processes (metagpu pods without active running GPU processes)
+	mgr.discoverAnonymousGpuProcesses()
+	// set gpu processes
 	mgr.setGpuProcesses()
 	// start gpu devices and processes cache
 	mgr.startGpuStatusCache()

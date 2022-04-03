@@ -8,7 +8,7 @@ import (
 	v1core "k8s.io/api/core/v1"
 )
 
-func (m *GpuMgr) discoverAnonymousProcesses() {
+func (m *GpuMgr) discoverAnonymousGpuProcesses() {
 	c, err := podexec.GetK8sClient()
 	if err != nil {
 		log.Error(err)
@@ -28,7 +28,7 @@ func (m *GpuMgr) discoverAnonymousProcesses() {
 			for _, config := range cfg.Configs {
 				resourceName := v1core.ResourceName(config.ResourceName)
 				if quantity, ok := container.Resources.Limits[resourceName]; ok {
-					m.GpuProcesses = append(m.GpuProcesses,
+					m.gpuProcessCollector = append(m.gpuProcessCollector,
 						NewGpuPod(container.Name, p.Name, p.Namespace, config.ResourceName, p.Spec.NodeName, quantity.Value()))
 				}
 			}
@@ -37,7 +37,7 @@ func (m *GpuMgr) discoverAnonymousProcesses() {
 }
 
 func (m *GpuMgr) isProcessAnonymouse(podId string) bool {
-	for _, p := range m.GpuProcesses {
+	for _, p := range m.gpuProcessCollector {
 		if p.PodId == podId {
 			return false
 		}

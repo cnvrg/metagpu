@@ -134,6 +134,7 @@ func setupLogging() {
 		log.SetReportCaller(true)
 		log.SetFormatter(&log.TextFormatter{
 			FullTimestamp: true,
+			DisableColors: true,
 			CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
 				fileName := strings.TrimSuffix(filepath.Base(frame.File), filepath.Ext(frame.File))
 				line := strconv.Itoa(frame.Line)
