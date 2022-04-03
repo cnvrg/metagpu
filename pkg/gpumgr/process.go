@@ -123,7 +123,7 @@ func (p *GpuProcess) EnrichProcessK8sInfo() {
 
 func (p *GpuProcess) GetShortCmdLine() string {
 	if len(p.Cmdline) == 0 {
-		return "error discovering process cmdline"
+		return "-"
 	}
 	return p.Cmdline[0]
 }
