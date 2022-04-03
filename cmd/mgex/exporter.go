@@ -72,7 +72,7 @@ var (
 		Subsystem: "process",
 		Name:      "metagpu_requests",
 		Help:      "total metagpu requests in deployment spec",
-	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name", "node_name"})
+	}, []string{"pod_name", "pod_namespace", "resource_name", "node_name"})
 
 	deviceProcessMaxAllowedMetagpuGPUUtilization = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
@@ -172,10 +172,13 @@ func setProcessesMetrics() {
 	resetProcessLevelMetrics()
 	// GPU processes metrics
 	for _, p := range getGpuProcesses() {
+		// metagpu requests
+		deviceProcessMetagpuRequests.WithLabelValues(p.PodName, p.PodNamespace, p.ResourceName, p.NodeName).
+			Set(float64(p.MetagpuRequests))
+
+		// set labels for all below metrics
 		labels := []string{
 			p.Uuid, fmt.Sprintf("%d", p.Pid), p.Cmdline, p.User, p.PodName, p.PodNamespace, p.ResourceName, p.NodeName}
-		// metagpu requests
-		deviceProcessMetagpuRequests.WithLabelValues(labels...).Set(float64(p.MetagpuRequests))
 		// if pid is 0 => pod running without GPU process within
 		if p.Pid == 0 {
 			// absolute memory and gpu usage
