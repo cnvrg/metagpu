@@ -21,6 +21,8 @@ message DeviceProcess{
   string cmdline = 4;
   string user = 5;
   string container_id = 6;
+  uint32 gpu_utilization = 10;
+
 }
 
 message GpuContainer{
@@ -53,7 +55,7 @@ message StreamGpuContainersRequest{
 }
 message StreamGpuContainersResponse{
   string visibility_level = 1;
-  GpuContainer gpu_container = 2;
+  repeated GpuContainer gpu_containers = 2;
 }
 
 message GetGpuContainersRequest{
@@ -61,7 +63,7 @@ message GetGpuContainersRequest{
 }
 message GetGpuContainersResponse{
   string visibility_level = 1;
-  GpuContainer gpu_container = 2;
+  repeated GpuContainer gpu_containers = 2;
 }
 
 message KillGpuProcessRequest{

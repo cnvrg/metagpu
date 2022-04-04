@@ -46,12 +46,12 @@ func (o *TableOutput) buildTable() {
 	t.Render()
 }
 
-func getTotalRequests(processes []*pbdevice.DeviceProcess) (totalRequest int) {
+func getTotalRequests(containers []*pbdevice.GpuContainer) (totalRequest int) {
 	metaGpuPodRequests := make(map[string]bool)
-	for _, deviceProcess := range processes {
-		if _, ok := metaGpuPodRequests[deviceProcess.PodName]; !ok {
-			totalRequest += int(deviceProcess.MetagpuRequests)
-			metaGpuPodRequests[deviceProcess.PodName] = true
+	for _, c := range containers {
+		if _, ok := metaGpuPodRequests[c.PodId]; !ok {
+			totalRequest += int(c.MetagpuRequests)
+			metaGpuPodRequests[c.PodId] = true
 		}
 	}
 	return
@@ -64,9 +64,11 @@ func getTotalShares(devices map[string]*pbdevice.Device) (totalShares int) {
 	return
 }
 
-func getTotalMemoryUsedByProcesses(processes []*pbdevice.DeviceProcess) (totalUsedMem int) {
-	for _, p := range processes {
-		totalUsedMem += int(p.Memory)
+func getTotalMemoryUsedByProcesses(containers []*pbdevice.GpuContainer) (totalUsedMem int) {
+	for _, c := range containers {
+		for _, p := range c.DeviceProcesses {
+			totalUsedMem += int(p.Memory)
+		}
 	}
 	return
 }

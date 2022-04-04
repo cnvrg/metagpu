@@ -80,8 +80,8 @@ func getDevicesProcesses() {
 	to.header = table.Row{"Idx", "Pod", "NS", "Pid", "Memory", "Cmd", "Req"}
 
 	if viper.GetBool("watch") {
-		request := &pbdevice.StreamProcessesRequest{PodId: hostname}
-		stream, err := device.StreamProcesses(ctlutils.AuthenticatedContext(viper.GetString("token")), request)
+		request := &pbdevice.StreamGpuContainersRequest{PodId: hostname}
+		stream, err := device.StreamGpuContainers(ctlutils.AuthenticatedContext(viper.GetString("token")), request)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -117,14 +117,14 @@ func getDevicesProcesses() {
 					return
 				}
 
-				to.body = buildDeviceProcessesTableBody(processResp.DevicesProcesses, deviceResp.Device)
-				to.footer = buildDeviceProcessesTableFooter(processResp.DevicesProcesses, deviceResp.Device, processResp.VisibilityLevel)
+				to.body = buildDeviceProcessesTableBody(processResp.GpuContainers, deviceResp.Device)
+				to.footer = buildDeviceProcessesTableFooter(processResp.GpuContainers, deviceResp.Device, processResp.VisibilityLevel)
 				to.buildTable()
 				to.print()
 			}
 		}
 	} else {
-		processResp, err := device.GetProcesses(ctlutils.AuthenticatedContext(viper.GetString("token")), &pbdevice.GetProcessesRequest{PodId: hostname})
+		processResp, err := device.GetGpuContainers(ctlutils.AuthenticatedContext(viper.GetString("token")), &pbdevice.GetGpuContainersRequest{PodId: hostname})
 		if err != nil {
 			log.Errorf("falid to list device processes, err: %s ", err)
 			return
@@ -134,8 +134,8 @@ func getDevicesProcesses() {
 			log.Errorf("falid to list devices, err: %s ", err)
 			return
 		}
-		to.body = buildDeviceProcessesTableBody(processResp.DevicesProcesses, deviceResp.Device)
-		to.footer = buildDeviceProcessesTableFooter(processResp.DevicesProcesses, deviceResp.Device, processResp.VisibilityLevel)
+		to.body = buildDeviceProcessesTableBody(processResp.GpuContainers, deviceResp.Device)
+		to.footer = buildDeviceProcessesTableFooter(processResp.GpuContainers, deviceResp.Device, processResp.VisibilityLevel)
 		to.buildTable()
 		to.print()
 	}
@@ -159,40 +159,44 @@ func buildDeviceInfoTableBody(devices []*pbdevice.Device) (body []table.Row, foo
 	return body, footer
 }
 
-func buildDeviceProcessesTableBody(processes []*pbdevice.DeviceProcess, devices map[string]*pbdevice.Device) (body []table.Row) {
-	for _, p := range processes {
-		d := devices[p.Uuid]
-		maxMem := int64(-1)
-		memUsage := ""
-		if d != nil {
-			maxMem = int64(d.MemoryShareSize * uint64(p.MetagpuRequests))
-			memUsage = fmt.Sprintf("\u001B[32m%d\u001B[0m/%d", p.Memory, maxMem)
-			if int64(p.Memory) > maxMem {
-				memUsage = fmt.Sprintf("\u001B[31m%d\u001B[0m/%d", p.Memory, maxMem)
-			}
-		}
+func buildDeviceProcessesTableBody(containers []*pbdevice.GpuContainer, devices map[string]*pbdevice.Device) (body []table.Row) {
 
-		body = append(body, table.Row{
-			getDeviceLoad(d),
-			p.PodName,
-			p.PodNamespace,
-			p.Pid,
-			memUsage,
-			p.Cmdline,
-			p.MetagpuRequests,
-		})
+	for _, c := range containers {
+		for _, p := range c.DeviceProcesses {
+			d := devices[p.Uuid]
+			maxMem := int64(-1)
+			memUsage := ""
+			if d != nil {
+				maxMem = int64(d.MemoryShareSize * uint64(c.MetagpuRequests))
+				memUsage = fmt.Sprintf("\u001B[32m%d\u001B[0m/%d", p.Memory, maxMem)
+				if int64(p.Memory) > maxMem {
+					memUsage = fmt.Sprintf("\u001B[31m%d\u001B[0m/%d", p.Memory, maxMem)
+				}
+			}
+
+			body = append(body, table.Row{
+				getDeviceLoad(d),
+				c.PodId,
+				c.PodNamespace,
+				p.Pid,
+				memUsage,
+				p.Cmdline,
+				c.MetagpuRequests,
+			})
+		}
 	}
+
 	return
 }
 
-func buildDeviceProcessesTableFooter(processes []*pbdevice.DeviceProcess, devices map[string]*pbdevice.Device, vl string) (footer table.Row) {
-	metaGpuSummary := fmt.Sprintf("%d", getTotalRequests(processes))
+func buildDeviceProcessesTableFooter(containers []*pbdevice.GpuContainer, devices map[string]*pbdevice.Device, vl string) (footer table.Row) {
+	metaGpuSummary := fmt.Sprintf("%d", getTotalRequests(containers))
 	// TODO: fix this, the vl should be taken from directly form the  package
 	// to problem is that package now includes the nvidia linux native stuff
 	// and some package re-org is required
 	if vl == "l0" {
-		metaGpuSummary = fmt.Sprintf("%d/%d", getTotalShares(devices), getTotalRequests(processes))
+		metaGpuSummary = fmt.Sprintf("%d/%d", getTotalShares(devices), getTotalRequests(containers))
 	}
-	usedMem := fmt.Sprintf("%dMb", getTotalMemoryUsedByProcesses(processes))
-	return table.Row{len(devices), "", "", len(processes), usedMem, "", metaGpuSummary}
+	usedMem := fmt.Sprintf("%dMb", getTotalMemoryUsedByProcesses(containers))
+	return table.Row{len(devices), "", "", len(containers), usedMem, "", metaGpuSummary}
 }

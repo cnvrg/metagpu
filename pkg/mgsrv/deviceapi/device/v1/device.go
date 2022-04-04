@@ -51,11 +51,11 @@ func (s *DeviceService) GetGpuContainers(ctx context.Context, r *pb.GetGpuContai
 	if s.vl == s.dvl {
 		r.PodId = "" // for deviceVisibilityLevel server should return all running process on all containers
 	}
-	response.GpuContainer = listDeviceProcesses(r.PodId, s.gpuMgr)
+	response.GpuContainers = listDeviceProcesses(r.PodId, s.gpuMgr)
 	return response, nil
 }
 
-func (s *DeviceService) StreamProcesses(r *pb.StreamGpuContainersRequest, stream pb.DeviceService_StreamGpuContainersServer) error {
+func (s *DeviceService) StreamGpuContainers(r *pb.StreamGpuContainersRequest, stream pb.DeviceService_StreamGpuContainersServer) error {
 
 	for {
 
@@ -70,7 +70,7 @@ func (s *DeviceService) StreamProcesses(r *pb.StreamGpuContainersRequest, stream
 			r.PodId = "" // for deviceVisibilityLevel server should return all running process on all containers
 		}
 		response := &pb.StreamGpuContainersResponse{VisibilityLevel: s.vl}
-		response.GpuContainer = listDeviceProcesses(r.PodId, s.gpuMgr)
+		response.GpuContainers = listDeviceProcesses(r.PodId, s.gpuMgr)
 		if err := stream.Send(response); err != nil {
 			return err
 		}
