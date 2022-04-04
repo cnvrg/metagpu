@@ -30,7 +30,7 @@ var _ = Describe("enforcer", func() {
 			if len(mgr.GpuDevices) < 0 {
 				log.Fatalf("no gpu devices detected, can't continue unit testing")
 			}
-			mgr.GpuProcesses = []*GpuProcess{
+			mgr.gpuProcesses = []*GpuProcess{
 				{
 					Pid:               1000,
 					GpuMemory:         mgr.GpuDevices[0].Memory.ShareSize,
@@ -49,7 +49,7 @@ var _ = Describe("enforcer", func() {
 			if len(mgr.GpuDevices) < 0 {
 				log.Fatalf("no gpu devices detected, can't continue unit testing")
 			}
-			mgr.GpuProcesses = []*GpuProcess{
+			mgr.gpuProcesses = []*GpuProcess{
 				{
 					Pid:               1000,
 					GpuMemory:         mgr.GpuDevices[0].Memory.ShareSize + 1,
@@ -68,7 +68,7 @@ var _ = Describe("enforcer", func() {
 			if len(mgr.GpuDevices) < 0 {
 				log.Fatalf("no gpu devices detected, can't continue unit testing")
 			}
-			mgr.GpuProcesses = []*GpuProcess{
+			mgr.gpuProcesses = []*GpuProcess{
 				{
 					Pid:               1000,
 					GpuMemory:         0,

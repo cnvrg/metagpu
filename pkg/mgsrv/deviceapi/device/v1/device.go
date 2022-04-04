@@ -38,12 +38,12 @@ func (s *DeviceService) LoadContext(ctx context.Context) error {
 	return nil
 }
 
-func (s *DeviceService) GetProcesses(ctx context.Context, r *pb.GetProcessesRequest) (*pb.GetProcessesResponse, error) {
+func (s *DeviceService) GetGpuContainers(ctx context.Context, r *pb.GetGpuContainersRequest) (*pb.GetGpuContainersResponse, error) {
 
 	if err := s.LoadContext(ctx); err != nil {
-		return &pb.GetProcessesResponse{}, err
+		return &pb.GetGpuContainersResponse{}, err
 	}
-	response := &pb.GetProcessesResponse{VisibilityLevel: s.vl}
+	response := &pb.GetGpuContainersResponse{VisibilityLevel: s.vl}
 	// stop execution if visibility level is container and pod id is not set (not enough permissions)
 	if s.vl == s.cvl && r.PodId == "" {
 		return response, status.Errorf(codes.PermissionDenied, "missing pod id and visibility level is to low (%s), can't proceed", s.vl)
@@ -51,11 +51,11 @@ func (s *DeviceService) GetProcesses(ctx context.Context, r *pb.GetProcessesRequ
 	if s.vl == s.dvl {
 		r.PodId = "" // for deviceVisibilityLevel server should return all running process on all containers
 	}
-	response.DevicesProcesses = listDeviceProcesses(r.PodId, s.gpuMgr)
+	response.GpuContainer = listDeviceProcesses(r.PodId, s.gpuMgr)
 	return response, nil
 }
 
-func (s *DeviceService) StreamProcesses(r *pb.StreamProcessesRequest, stream pb.DeviceService_StreamProcessesServer) error {
+func (s *DeviceService) StreamProcesses(r *pb.StreamGpuContainersRequest, stream pb.DeviceService_StreamGpuContainersServer) error {
 
 	for {
 
@@ -69,8 +69,8 @@ func (s *DeviceService) StreamProcesses(r *pb.StreamProcessesRequest, stream pb.
 		if s.vl == s.dvl {
 			r.PodId = "" // for deviceVisibilityLevel server should return all running process on all containers
 		}
-		response := &pb.StreamProcessesResponse{VisibilityLevel: s.vl}
-		response.DevicesProcesses = listDeviceProcesses(r.PodId, s.gpuMgr)
+		response := &pb.StreamGpuContainersResponse{VisibilityLevel: s.vl}
+		response.GpuContainer = listDeviceProcesses(r.PodId, s.gpuMgr)
 		if err := stream.Send(response); err != nil {
 			return err
 		}
