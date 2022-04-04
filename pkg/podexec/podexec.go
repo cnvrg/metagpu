@@ -77,11 +77,11 @@ func (e *podExec) copyMgctl() {
 	e.cmd = []string{"cp", "/dev/stdin", "/usr/bin/mgctl"}
 	e.stdin, err = e.getmgctlBinFile()
 	if err != nil {
-		l.Error(e)
+		l.Error(err)
 		return
 	}
 	if err := e.exec(); err != nil {
-		l.Error(e)
+		l.Error(err)
 		return
 	}
 }

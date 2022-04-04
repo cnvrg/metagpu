@@ -18,12 +18,14 @@ func (m *GpuMgr) StartMemoryEnforcer() {
 }
 
 func (m *GpuMgr) enforce() (gpuProcForKill []*GpuProcess) {
-	for _, p := range m.gpuProcesses {
-		if d := m.getGpuDeviceByUuid(p.DeviceUuid); d != nil {
-			maxAllowedMem := d.Memory.ShareSize * uint64(p.PodMetagpuRequest)
-			if p.GpuMemory > maxAllowedMem && p.Pid != 0 && maxAllowedMem > 0 {
-				log.Infof("out of memory: %dMB/%dMB, pod: %s going to be terminated", p.GpuMemory, maxAllowedMem, p.PodId)
-				gpuProcForKill = append(gpuProcForKill, p)
+	for _, c := range m.gpuContainers {
+		for _, p := range c.Processes {
+			if d := m.getGpuDeviceByUuid(p.DeviceUuid); d != nil {
+				maxAllowedMem := d.Memory.ShareSize * uint64(c.PodMetagpuRequest)
+				if p.GpuMemory > maxAllowedMem && p.Pid != 0 && maxAllowedMem > 0 {
+					log.Infof("out of memory: %dMB/%dMB, pod: %s going to be terminated", p.GpuMemory, maxAllowedMem, c.PodId)
+					gpuProcForKill = append(gpuProcForKill, p)
+				}
 			}
 		}
 	}

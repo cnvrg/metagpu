@@ -106,6 +106,8 @@ func (m *GpuMgr) discoverGpuContainers() {
 		log.Error(err)
 		return
 	}
+	// reset gpu containers collector
+	m.gpuContainersCollector = nil
 	cfg := sharecfg.NewDeviceSharingConfig()
 	for _, p := range pl.Items {
 		for _, container := range p.Spec.Containers {
