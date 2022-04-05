@@ -179,22 +179,12 @@ func setProcessesMetrics() {
 		// metagpu requests
 		deviceProcessMetagpuRequests.WithLabelValues(
 			c.PodId, c.PodNamespace, c.ResourceName, c.NodeName).Set(float64(c.MetagpuRequests))
-		for _, p := range c.DeviceProcesses {
-			// set labels for device process level metrics
-			labels := []string{
-				p.Uuid, fmt.Sprintf("%d", p.Pid), p.Cmdline, p.User, c.PodId, c.PodNamespace, c.ResourceName, c.NodeName}
-			// if pid is 0 => pod running without GPU process within
-			if p.Pid == 0 {
-				// absolute memory and gpu usage
-				deviceProcessAbsoluteGpuUtilization.WithLabelValues(labels...).Set(0)
-				deviceProcessMemoryUsage.WithLabelValues(labels...).Set(0)
-				// max (relative to metagpus request) allowed gpu and memory utilization
-				deviceProcessMaxAllowedMetagpuGPUUtilization.WithLabelValues(labels...).Set(0)
-				deviceProcessMaxAllowedMetaGpuMemory.WithLabelValues(labels...).Set(0)
-				// relative gpu and memory utilization
-				deviceProcessMetagpuRelativeGPUUtilization.WithLabelValues(labels...).Set(0)
-				deviceProcessMetagpuRelativeMemoryUtilization.WithLabelValues(labels...).Set(0)
-			} else {
+		// if pod has processes expose process metrics
+		if len(c.DeviceProcesses) > 0 {
+			for _, p := range c.DeviceProcesses {
+				// set labels for device process level metrics
+				labels := []string{
+					p.Uuid, fmt.Sprintf("%d", p.Pid), p.Cmdline, p.User, c.PodId, c.PodNamespace, c.ResourceName, c.NodeName}
 				// absolute memory and gpu usage
 				deviceProcessAbsoluteGpuUtilization.WithLabelValues(labels...).Set(float64(p.GpuUtilization))
 				deviceProcessMemoryUsage.WithLabelValues(labels...).Set(float64(p.Memory))
@@ -205,6 +195,18 @@ func setProcessesMetrics() {
 				deviceProcessMetagpuRelativeGPUUtilization.WithLabelValues(labels...).Set(getRelativeGPUUtilization(c, p))
 				deviceProcessMetagpuRelativeMemoryUtilization.WithLabelValues(labels...).Set(getRelativeMemoryUtilization(c, p))
 			}
+		} else { // pod doesn't have any processes, all the metrics should be set to 0
+			labels := []string{
+				"-", "-", "-", "-", c.PodId, c.PodNamespace, c.ResourceName, c.NodeName}
+			// absolute memory and gpu usage
+			deviceProcessAbsoluteGpuUtilization.WithLabelValues(labels...).Set(0)
+			deviceProcessMemoryUsage.WithLabelValues(labels...).Set(0)
+			// max (relative to metagpus request) allowed gpu and memory utilization
+			deviceProcessMaxAllowedMetagpuGPUUtilization.WithLabelValues(labels...).Set(0)
+			deviceProcessMaxAllowedMetaGpuMemory.WithLabelValues(labels...).Set(0)
+			// relative gpu and memory utilization
+			deviceProcessMetagpuRelativeGPUUtilization.WithLabelValues(labels...).Set(0)
+			deviceProcessMetagpuRelativeMemoryUtilization.WithLabelValues(labels...).Set(0)
 		}
 	}
 }
