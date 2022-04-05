@@ -174,7 +174,7 @@ func buildDeviceProcessesTableBody(containers []*pbdevice.GpuContainer) (body []
 				body = append(body, table.Row{
 					c.PodId,
 					c.PodNamespace,
-					formatContainerDeviceIndexes(containers),
+					formatContainerDeviceIndexes(c),
 					memUsage,
 					p.Pid,
 					p.Cmdline,
@@ -186,7 +186,7 @@ func buildDeviceProcessesTableBody(containers []*pbdevice.GpuContainer) (body []
 			body = append(body, table.Row{
 				c.PodId,
 				c.PodNamespace,
-				formatContainerDeviceIndexes(containers),
+				formatContainerDeviceIndexes(c),
 				memUsage,
 				"-",
 				"-",

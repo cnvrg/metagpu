@@ -44,6 +44,7 @@ rules:
     verbs:
       - list
       - get
+      - create
   - apiGroups:
       - ""
     resources:
@@ -127,7 +128,7 @@ spec:
         accelerator: nvidia
       containers:
         - name: metagpu-device-plugin
-          image: "docker.io/cnvrg/metagpu-device-plugin:main"
+          image: "docker.io/cnvrg/metagpu-device-plugin:DEV-13690-tot-mem-cmd-line"
           imagePullPolicy: Always
           command:
             - /usr/bin/mgdp
@@ -155,7 +156,7 @@ spec:
               name: proc
               readOnly: true
         - name: metagpu-exporter
-          image: "docker.io/cnvrg/metagpu-device-plugin:main"
+          image: "docker.io/cnvrg/metagpu-device-plugin:DEV-13690-tot-mem-cmd-line"
           imagePullPolicy: Always
           command:
             - /usr/bin/mgex

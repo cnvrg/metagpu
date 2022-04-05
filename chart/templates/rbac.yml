@@ -11,6 +11,7 @@ rules:
     verbs:
       - list
       - get
+      - create
   - apiGroups:
       - ""
     resources:

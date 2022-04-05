@@ -68,12 +68,10 @@ func getTotalMemoryUsedByProcesses(containers []*pbdevice.GpuContainer) (totalUs
 	return
 }
 
-func formatContainerDeviceIndexes(containers []*pbdevice.GpuContainer) string {
+func formatContainerDeviceIndexes(container *pbdevice.GpuContainer) string {
 	var devIdxs []string
-	for _, c := range containers {
-		for _, d := range c.ContainerDevices {
-			devIdxs = append(devIdxs, fmt.Sprintf("%d", d.Device.Index))
-		}
+	for _, d := range container.ContainerDevices {
+		devIdxs = append(devIdxs, fmt.Sprintf("%d", d.Device.Index))
 	}
 	return strings.Join(devIdxs, ":")
 }
