@@ -5,6 +5,7 @@ import (
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
 	"github.com/atomicgo/cursor"
 	"github.com/jedib0t/go-pretty/v6/table"
+	"strings"
 )
 
 type TableOutput struct {
@@ -41,18 +42,14 @@ func (o *TableOutput) buildTable() {
 	t.AppendRows(o.body)
 	t.SetStyle(table.StyleColoredGreenWhiteOnBlack)
 	t.AppendFooter(o.footer)
-	t.SetColumnConfigs([]table.ColumnConfig{{Number: 1, AutoMerge: true}})
-	t.SortBy([]table.SortBy{{Name: "Device UUID", Mode: table.Asc}})
+	//t.SetColumnConfigs([]table.ColumnConfig{{Number: 1, AutoMerge: true}})
+	//t.SortBy([]table.SortBy{{Name: "Device UUID", Mode: table.Asc}})
 	t.Render()
 }
 
 func getTotalRequests(containers []*pbdevice.GpuContainer) (totalRequest int) {
-	metaGpuPodRequests := make(map[string]bool)
 	for _, c := range containers {
-		if _, ok := metaGpuPodRequests[c.PodId]; !ok {
-			totalRequest += int(c.MetagpuRequests)
-			metaGpuPodRequests[c.PodId] = true
-		}
+		totalRequest += int(c.MetagpuRequests)
 	}
 	return
 }
@@ -85,4 +82,23 @@ func getDeviceLoad(device *pbdevice.Device) string {
 		device.GpuUtilization,
 		device.MemoryUsed*100/device.MemoryTotal,
 		device.MemoryTotal)
+}
+
+func getDeviceIndexesTableRow(uuids map[string]int32, devices map[string]*pbdevice.Device) (devIdxs []string) {
+	for uuid, _ := range uuids {
+		if device, ok := devices[uuid]; ok {
+			devIdxs = append(devIdxs, fmt.Sprintf("%d", device.Index))
+		}
+	}
+	return
+}
+
+func formatContainerDeviceIndexes(containers []*pbdevice.GpuContainer) string {
+	var devIdxs []string
+	for _, c := range containers {
+		for _, d := range c.ContainerDevices {
+			devIdxs = append(devIdxs, fmt.Sprintf("%d", d.Device.Index))
+		}
+	}
+	return strings.Join(devIdxs, ",")
 }

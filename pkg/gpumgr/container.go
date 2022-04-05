@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+type ContainerDevice struct {
+	GpuDevice       *GpuDevice
+	AllocatedShares int32
+}
+
 type GpuContainer struct {
 	ContainerId       string
 	ContainerName     string
@@ -18,7 +23,7 @@ type GpuContainer struct {
 	ResourceName      string
 	Nodename          string
 	Processes         []*GpuProcess
-	AllocatedGpus     []string
+	Devices           []*ContainerDevice
 }
 
 func getContainerId(pod *v1core.Pod, containerName string) (containerId string) {
@@ -35,7 +40,7 @@ func getContainerId(pod *v1core.Pod, containerName string) (containerId string) 
 	return
 }
 
-func (c *GpuContainer) setAllocatedGpus() {
+func (c *GpuContainer) setAllocatedGpus(gpuDevices []*GpuDevice) {
 	l := log.WithField("pod", c.PodId)
 	pe, err := podexec.NewPodExec(c.ContainerName, c.PodId, c.PodNamespace)
 	if err != nil {
@@ -47,18 +52,30 @@ func (c *GpuContainer) setAllocatedGpus() {
 		l.Error(err)
 		return
 	}
-	var uuidsMap = make(map[string]bool)
+	var gpuAllocationMap = make(map[string]int32)
 	for _, metaDeviceId := range strings.Split(output, ",") {
 		r, _ := regexp.Compile("cnvrg-meta-\\d+-\\d+-")
 		deviceUuid := strings.TrimSuffix(r.ReplaceAllString(metaDeviceId, ""), "\n")
-		uuidsMap[deviceUuid] = true
+		if _, ok := gpuAllocationMap[deviceUuid]; ok {
+			gpuAllocationMap[deviceUuid] = gpuAllocationMap[deviceUuid] + 1
+		} else {
+			gpuAllocationMap[deviceUuid] = 0
+		}
 	}
-	for id, _ := range uuidsMap {
-		c.AllocatedGpus = append(c.AllocatedGpus, id)
+
+	for uuid, allocatedShares := range gpuAllocationMap {
+		for _, device := range gpuDevices {
+			if device.UUID == uuid {
+				c.Devices = append(c.Devices, &ContainerDevice{
+					GpuDevice:       device,
+					AllocatedShares: allocatedShares,
+				})
+			}
+		}
 	}
 }
 
-func NewGpuContainer(containerId, containerName, podId, ns, resourceName, nodename string, metagpuRequests int64) *GpuContainer {
+func NewGpuContainer(containerId, containerName, podId, ns, resourceName, nodename string, metagpuRequests int64, gpuDevices []*GpuDevice) *GpuContainer {
 	p := &GpuContainer{
 		ContainerId:       containerId,
 		PodId:             podId,
@@ -69,7 +86,7 @@ func NewGpuContainer(containerId, containerName, podId, ns, resourceName, nodena
 		Nodename:          nodename,
 	}
 	// discover allocated GPUs
-	p.setAllocatedGpus()
+	p.setAllocatedGpus(gpuDevices)
 	// inject mgctl bin
 	if viper.GetBool("mgctlAutoInject") {
 		podexec.CopymgctlToContainer(p.ContainerName, p.PodId, p.PodNamespace)

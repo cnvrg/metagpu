@@ -116,8 +116,7 @@ func getDevicesProcesses() {
 					log.Errorf("falid to list devices, err: %s ", err)
 					return
 				}
-
-				to.body = buildDeviceProcessesTableBody(processResp.GpuContainers, deviceResp.Device)
+				to.body = buildDeviceProcessesTableBody(processResp.GpuContainers)
 				to.footer = buildDeviceProcessesTableFooter(processResp.GpuContainers, deviceResp.Device, processResp.VisibilityLevel)
 				to.buildTable()
 				to.print()
@@ -134,7 +133,7 @@ func getDevicesProcesses() {
 			log.Errorf("falid to list devices, err: %s ", err)
 			return
 		}
-		to.body = buildDeviceProcessesTableBody(processResp.GpuContainers, deviceResp.Device)
+		to.body = buildDeviceProcessesTableBody(processResp.GpuContainers)
 		to.footer = buildDeviceProcessesTableFooter(processResp.GpuContainers, deviceResp.Device, processResp.VisibilityLevel)
 		to.buildTable()
 		to.print()
@@ -159,31 +158,42 @@ func buildDeviceInfoTableBody(devices []*pbdevice.Device) (body []table.Row, foo
 	return body, footer
 }
 
-func buildDeviceProcessesTableBody(containers []*pbdevice.GpuContainer, devices map[string]*pbdevice.Device) (body []table.Row) {
+func buildDeviceProcessesTableBody(containers []*pbdevice.GpuContainer) (body []table.Row) {
 
 	for _, c := range containers {
-		for _, p := range c.DeviceProcesses {
-			d := devices[p.Uuid]
-			maxMem := int64(-1)
-			memUsage := ""
-			if d != nil {
-				maxMem = int64(d.MemoryShareSize * uint64(c.MetagpuRequests))
-				memUsage = fmt.Sprintf("\u001B[32m%d\u001B[0m/%d", p.Memory, maxMem)
+		if len(c.ContainerDevices) == 0 {
+			return
+		}
+		maxMem := int64(c.ContainerDevices[0].Device.MemoryShareSize * uint64(c.MetagpuRequests))
+		if len(c.DeviceProcesses) > 0 {
+			for _, p := range c.DeviceProcesses {
+				memUsage := fmt.Sprintf("\u001B[32m%d\u001B[0m/%d", p.Memory, maxMem)
 				if int64(p.Memory) > maxMem {
 					memUsage = fmt.Sprintf("\u001B[31m%d\u001B[0m/%d", p.Memory, maxMem)
 				}
+				body = append(body, table.Row{
+					c.PodId,
+					c.PodNamespace,
+					formatContainerDeviceIndexes(containers),
+					memUsage,
+					p.Pid,
+					p.Cmdline,
+					c.MetagpuRequests,
+				})
 			}
-
+		} else {
+			memUsage := fmt.Sprintf("\u001B[32m%d\u001B[0m/%d", 0, maxMem)
 			body = append(body, table.Row{
-				getDeviceLoad(d),
 				c.PodId,
 				c.PodNamespace,
-				p.Pid,
+				formatContainerDeviceIndexes(containers),
 				memUsage,
-				p.Cmdline,
+				"-",
+				"-",
 				c.MetagpuRequests,
 			})
 		}
+
 	}
 
 	return

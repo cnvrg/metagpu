@@ -123,6 +123,7 @@ func (m *GpuMgr) discoverGpuContainers() {
 							config.ResourceName,
 							p.Spec.NodeName,
 							quantity.Value(),
+							m.GpuDevices,
 						),
 					)
 				}

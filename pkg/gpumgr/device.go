@@ -72,5 +72,4 @@ func (d *GpuDevice) setGpuMemoryUsage(memory nvml.Memory) {
 		Used:      memory.Used / MB,
 		ShareSize: memory.Total / uint64(d.Shares) / MB,
 	}
-
 }
