@@ -42,8 +42,6 @@ func (o *TableOutput) buildTable() {
 	t.AppendRows(o.body)
 	t.SetStyle(table.StyleColoredGreenWhiteOnBlack)
 	t.AppendFooter(o.footer)
-	//t.SetColumnConfigs([]table.ColumnConfig{{Number: 1, AutoMerge: true}})
-	//t.SortBy([]table.SortBy{{Name: "Device UUID", Mode: table.Asc}})
 	t.Render()
 }
 
@@ -70,29 +68,6 @@ func getTotalMemoryUsedByProcesses(containers []*pbdevice.GpuContainer) (totalUs
 	return
 }
 
-func getDeviceLoad(device *pbdevice.Device) string {
-	if device == nil {
-		return ""
-	}
-	if device.MemoryTotal <= 0 {
-		return fmt.Sprintf("%d", device.Index)
-	}
-	return fmt.Sprintf("%d [GPU:%d%%|MEM:%d%%|TOT:%dMB]",
-		device.Index,
-		device.GpuUtilization,
-		device.MemoryUsed*100/device.MemoryTotal,
-		device.MemoryTotal)
-}
-
-func getDeviceIndexesTableRow(uuids map[string]int32, devices map[string]*pbdevice.Device) (devIdxs []string) {
-	for uuid, _ := range uuids {
-		if device, ok := devices[uuid]; ok {
-			devIdxs = append(devIdxs, fmt.Sprintf("%d", device.Index))
-		}
-	}
-	return
-}
-
 func formatContainerDeviceIndexes(containers []*pbdevice.GpuContainer) string {
 	var devIdxs []string
 	for _, c := range containers {
@@ -100,5 +75,5 @@ func formatContainerDeviceIndexes(containers []*pbdevice.GpuContainer) string {
 			devIdxs = append(devIdxs, fmt.Sprintf("%d", d.Device.Index))
 		}
 	}
-	return strings.Join(devIdxs, ",")
+	return strings.Join(devIdxs, ":")
 }

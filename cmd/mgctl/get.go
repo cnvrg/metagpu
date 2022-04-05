@@ -77,7 +77,7 @@ func getDevicesProcesses() {
 	}
 
 	to := &TableOutput{}
-	to.header = table.Row{"Idx", "Pod", "NS", "Pid", "Memory", "Cmd", "Req"}
+	to.header = table.Row{"Pod", "NS", "GPU", "Memory", "Pid", "Cmd", "Req"}
 
 	if viper.GetBool("watch") {
 		request := &pbdevice.StreamGpuContainersRequest{PodId: hostname}
@@ -204,9 +204,9 @@ func buildDeviceProcessesTableFooter(containers []*pbdevice.GpuContainer, device
 	// TODO: fix this, the vl should be taken from directly form the  package
 	// to problem is that package now includes the nvidia linux native stuff
 	// and some package re-org is required
-	if vl == "l0" {
-		metaGpuSummary = fmt.Sprintf("%d/%d", getTotalShares(devices), getTotalRequests(containers))
-	}
+	//if vl == "l0" { // TODO: temporary disabled
+	metaGpuSummary = fmt.Sprintf("%d/%d", getTotalShares(devices), getTotalRequests(containers))
+	//}
 	usedMem := fmt.Sprintf("%dMb", getTotalMemoryUsedByProcesses(containers))
-	return table.Row{len(devices), "", "", len(containers), usedMem, "", metaGpuSummary}
+	return table.Row{len(containers), "", "", usedMem, "", "", metaGpuSummary}
 }
