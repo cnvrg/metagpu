@@ -18,8 +18,8 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DeviceServiceClient interface {
-	GetProcesses(ctx context.Context, in *GetProcessesRequest, opts ...grpc.CallOption) (*GetProcessesResponse, error)
-	StreamProcesses(ctx context.Context, in *StreamProcessesRequest, opts ...grpc.CallOption) (DeviceService_StreamProcessesClient, error)
+	GetGpuContainers(ctx context.Context, in *GetGpuContainersRequest, opts ...grpc.CallOption) (*GetGpuContainersResponse, error)
+	StreamGpuContainers(ctx context.Context, in *StreamGpuContainersRequest, opts ...grpc.CallOption) (DeviceService_StreamGpuContainersClient, error)
 	GetDevices(ctx context.Context, in *GetDevicesRequest, opts ...grpc.CallOption) (*GetDevicesResponse, error)
 	KillGpuProcess(ctx context.Context, in *KillGpuProcessRequest, opts ...grpc.CallOption) (*KillGpuProcessResponse, error)
 	PatchConfigs(ctx context.Context, in *PatchConfigsRequest, opts ...grpc.CallOption) (*PatchConfigsResponse, error)
@@ -35,21 +35,21 @@ func NewDeviceServiceClient(cc grpc.ClientConnInterface) DeviceServiceClient {
 	return &deviceServiceClient{cc}
 }
 
-func (c *deviceServiceClient) GetProcesses(ctx context.Context, in *GetProcessesRequest, opts ...grpc.CallOption) (*GetProcessesResponse, error) {
-	out := new(GetProcessesResponse)
-	err := c.cc.Invoke(ctx, "/device.v1.DeviceService/GetProcesses", in, out, opts...)
+func (c *deviceServiceClient) GetGpuContainers(ctx context.Context, in *GetGpuContainersRequest, opts ...grpc.CallOption) (*GetGpuContainersResponse, error) {
+	out := new(GetGpuContainersResponse)
+	err := c.cc.Invoke(ctx, "/device.v1.DeviceService/GetGpuContainers", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *deviceServiceClient) StreamProcesses(ctx context.Context, in *StreamProcessesRequest, opts ...grpc.CallOption) (DeviceService_StreamProcessesClient, error) {
-	stream, err := c.cc.NewStream(ctx, &DeviceService_ServiceDesc.Streams[0], "/device.v1.DeviceService/StreamProcesses", opts...)
+func (c *deviceServiceClient) StreamGpuContainers(ctx context.Context, in *StreamGpuContainersRequest, opts ...grpc.CallOption) (DeviceService_StreamGpuContainersClient, error) {
+	stream, err := c.cc.NewStream(ctx, &DeviceService_ServiceDesc.Streams[0], "/device.v1.DeviceService/StreamGpuContainers", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &deviceServiceStreamProcessesClient{stream}
+	x := &deviceServiceStreamGpuContainersClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -59,17 +59,17 @@ func (c *deviceServiceClient) StreamProcesses(ctx context.Context, in *StreamPro
 	return x, nil
 }
 
-type DeviceService_StreamProcessesClient interface {
-	Recv() (*StreamProcessesResponse, error)
+type DeviceService_StreamGpuContainersClient interface {
+	Recv() (*StreamGpuContainersResponse, error)
 	grpc.ClientStream
 }
 
-type deviceServiceStreamProcessesClient struct {
+type deviceServiceStreamGpuContainersClient struct {
 	grpc.ClientStream
 }
 
-func (x *deviceServiceStreamProcessesClient) Recv() (*StreamProcessesResponse, error) {
-	m := new(StreamProcessesResponse)
+func (x *deviceServiceStreamGpuContainersClient) Recv() (*StreamGpuContainersResponse, error) {
+	m := new(StreamGpuContainersResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -125,8 +125,8 @@ func (c *deviceServiceClient) PingServer(ctx context.Context, in *PingServerRequ
 // All implementations must embed UnimplementedDeviceServiceServer
 // for forward compatibility
 type DeviceServiceServer interface {
-	GetProcesses(context.Context, *GetProcessesRequest) (*GetProcessesResponse, error)
-	StreamProcesses(*StreamProcessesRequest, DeviceService_StreamProcessesServer) error
+	GetGpuContainers(context.Context, *GetGpuContainersRequest) (*GetGpuContainersResponse, error)
+	StreamGpuContainers(*StreamGpuContainersRequest, DeviceService_StreamGpuContainersServer) error
 	GetDevices(context.Context, *GetDevicesRequest) (*GetDevicesResponse, error)
 	KillGpuProcess(context.Context, *KillGpuProcessRequest) (*KillGpuProcessResponse, error)
 	PatchConfigs(context.Context, *PatchConfigsRequest) (*PatchConfigsResponse, error)
@@ -139,11 +139,11 @@ type DeviceServiceServer interface {
 type UnimplementedDeviceServiceServer struct {
 }
 
-func (UnimplementedDeviceServiceServer) GetProcesses(context.Context, *GetProcessesRequest) (*GetProcessesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetProcesses not implemented")
+func (UnimplementedDeviceServiceServer) GetGpuContainers(context.Context, *GetGpuContainersRequest) (*GetGpuContainersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGpuContainers not implemented")
 }
-func (UnimplementedDeviceServiceServer) StreamProcesses(*StreamProcessesRequest, DeviceService_StreamProcessesServer) error {
-	return status.Errorf(codes.Unimplemented, "method StreamProcesses not implemented")
+func (UnimplementedDeviceServiceServer) StreamGpuContainers(*StreamGpuContainersRequest, DeviceService_StreamGpuContainersServer) error {
+	return status.Errorf(codes.Unimplemented, "method StreamGpuContainers not implemented")
 }
 func (UnimplementedDeviceServiceServer) GetDevices(context.Context, *GetDevicesRequest) (*GetDevicesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDevices not implemented")
@@ -173,42 +173,42 @@ func RegisterDeviceServiceServer(s grpc.ServiceRegistrar, srv DeviceServiceServe
 	s.RegisterService(&DeviceService_ServiceDesc, srv)
 }
 
-func _DeviceService_GetProcesses_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetProcessesRequest)
+func _DeviceService_GetGpuContainers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGpuContainersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DeviceServiceServer).GetProcesses(ctx, in)
+		return srv.(DeviceServiceServer).GetGpuContainers(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/device.v1.DeviceService/GetProcesses",
+		FullMethod: "/device.v1.DeviceService/GetGpuContainers",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DeviceServiceServer).GetProcesses(ctx, req.(*GetProcessesRequest))
+		return srv.(DeviceServiceServer).GetGpuContainers(ctx, req.(*GetGpuContainersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DeviceService_StreamProcesses_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(StreamProcessesRequest)
+func _DeviceService_StreamGpuContainers_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(StreamGpuContainersRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(DeviceServiceServer).StreamProcesses(m, &deviceServiceStreamProcessesServer{stream})
+	return srv.(DeviceServiceServer).StreamGpuContainers(m, &deviceServiceStreamGpuContainersServer{stream})
 }
 
-type DeviceService_StreamProcessesServer interface {
-	Send(*StreamProcessesResponse) error
+type DeviceService_StreamGpuContainersServer interface {
+	Send(*StreamGpuContainersResponse) error
 	grpc.ServerStream
 }
 
-type deviceServiceStreamProcessesServer struct {
+type deviceServiceStreamGpuContainersServer struct {
 	grpc.ServerStream
 }
 
-func (x *deviceServiceStreamProcessesServer) Send(m *StreamProcessesResponse) error {
+func (x *deviceServiceStreamGpuContainersServer) Send(m *StreamGpuContainersResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -310,8 +310,8 @@ var DeviceService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*DeviceServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetProcesses",
-			Handler:    _DeviceService_GetProcesses_Handler,
+			MethodName: "GetGpuContainers",
+			Handler:    _DeviceService_GetGpuContainers_Handler,
 		},
 		{
 			MethodName: "GetDevices",
@@ -336,8 +336,8 @@ var DeviceService_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "StreamProcesses",
-			Handler:       _DeviceService_StreamProcesses_Handler,
+			StreamName:    "StreamGpuContainers",
+			Handler:       _DeviceService_StreamGpuContainers_Handler,
 			ServerStreams: true,
 		},
 	},

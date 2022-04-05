@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/ctlutils"
@@ -103,16 +104,16 @@ var (
 	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name", "node_name"})
 )
 
-func getGpuProcesses() []*pbdevice.DeviceProcess {
+func getGpuContainers() []*pbdevice.GpuContainer {
 	devices := pbdevice.NewDeviceServiceClient(conn)
-	req := &pbdevice.GetProcessesRequest{}
+	req := &pbdevice.GetGpuContainersRequest{}
 	ctx := ctlutils.AuthenticatedContext(viper.GetString("token"))
-	resp, err := devices.GetProcesses(ctx, req)
+	resp, err := devices.GetGpuContainers(ctx, req)
 	if err != nil {
 		log.Error(err)
 		return nil
 	}
-	return resp.DevicesProcesses
+	return resp.GpuContainers
 }
 
 func getGpuDevicesInfo() []*pbdevice.Device {
@@ -174,16 +175,29 @@ func setProcessesMetrics() {
 	// reset metrics
 	resetProcessLevelMetrics()
 	// GPU processes metrics
-	for _, p := range getGpuProcesses() {
+	for _, c := range getGpuContainers() {
 		// metagpu requests
-		deviceProcessMetagpuRequests.WithLabelValues(p.PodName, p.PodNamespace, p.ResourceName, p.NodeName).
-			Set(float64(p.MetagpuRequests))
-
-		// set labels for all below metrics
-		labels := []string{
-			p.Uuid, fmt.Sprintf("%d", p.Pid), p.Cmdline, p.User, p.PodName, p.PodNamespace, p.ResourceName, p.NodeName}
-		// if pid is 0 => pod running without GPU process within
-		if p.Pid == 0 {
+		deviceProcessMetagpuRequests.WithLabelValues(
+			c.PodId, c.PodNamespace, c.ResourceName, c.NodeName).Set(float64(c.MetagpuRequests))
+		// if pod has processes expose process metrics
+		if len(c.DeviceProcesses) > 0 {
+			for _, p := range c.DeviceProcesses {
+				// set labels for device process level metrics
+				labels := []string{
+					p.Uuid, fmt.Sprintf("%d", p.Pid), p.Cmdline, p.User, c.PodId, c.PodNamespace, c.ResourceName, c.NodeName}
+				// absolute memory and gpu usage
+				deviceProcessAbsoluteGpuUtilization.WithLabelValues(labels...).Set(float64(p.GpuUtilization))
+				deviceProcessMemoryUsage.WithLabelValues(labels...).Set(float64(p.Memory))
+				// max (relative to metagpus request) allowed gpu and memory utilization
+				deviceProcessMaxAllowedMetagpuGPUUtilization.WithLabelValues(labels...).Set(getMaxAllowedMetagpuGPUUtilization(c))
+				deviceProcessMaxAllowedMetaGpuMemory.WithLabelValues(labels...).Set(getMaxAllowedMetaGpuMemory(c))
+				// relative gpu and memory utilization
+				deviceProcessMetagpuRelativeGPUUtilization.WithLabelValues(labels...).Set(getRelativeGPUUtilization(c, p))
+				deviceProcessMetagpuRelativeMemoryUtilization.WithLabelValues(labels...).Set(getRelativeMemoryUtilization(c, p))
+			}
+		} else { // pod doesn't have any processes, all the metrics should be set to 0
+			labels := []string{
+				"-", "-", "-", "-", c.PodId, c.PodNamespace, c.ResourceName, c.NodeName}
 			// absolute memory and gpu usage
 			deviceProcessAbsoluteGpuUtilization.WithLabelValues(labels...).Set(0)
 			deviceProcessMemoryUsage.WithLabelValues(labels...).Set(0)
@@ -193,31 +207,46 @@ func setProcessesMetrics() {
 			// relative gpu and memory utilization
 			deviceProcessMetagpuRelativeGPUUtilization.WithLabelValues(labels...).Set(0)
 			deviceProcessMetagpuRelativeMemoryUtilization.WithLabelValues(labels...).Set(0)
-		} else {
-			// absolute memory and gpu usage
-			deviceProcessAbsoluteGpuUtilization.WithLabelValues(labels...).Set(float64(p.GpuUtilization))
-			deviceProcessMemoryUsage.WithLabelValues(labels...).Set(float64(p.Memory))
-			// max (relative to metagpus request) allowed gpu and memory utilization
-			deviceProcessMaxAllowedMetagpuGPUUtilization.WithLabelValues(labels...).Set(getMaxAllowedMetagpuGPUUtilization(p))
-			deviceProcessMaxAllowedMetaGpuMemory.WithLabelValues(labels...).Set(getMaxAllowedMetaGpuMemory(p))
-			// relative gpu and memory utilization
-			deviceProcessMetagpuRelativeGPUUtilization.WithLabelValues(labels...).Set(getRelativeGPUUtilization(p))
-			deviceProcessMetagpuRelativeMemoryUtilization.WithLabelValues(labels...).Set(getRelativeMemoryUtilization(p))
-
 		}
 	}
 }
 
-func getMaxAllowedMetagpuGPUUtilization(p *pbdevice.DeviceProcess) float64 {
-	return float64((100 / devicesCache[p.Uuid].Shares) * uint32(p.MetagpuRequests))
+func getMaxAllowedMetagpuGPUUtilization(c *pbdevice.GpuContainer) float64 {
+	l := log.WithField("pod", c.PodId)
+	d, err := getFirstContainerDevice(c)
+	if err != nil {
+		l.Error(err)
+		return 0
+	}
+	return float64((100 / d.Device.Shares) * uint32(c.MetagpuRequests))
 }
 
-func getMaxAllowedMetaGpuMemory(p *pbdevice.DeviceProcess) float64 {
-	return float64(uint64(p.MetagpuRequests) * devicesCache[p.Uuid].MemoryShareSize)
+func getMaxAllowedMetaGpuMemory(c *pbdevice.GpuContainer) float64 {
+	l := log.WithField("pod", c.PodId)
+	d, err := getFirstContainerDevice(c)
+	if err != nil {
+		l.Error(err)
+		return 0
+	}
+	return float64(uint64(c.MetagpuRequests) * d.Device.MemoryShareSize)
+
 }
 
-func getRelativeGPUUtilization(p *pbdevice.DeviceProcess) float64 {
-	maxMetaGpuUtilization := (100 / devicesCache[p.Uuid].Shares) * uint32(p.MetagpuRequests)
+func getFirstContainerDevice(c *pbdevice.GpuContainer) (*pbdevice.ContainerDevice, error) {
+	if len(c.ContainerDevices) == 0 {
+		return nil, errors.New("no allocated gpus found")
+	}
+	return c.ContainerDevices[0], nil
+}
+
+func getRelativeGPUUtilization(c *pbdevice.GpuContainer, p *pbdevice.DeviceProcess) float64 {
+	l := log.WithField("pod", c.PodId)
+	d, err := getFirstContainerDevice(c)
+	if err != nil {
+		l.Error(err)
+		return 0
+	}
+	maxMetaGpuUtilization := (100 / d.Device.Shares) * uint32(c.MetagpuRequests)
 	metaGpuUtilization := 0
 	if p.GpuUtilization > 0 && maxMetaGpuUtilization > 0 {
 		metaGpuUtilization = int((p.GpuUtilization * 100) / maxMetaGpuUtilization)
@@ -225,8 +254,14 @@ func getRelativeGPUUtilization(p *pbdevice.DeviceProcess) float64 {
 	return float64(metaGpuUtilization)
 }
 
-func getRelativeMemoryUtilization(p *pbdevice.DeviceProcess) float64 {
-	maxMetaMemory := int(uint64(p.MetagpuRequests) * devicesCache[p.Uuid].MemoryShareSize)
+func getRelativeMemoryUtilization(c *pbdevice.GpuContainer, p *pbdevice.DeviceProcess) float64 {
+	l := log.WithField("pod", c.PodId)
+	d, err := getFirstContainerDevice(c)
+	if err != nil {
+		l.Error(err)
+		return 0
+	}
+	maxMetaMemory := int(uint64(c.MetagpuRequests) * d.Device.MemoryShareSize)
 	metaMemUtilization := 0
 	if maxMetaMemory > 0 {
 		metaMemUtilization = (int(p.Memory) * 100) / maxMetaMemory

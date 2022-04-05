@@ -1,10 +1,14 @@
 package gpumgr
 
 import (
+	"context"
 	"fmt"
 	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/nvmlutils"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/podexec"
+	"github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/pkg/sharecfg"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	v1core "k8s.io/api/core/v1"
 	"os"
 	"time"
 )
@@ -15,10 +19,12 @@ type GpuMgr struct {
 	ContainerLevelVisibilityToken string
 	DeviceLevelVisibilityToken    string
 	GpuDevices                    []*GpuDevice
-	// final list of gpu processes
-	GpuProcesses []*GpuProcess
+	//// list of gpu processes
+	//gpuProcesses []*GpuProcess
+	// list of gpu containers
+	gpuContainers []*GpuContainer
 	// collection of the gpu processes: the anonymouse and active running
-	gpuProcessCollector []*GpuProcess
+	gpuContainersCollector []*GpuContainer
 }
 
 type GpuDeviceInfo struct {
@@ -31,10 +37,14 @@ func (m *GpuMgr) startGpuStatusCache() {
 	go func() {
 		for {
 			time.Sleep(5 * time.Second)
+			// set gpu devices
 			m.setGpuDevices()
-			m.discoverActiveGpuProcesses()
-			m.discoverAnonymousGpuProcesses()
-			m.setGpuProcesses()
+			// set gpu containers
+			m.discoverGpuContainers()
+			// set active gpu processes
+			m.enrichGpuContainer()
+			// set final gpu containers list
+			m.setGpuContainers()
 		}
 	}()
 }
@@ -53,21 +63,23 @@ func (m *GpuMgr) setGpuDevices() {
 	m.GpuDevices = gpuDevices
 }
 
-func (m *GpuMgr) discoverActiveGpuProcesses() {
-	var gpuProcesses []*GpuProcess
+func (m *GpuMgr) enrichGpuContainer() {
 	for _, device := range m.GpuDevices {
 		for _, nvmlProcessInfo := range nvmlutils.GetComputeRunningProcesses(device.Index) {
 			stats := nvmlutils.GetAccountingStats(device.Index, nvmlProcessInfo.Pid)
 			gpuProc := NewGpuProcess(nvmlProcessInfo.Pid, stats.GpuUtilization, nvmlProcessInfo.UsedGpuMemory/MB, device.UUID)
-			gpuProcesses = append(gpuProcesses, gpuProc)
+			for _, c := range m.gpuContainersCollector {
+				if c.ContainerId == gpuProc.ContainerId {
+					c.Processes = append(c.Processes, gpuProc)
+				}
+			}
 		}
 	}
-	m.gpuProcessCollector = gpuProcesses
 }
 
-func (m *GpuMgr) setGpuProcesses() {
-	m.GpuProcesses = m.gpuProcessCollector
-	log.Infof("discovered %d gpu processes", len(m.GpuProcesses))
+func (m *GpuMgr) setGpuContainers() {
+	m.gpuContainers = m.gpuContainersCollector
+	log.Infof("discovered %d gpu containers", len(m.gpuContainers))
 }
 
 func (m *GpuMgr) GetDeviceInfo() *GpuDeviceInfo {
@@ -83,19 +95,56 @@ func (m *GpuMgr) GetDeviceInfo() *GpuDeviceInfo {
 	return &GpuDeviceInfo{Node: hostname, Metadata: info, Devices: m.GpuDevices}
 }
 
-func (m *GpuMgr) GetProcesses(podId string) []*GpuProcess {
-	// if podId is set, return single process
-	if podId != "" {
-		var podProcesses []*GpuProcess
-		for _, deviceProcess := range m.GpuProcesses {
-			if deviceProcess.PodId == podId {
-				podProcesses = append(podProcesses, deviceProcess)
+func (m *GpuMgr) discoverGpuContainers() {
+	c, err := podexec.GetK8sClient()
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	pl := &v1core.PodList{}
+	if err := c.List(context.Background(), pl); err != nil {
+		log.Error(err)
+		return
+	}
+	// reset gpu containers collector
+	m.gpuContainersCollector = nil
+	cfg := sharecfg.NewDeviceSharingConfig()
+	for _, p := range pl.Items {
+		for _, container := range p.Spec.Containers {
+			for _, config := range cfg.Configs {
+				resourceName := v1core.ResourceName(config.ResourceName)
+				if quantity, ok := container.Resources.Limits[resourceName]; ok {
+					m.gpuContainersCollector = append(m.gpuContainersCollector,
+						NewGpuContainer(
+							getContainerId(&p, container.Name),
+							container.Name,
+							p.Name,
+							p.Namespace,
+							config.ResourceName,
+							p.Spec.NodeName,
+							quantity.Value(),
+							m.GpuDevices,
+						),
+					)
+				}
 			}
 		}
-		return podProcesses
+	}
+}
+
+func (m *GpuMgr) GetProcesses(podId string) []*GpuContainer {
+	// if podId is set, return single process
+	if podId != "" {
+		var gpuContainers []*GpuContainer
+		for _, deviceProcess := range m.gpuContainers {
+			if deviceProcess.PodId == podId {
+				gpuContainers = append(gpuContainers, deviceProcess)
+			}
+		}
+		return gpuContainers
 	}
 	// return all processes
-	return m.GpuProcesses
+	return m.gpuContainers
 }
 
 func (m *GpuMgr) GetMetaDevices() map[string]*GpuDevice {
@@ -123,12 +172,12 @@ func NewGpuManager() *GpuMgr {
 	mgr := &GpuMgr{}
 	// init gpu devices
 	mgr.setGpuDevices()
+	// init gpu containers
+	mgr.discoverGpuContainers()
 	// init active gpu processes
-	mgr.discoverActiveGpuProcesses()
-	// init anonymouse gpu processes (metagpu pods without active running GPU processes)
-	mgr.discoverAnonymousGpuProcesses()
+	mgr.enrichGpuContainer()
 	// set gpu processes
-	mgr.setGpuProcesses()
+	mgr.setGpuContainers()
 	// start gpu devices and processes cache
 	mgr.startGpuStatusCache()
 	// start mem enforcer

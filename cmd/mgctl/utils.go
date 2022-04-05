@@ -5,6 +5,7 @@ import (
 	pbdevice "github.com/AccessibleAI/cnvrg-fractional-accelerator-device-plugin/gen/proto/go/device/v1"
 	"github.com/atomicgo/cursor"
 	"github.com/jedib0t/go-pretty/v6/table"
+	"strings"
 )
 
 type TableOutput struct {
@@ -41,18 +42,12 @@ func (o *TableOutput) buildTable() {
 	t.AppendRows(o.body)
 	t.SetStyle(table.StyleColoredGreenWhiteOnBlack)
 	t.AppendFooter(o.footer)
-	t.SetColumnConfigs([]table.ColumnConfig{{Number: 1, AutoMerge: true}})
-	t.SortBy([]table.SortBy{{Name: "Device UUID", Mode: table.Asc}})
 	t.Render()
 }
 
-func getTotalRequests(processes []*pbdevice.DeviceProcess) (totalRequest int) {
-	metaGpuPodRequests := make(map[string]bool)
-	for _, deviceProcess := range processes {
-		if _, ok := metaGpuPodRequests[deviceProcess.PodName]; !ok {
-			totalRequest += int(deviceProcess.MetagpuRequests)
-			metaGpuPodRequests[deviceProcess.PodName] = true
-		}
+func getTotalRequests(containers []*pbdevice.GpuContainer) (totalRequest int) {
+	for _, c := range containers {
+		totalRequest += int(c.MetagpuRequests)
 	}
 	return
 }
@@ -64,23 +59,19 @@ func getTotalShares(devices map[string]*pbdevice.Device) (totalShares int) {
 	return
 }
 
-func getTotalMemoryUsedByProcesses(processes []*pbdevice.DeviceProcess) (totalUsedMem int) {
-	for _, p := range processes {
-		totalUsedMem += int(p.Memory)
+func getTotalMemoryUsedByProcesses(containers []*pbdevice.GpuContainer) (totalUsedMem int) {
+	for _, c := range containers {
+		for _, p := range c.DeviceProcesses {
+			totalUsedMem += int(p.Memory)
+		}
 	}
 	return
 }
 
-func getDeviceLoad(device *pbdevice.Device) string {
-	if device == nil {
-		return ""
+func formatContainerDeviceIndexes(container *pbdevice.GpuContainer) string {
+	var devIdxs []string
+	for _, d := range container.ContainerDevices {
+		devIdxs = append(devIdxs, fmt.Sprintf("%d", d.Device.Index))
 	}
-	if device.MemoryTotal <= 0 {
-		return fmt.Sprintf("%d", device.Index)
-	}
-	return fmt.Sprintf("%d [GPU:%d%%|MEM:%d%%|TOT:%dMB]",
-		device.Index,
-		device.GpuUtilization,
-		device.MemoryUsed*100/device.MemoryTotal,
-		device.MemoryTotal)
+	return strings.Join(devIdxs, ":")
 }

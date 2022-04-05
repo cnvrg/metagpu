@@ -33,7 +33,7 @@ func GetK8sClient() (client.Client, error) {
 
 func CopymgctlToContainer(containerName, podId, ns string) {
 
-	pe, err := newPodExec(containerName, podId, ns)
+	pe, err := NewPodExec(containerName, podId, ns)
 	if err != nil {
 		log.Error(err)
 		return
@@ -47,13 +47,12 @@ func CopymgctlToContainer(containerName, podId, ns string) {
 
 func (e *podExec) shouldCopyMgctl() bool {
 	l := log.WithFields(log.Fields{"containerName": e.containerName, "podName": e.podName})
-	e.cmd = []string{"/usr/bin/ls", "/usr/bin"}
-	e.stdout = new(bytes.Buffer)
-	if err := e.exec(); err != nil {
+	output, err := e.RunCommand([]string{"/usr/bin/ls", "/usr/bin"})
+	if err != nil {
 		l.Error(err)
 		return false
 	}
-	files := strings.Split(e.stdout.String(), "\n")
+	files := strings.Split(output, "\n")
 	for _, fileName := range files {
 		if fileName == "mgctl" {
 			return false
@@ -61,6 +60,15 @@ func (e *podExec) shouldCopyMgctl() bool {
 	}
 	l.Info("injecting mgctl bin")
 	return true
+}
+
+func (e *podExec) RunCommand(command []string) (output string, err error) {
+	e.cmd = command
+	e.stdout = new(bytes.Buffer)
+	if err := e.exec(); err != nil {
+		return "", err
+	}
+	return e.stdout.String(), nil
 }
 
 func (e *podExec) makeMgctlExecutable() {
@@ -77,11 +85,11 @@ func (e *podExec) copyMgctl() {
 	e.cmd = []string{"cp", "/dev/stdin", "/usr/bin/mgctl"}
 	e.stdin, err = e.getmgctlBinFile()
 	if err != nil {
-		l.Error(e)
+		l.Error(err)
 		return
 	}
 	if err := e.exec(); err != nil {
-		l.Error(e)
+		l.Error(err)
 		return
 	}
 }
@@ -95,7 +103,7 @@ func (e *podExec) getmgctlBinFile() (*os.File, error) {
 	}
 }
 
-func newPodExec(containerName, podId, ns string) (*podExec, error) {
+func NewPodExec(containerName, podId, ns string) (*podExec, error) {
 	return &podExec{podName: podId, podNs: ns, containerName: containerName}, nil
 }
 

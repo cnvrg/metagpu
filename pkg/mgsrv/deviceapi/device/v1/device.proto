@@ -3,8 +3,8 @@ syntax = "proto3";
 package device.v1;
 
 service DeviceService{
-  rpc GetProcesses (GetProcessesRequest) returns (GetProcessesResponse){}
-  rpc StreamProcesses (StreamProcessesRequest) returns (stream StreamProcessesResponse){}
+  rpc GetGpuContainers (GetGpuContainersRequest) returns (GetGpuContainersResponse){}
+  rpc StreamGpuContainers (StreamGpuContainersRequest) returns (stream StreamGpuContainersResponse){}
   rpc GetDevices(GetDevicesRequest) returns (GetDevicesResponse){}
   rpc KillGpuProcess(KillGpuProcessRequest) returns (KillGpuProcessResponse){}
   rpc PatchConfigs(PatchConfigsRequest) returns (PatchConfigsResponse){}
@@ -14,6 +14,8 @@ service DeviceService{
 
 }
 
+
+
 message DeviceProcess{
   string uuid = 1;
   uint32 pid = 2;
@@ -21,13 +23,27 @@ message DeviceProcess{
   string cmdline = 4;
   string user = 5;
   string container_id = 6;
-  string pod_name = 7;
-  string pod_namespace = 8;
-  int64 metagpu_requests = 9;
   uint32 gpu_utilization = 10;
-  string resource_name = 11;
-  string node_name = 12;
+
 }
+
+message ContainerDevice{
+  Device device = 1;
+  int32 allocated_shares = 2;
+}
+
+message GpuContainer{
+  string container_id = 1;
+  string container_name = 2;
+  string pod_id = 3;
+  string pod_namespace = 4;
+  int64  metagpu_requests = 5;
+  string resource_name = 6;
+  string node_name = 7;
+  repeated DeviceProcess device_processes = 8;
+  repeated ContainerDevice container_devices = 9;
+}
+
 message Device{
   string uuid = 1;
   uint32 index = 2;
@@ -41,20 +57,21 @@ message Device{
   string resource_name = 10;
   string node_name = 11;
 }
-message StreamProcessesRequest{
+
+message StreamGpuContainersRequest{
   string pod_id = 1;
 }
-message StreamProcessesResponse{
+message StreamGpuContainersResponse{
   string visibility_level = 1;
-  repeated DeviceProcess devices_processes = 2;
+  repeated GpuContainer gpu_containers = 2;
 }
 
-message GetProcessesRequest{
+message GetGpuContainersRequest{
   string pod_id = 1;
 }
-message GetProcessesResponse{
+message GetGpuContainersResponse{
   string visibility_level = 1;
-  repeated DeviceProcess devices_processes = 2;
+  repeated GpuContainer gpu_containers = 2;
 }
 
 message KillGpuProcessRequest{

@@ -30,14 +30,16 @@ var _ = Describe("enforcer", func() {
 			if len(mgr.GpuDevices) < 0 {
 				log.Fatalf("no gpu devices detected, can't continue unit testing")
 			}
-			mgr.GpuProcesses = []*GpuProcess{
-				{
-					Pid:               1000,
-					GpuMemory:         mgr.GpuDevices[0].Memory.ShareSize,
-					PodMetagpuRequest: 1,
-					DeviceUuid:        mgr.GpuDevices[0].UUID,
-				},
-			}
+			mgr.gpuContainers = []*GpuContainer{{
+				PodMetagpuRequest: 1,
+				Processes: []*GpuProcess{{
+					Pid:            100,
+					DeviceUuid:     mgr.GpuDevices[0].UUID,
+					GpuUtilization: 0,
+					GpuMemory:      mgr.GpuDevices[0].Memory.ShareSize,
+				}},
+			}}
+
 			res := mgr.enforce()
 			Expect(len(res)).To(Equal(0))
 		})
@@ -49,14 +51,16 @@ var _ = Describe("enforcer", func() {
 			if len(mgr.GpuDevices) < 0 {
 				log.Fatalf("no gpu devices detected, can't continue unit testing")
 			}
-			mgr.GpuProcesses = []*GpuProcess{
-				{
-					Pid:               1000,
-					GpuMemory:         mgr.GpuDevices[0].Memory.ShareSize + 1,
-					PodMetagpuRequest: 1,
-					DeviceUuid:        mgr.GpuDevices[0].UUID,
-				},
-			}
+			mgr.gpuContainers = []*GpuContainer{{
+				PodMetagpuRequest: 1,
+				Processes: []*GpuProcess{{
+					Pid:            100,
+					DeviceUuid:     mgr.GpuDevices[0].UUID,
+					GpuUtilization: 0,
+					GpuMemory:      mgr.GpuDevices[0].Memory.ShareSize + 1,
+				}},
+			}}
+
 			res := mgr.enforce()
 			Expect(len(res)).To(Equal(1))
 		})
@@ -68,14 +72,14 @@ var _ = Describe("enforcer", func() {
 			if len(mgr.GpuDevices) < 0 {
 				log.Fatalf("no gpu devices detected, can't continue unit testing")
 			}
-			mgr.GpuProcesses = []*GpuProcess{
-				{
-					Pid:               1000,
-					GpuMemory:         0,
-					PodMetagpuRequest: 1,
-					DeviceUuid:        mgr.GpuDevices[0].UUID,
-				},
-			}
+			mgr.gpuContainers = []*GpuContainer{{
+				PodMetagpuRequest: 1,
+				Processes: []*GpuProcess{{
+					Pid:        100,
+					DeviceUuid: mgr.GpuDevices[0].UUID,
+					GpuMemory:  0,
+				}},
+			}}
 			res := mgr.enforce()
 			Expect(len(res)).To(Equal(0))
 		})
