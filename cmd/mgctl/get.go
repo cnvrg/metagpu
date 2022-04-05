@@ -77,7 +77,7 @@ func getDevicesProcesses() {
 	}
 
 	to := &TableOutput{}
-	to.header = table.Row{"Pod", "NS", "GPU", "Memory", "Pid", "Cmd", "Req"}
+	to.header = table.Row{"Pod", "NS", "GPU", "Node", "Memory", "Pid", "Cmd", "Req"}
 
 	if viper.GetBool("watch") {
 		request := &pbdevice.StreamGpuContainersRequest{PodId: hostname}
@@ -162,7 +162,7 @@ func buildDeviceProcessesTableBody(containers []*pbdevice.GpuContainer) (body []
 
 	for _, c := range containers {
 		if len(c.ContainerDevices) == 0 {
-			return
+			continue
 		}
 		maxMem := int64(c.ContainerDevices[0].Device.MemoryShareSize * uint64(c.MetagpuRequests))
 		if len(c.DeviceProcesses) > 0 {
@@ -175,6 +175,7 @@ func buildDeviceProcessesTableBody(containers []*pbdevice.GpuContainer) (body []
 					c.PodId,
 					c.PodNamespace,
 					formatContainerDeviceIndexes(c),
+					c.NodeName,
 					memUsage,
 					p.Pid,
 					p.Cmdline,
@@ -187,6 +188,7 @@ func buildDeviceProcessesTableBody(containers []*pbdevice.GpuContainer) (body []
 				c.PodId,
 				c.PodNamespace,
 				formatContainerDeviceIndexes(c),
+				c.NodeName,
 				memUsage,
 				"-",
 				"-",
