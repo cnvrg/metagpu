@@ -77,7 +77,7 @@ func getDevicesProcesses() {
 	}
 
 	to := &TableOutput{}
-	to.header = table.Row{"Pod", "NS", "GPU", "Node", "Memory", "Pid", "Cmd", "Req"}
+	to.header = table.Row{"Pod", "NS", "Device", "Node", "GPU", "Memory", "Pid", "Cmd", "Req"}
 
 	if viper.GetBool("watch") {
 		request := &pbdevice.StreamGpuContainersRequest{PodId: hostname}
@@ -161,35 +161,53 @@ func buildDeviceInfoTableBody(devices []*pbdevice.Device) (body []table.Row, foo
 func buildDeviceProcessesTableBody(containers []*pbdevice.GpuContainer) (body []table.Row) {
 
 	for _, c := range containers {
-		if len(c.ContainerDevices) == 0 {
-			continue
-		}
-		maxMem := int64(c.ContainerDevices[0].Device.MemoryShareSize * uint64(c.MetagpuRequests))
-		if len(c.DeviceProcesses) > 0 {
-			for _, p := range c.DeviceProcesses {
-				memUsage := fmt.Sprintf("\u001B[32m%d\u001B[0m/%d", p.Memory, maxMem)
-				if int64(p.Memory) > maxMem {
-					memUsage = fmt.Sprintf("\u001B[31m%d\u001B[0m/%d", p.Memory, maxMem)
+		if len(c.ContainerDevices) > 0 {
+			maxMem := int64(c.ContainerDevices[0].Device.MemoryShareSize * uint64(c.MetagpuRequests))
+			if len(c.DeviceProcesses) > 0 {
+				for _, p := range c.DeviceProcesses {
+					relativeGpuUsage := (p.GpuUtilization * 100) / (100 / c.ContainerDevices[0].Device.Shares * uint32(c.MetagpuRequests))
+					gpuUsage := fmt.Sprintf("\u001B[32m%d%%\u001B[0m", relativeGpuUsage)
+					if relativeGpuUsage > 100 {
+						gpuUsage = fmt.Sprintf("\u001B[31m%d%%\u001B[0m", relativeGpuUsage)
+					}
+					memUsage := fmt.Sprintf("\u001B[32m%d\u001B[0m/%d", p.Memory, maxMem)
+					if int64(p.Memory) > maxMem {
+						memUsage = fmt.Sprintf("\u001B[31m%d\u001B[0m/%d", p.Memory, maxMem)
+					}
+					body = append(body, table.Row{
+						c.PodId,
+						c.PodNamespace,
+						formatContainerDeviceIndexes(c),
+						c.NodeName,
+						gpuUsage,
+						memUsage,
+						p.Pid,
+						p.Cmdline,
+						c.MetagpuRequests,
+					})
 				}
+			} else {
+				memUsage := fmt.Sprintf("\u001B[32m%d\u001B[0m/%d", 0, maxMem)
 				body = append(body, table.Row{
 					c.PodId,
 					c.PodNamespace,
 					formatContainerDeviceIndexes(c),
 					c.NodeName,
+					"-",
 					memUsage,
-					p.Pid,
-					p.Cmdline,
+					"-",
+					"-",
 					c.MetagpuRequests,
 				})
 			}
 		} else {
-			memUsage := fmt.Sprintf("\u001B[32m%d\u001B[0m/%d", 0, maxMem)
 			body = append(body, table.Row{
 				c.PodId,
 				c.PodNamespace,
 				formatContainerDeviceIndexes(c),
 				c.NodeName,
-				memUsage,
+				"-",
+				"-",
 				"-",
 				"-",
 				c.MetagpuRequests,
@@ -210,5 +228,5 @@ func buildDeviceProcessesTableFooter(containers []*pbdevice.GpuContainer, device
 	metaGpuSummary = fmt.Sprintf("%d/%d", getTotalShares(devices), getTotalRequests(containers))
 	//}
 	usedMem := fmt.Sprintf("%dMb", getTotalMemoryUsedByProcesses(containers))
-	return table.Row{len(containers), "", "", usedMem, "", "", metaGpuSummary}
+	return table.Row{len(containers), "", "", "", usedMem, "", "", "", metaGpuSummary}
 }

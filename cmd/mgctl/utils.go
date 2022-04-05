@@ -73,5 +73,8 @@ func formatContainerDeviceIndexes(container *pbdevice.GpuContainer) string {
 	for _, d := range container.ContainerDevices {
 		devIdxs = append(devIdxs, fmt.Sprintf("%d", d.Device.Index))
 	}
-	return strings.Join(devIdxs, ":")
+	if len(devIdxs) > 0 {
+		return strings.Join(devIdxs, ":")
+	}
+	return "-"
 }
