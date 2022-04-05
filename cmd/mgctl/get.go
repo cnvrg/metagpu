@@ -228,5 +228,5 @@ func buildDeviceProcessesTableFooter(containers []*pbdevice.GpuContainer, device
 	metaGpuSummary = fmt.Sprintf("%d/%d", getTotalShares(devices), getTotalRequests(containers))
 	//}
 	usedMem := fmt.Sprintf("%dMb", getTotalMemoryUsedByProcesses(containers))
-	return table.Row{len(containers), "", "", "", usedMem, "", "", "", metaGpuSummary}
+	return table.Row{len(containers), "", "", "", "", usedMem, "", "", metaGpuSummary}
 }
