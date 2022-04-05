@@ -90,12 +90,13 @@ func (c *DeviceSharingConfig) GpuAutoResharing() {
 	// TODO: make sharing configurations persistent
 }
 
+// GetShareSize Get share size in MB
 func (c *DeviceSharingConfig) GetShareSize() int {
 	nvmlDevice := c.getFirstDevice()
 	if nvmlDevice != nil {
 		mem := nvmlutils.GetDeviceMemory(nvmlDevice)
 		if mem.Total > 0 {
-			return int(mem.Total / uint64(c.MetagpusPerGpu))
+			return int((mem.Total / (1024 * 1024)) / uint64(c.MetagpusPerGpu))
 		}
 	}
 	return 0
