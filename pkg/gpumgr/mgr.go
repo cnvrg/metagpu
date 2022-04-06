@@ -114,18 +114,40 @@ func (m *GpuMgr) discoverGpuContainers() {
 			for _, config := range cfg.Configs {
 				resourceName := v1core.ResourceName(config.ResourceName)
 				if quantity, ok := container.Resources.Limits[resourceName]; ok {
-					m.gpuContainersCollector = append(m.gpuContainersCollector,
-						NewGpuContainer(
-							getContainerId(&p, container.Name),
-							container.Name,
-							p.Name,
-							p.Namespace,
-							config.ResourceName,
-							p.Spec.NodeName,
-							quantity.Value(),
-							m.GpuDevices,
-						),
-					)
+
+					if viper.GetString("nodename") == "" {
+						m.gpuContainersCollector = append(m.gpuContainersCollector,
+							NewGpuContainer(
+								getContainerId(&p, container.Name),
+								container.Name,
+								p.Name,
+								p.Namespace,
+								config.ResourceName,
+								p.Spec.NodeName,
+								quantity.Value(),
+								m.GpuDevices,
+							),
+						)
+						continue
+					}
+
+					if viper.GetString("nodename") == p.Spec.NodeName {
+						{
+							m.gpuContainersCollector = append(m.gpuContainersCollector,
+								NewGpuContainer(
+									getContainerId(&p, container.Name),
+									container.Name,
+									p.Name,
+									p.Namespace,
+									config.ResourceName,
+									p.Spec.NodeName,
+									quantity.Value(),
+									m.GpuDevices,
+								),
+							)
+						}
+					}
+
 				}
 			}
 		}

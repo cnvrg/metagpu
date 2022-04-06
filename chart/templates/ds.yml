@@ -42,6 +42,10 @@ spec:
           securityContext:
             privileged: true
           env:
+            - name: METAGPU_DEVICE_PLUGIN_NODENAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: POD_IP
               valueFrom:
                 fieldRef:
