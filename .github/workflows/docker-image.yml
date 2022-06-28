@@ -17,7 +17,7 @@ jobs:
       id: tag_bump
       env:
         MSG: ${{ github.event.inputs.msg }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.CNVRG_GITHUB_TOKEN }}
         PRERELEASE_AUTOMATIC_BUMP: true
 
     - name: Set up Python
@@ -41,7 +41,7 @@ jobs:
       id: changelog
       uses: metcalfc/changelog-generator@v3.0.0
       with:
-        myToken: ${{ secrets.GITHUB_TOKEN }}
+        myToken: ${{ secrets.CNVRG_GITHUB_TOKEN }}
         head-ref: ${{ steps.tag_bump.outputs.tag }}
         base-ref: ${{ steps.tag_bump.outputs.new_tag }}
       if: ${{ steps.cnvrg_changelog.outputs.empty == 'true' && steps.tag_bump.outputs.bumped == 'true' && steps.tag_bump.outputs.prerelease == 'false' }}
