@@ -2,12 +2,8 @@ name: Docker Image CI
 
 on:
   push:
-  workflow_dispatch:
-    inputs:
-      msg:
-        description: "Msg instead of commit log"
-        required: true
-        default: 'false'
+    branches: [ 'master' ]
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -70,14 +66,12 @@ jobs:
         log="${log//$'\n'/'%0A'}"
         log="${log//$'\r'/'%0D'}"
         echo "::set-output name=changelog::$log"
-
     - name: Print the final changelog
       if: ${{ steps.tag_bump.outputs.bumped == 'true' && steps.tag_bump.outputs.prerelease == 'false' }}
       run: |
         cat << "EOF"
         ${{ steps.changelog_final.outputs.changelog }}
         EOF
-
     - name: Changelog Release
       uses: softprops/action-gh-release@v1
       with:
@@ -117,11 +111,10 @@ jobs:
         context: ./
         file: ./Dockerfile
         push: true
-        tags: cnvrg/${{ steps.extract_info.outputs.repo }}:latest
+        tags: cnvrg/metagpu-device-plugin:latest
         build-args: |
           BUILD_SHA=${{ steps.extract_info.outputs.head }}
           BUILD_VERSION=latest
-
     - name: Build and push tagged image
       id: docker_build_tag
       uses: docker/build-push-action@v2
@@ -130,7 +123,25 @@ jobs:
         context: ./
         file: ./Dockerfile
         push: true
-        tags: cnvrg/${{ steps.extract_info.outputs.repo }}:${{ steps.tag_bump.outputs.new_tag }}
+        tags: cnvrg/metagpu-device-plugin:${{ steps.tag_bump.outputs.new_tag }}
         build-args: |
           BUILD_SHA=${{ steps.extract_info.outputs.head }}
           BUILD_VERSION=${{ steps.tag_bump.outputs.new_tag }}
+    - name: Slack Notification
+      uses: rtCamp/action-slack-notify@v2
+      if: ${{ steps.tag_bump.outputs.bumped == 'true' && steps.tag_bump.outputs.prerelease == 'false' }}
+      env:
+        SLACK_USERNAME: Github Actions
+        SLACK_WEBHOOK: ${{ secrets.SLACK_GITHUB_APP_TOKEN  }}
+        SLACK_CHANNEL: "#release-notes-metacloud"
+        SLACK_ICON: https://avatars.githubusercontent.com/u/44036562?s=48&v=4
+        SLACK_COLOR: ${{ job.status }}
+        SLACK_FOOTER: ""
+        MSG_MINIMAL: true
+        SLACK_TITLE: "Repo Name"
+        SLACK_MESSAGE: |
+          <${{ steps.extract_info.outputs.repo_url }}|${{github.event.repository.name}}>
+          *Docker Image: cnvrg/${{ steps.extract_info.outputs.repo }}:${{ steps.tag_bump.outputs.new_tag }}*
+          *Version: ${{ steps.tag_bump.outputs.new_tag }}*
+          <${{ steps.extract_info.outputs.repo_url }}/releases|Release Notes:>
+          ${{steps.changelog_final.outputs.changelog}}
