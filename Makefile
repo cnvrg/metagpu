@@ -6,8 +6,14 @@ build:
 build-exporter:
 	go build -ldflags="-X 'main.Build=$$(git rev-parse --short HEAD)' -X 'main.Version=1.0.0'" -v -o bin/mgex cmd/mgex/*.go
 
-debug-remote:
+remote-sync:
+	kubectl cp ./ $(shell kubectl get pods -lapp=dev-metagpu -A -ojson | jq -r '.items[] | .metadata.namespace + "/" + .metadata.name'):/opt/workdir/.go/github.com/metagpu
+
+remote-debug:
 	dlv debug --headless --listen=:2345 --api-version=2 --accept-multiclient  ./cmd/mgdp/main.go -- start
+
+docker-dev-build:
+	docker buildx build --platform linux/amd64 --push -t cnvrg/golang-dvl:latest -f Dockerfile.dev .
 
 docker-build: build-proto
 	docker build \
@@ -34,12 +40,6 @@ generate-manifests:
 .PHONY: deploy
 deploy:
 	helm template chart/ --set tag=$(shell git rev-parse --abbrev-ref HEAD) | kubectl apply -f -
-
-dev-sync-azure:
-	rsync -av  --exclude 'bin' --exclude '.git'  /Users/dima/.go/src/github.com/AccessibleAI/metagpu-device-plugin/* root@20.120.94.51:/root/.go/src/github.com/AccessibleAI/metagpu-device-plugin
-
-dev-sync-trex:
-	rsync -av  --exclude 'bin' --exclude '.git'  /Users/dima/.go/src/github.com/AccessibleAI/metagpu-device-plugin/* root@212.199.86.38:/root/.go/src/github.com/AccessibleAI/metagpu-device-plugin
 
 test-all:
 	go test ./pkg/... -v

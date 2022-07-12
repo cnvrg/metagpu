@@ -15,6 +15,8 @@ import (
 	"strings"
 )
 
+var copyCache *mgctlCopyCache
+
 func GetK8sClient() (client.Client, error) {
 	l := log.WithFields(log.Fields{"context": "getK8sClient"})
 	rc := k8sClientConfig.GetConfigOrDie()
@@ -38,14 +40,18 @@ func CopymgctlToContainer(containerName, podId, ns string) {
 		log.Error(err)
 		return
 	}
-	// TODO: create in-memory cache with tell the pods that's already has mgctl
+
 	if pe.shouldCopyMgctl() {
 		pe.copyMgctl()
 		pe.makeMgctlExecutable()
+		pe.getCopyCache().setCache(podId) // in memory cache to skip pod exec command
 	}
 }
 
 func (e *podExec) shouldCopyMgctl() bool {
+	if e.getCopyCache().isCached(e.podName) {
+		return false
+	}
 	l := log.WithFields(log.Fields{"containerName": e.containerName, "podName": e.podName})
 	output, err := e.RunCommand([]string{"/usr/bin/ls", "/usr/bin"})
 	if err != nil {
@@ -103,8 +109,11 @@ func (e *podExec) getmgctlBinFile() (*os.File, error) {
 	}
 }
 
-func NewPodExec(containerName, podId, ns string) (*podExec, error) {
-	return &podExec{podName: podId, podNs: ns, containerName: containerName}, nil
+func (e *podExec) getCopyCache() *mgctlCopyCache {
+	if copyCache == nil {
+		copyCache = NewMgctlCopyCache()
+	}
+	return copyCache
 }
 
 func (e *podExec) exec() error {
@@ -144,4 +153,8 @@ func (e *podExec) exec() error {
 		return errors.New(stdError)
 	}
 	return nil
+}
+
+func NewPodExec(containerName, podId, ns string) (*podExec, error) {
+	return &podExec{podName: podId, podNs: ns, containerName: containerName}, nil
 }

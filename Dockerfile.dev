@@ -1,0 +1,18 @@
+FROM nvidia/cuda:11.6.0-base-ubuntu20.04
+
+ENV NVIDIA_DISABLE_REQUIRE="true"
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=utility
+
+ENV PATH=${PATH}:/usr/local/go/bin:/opt/workdir/.go/bin
+ENV GOPATH=/opt/workdir/.go
+ENV GOCACHE=/opt/workdir/.go/.cache
+
+WORKDIR /opt/workdir
+RUN apt update -y && apt install curl wget vim git gcc make -y
+RUN wget https://go.dev/dl/go1.17.11.linux-amd64.tar.gz
+RUN rm -rf /usr/local/go \
+    && tar -C /usr/local -xzf go1.17.11.linux-amd64.tar.gz \
+    && mkdir -p /opt/workdir/.go/github.com
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
+CMD ["/bin/bash", "-c", "sleep inf"]

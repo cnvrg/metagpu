@@ -19,8 +19,6 @@ type GpuMgr struct {
 	ContainerLevelVisibilityToken string
 	DeviceLevelVisibilityToken    string
 	GpuDevices                    []*GpuDevice
-	//// list of gpu processes
-	//gpuProcesses []*GpuProcess
 	// list of gpu containers
 	gpuContainers []*GpuContainer
 	// collection of the gpu processes: the anonymouse and active running
