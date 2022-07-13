@@ -13,7 +13,7 @@ remote-debug:
 	dlv debug --headless --listen=:2345 --api-version=2 --accept-multiclient  ./cmd/mgdp/main.go -- start
 
 docker-dev-build:
-	docker buildx build --platform linux/amd64 --push -t cnvrg/golang-dvl:latest -f Dockerfile.dev .
+	docker buildx build --platform linux/amd64 --push -t cnvrg/golang-cuda11-6-dvl:latest -f Dockerfile.dev .
 
 docker-build: build-proto
 	docker build \
@@ -41,7 +41,7 @@ generate-manifests:
 deploy:
 	helm template chart/ --set tag=$(shell git rev-parse --abbrev-ref HEAD) | kubectl apply -f -
 
-test-all:
+test:
 	go test ./pkg/... -v
 
 test-allocator:

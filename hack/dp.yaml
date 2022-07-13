@@ -11,11 +11,10 @@ spec:
       labels:
         name: nvidia-device-plugin-ds
     spec:
+      nodeSelector:
+        accelerator: nvidia
       tolerations:
         - operator: Exists
-        - key: nvidia.com/gpu
-          operator: Exists
-          effect: NoSchedule
       priorityClassName: "system-node-critical"
       containers:
         - image: nvcr.io/nvidia/k8s-device-plugin:v0.9.0
