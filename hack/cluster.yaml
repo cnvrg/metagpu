@@ -1,8 +1,0 @@
-nodes:
-    - address: 172.20.0.4
-      user: root
-      ssh_key_path: "/root/.ssh/id_rsa"
-      role:
-        - controlplane
-        - etcd
-        - worker

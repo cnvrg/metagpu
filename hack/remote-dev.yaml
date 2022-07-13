@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dev-metagpu
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: dev-metagpu
+  template:
+    metadata:
+      labels:
+        app: dev-metagpu
+    spec:
+      nodeSelector:
+        accelerator: nvidia
+      tolerations:
+        - operator: Exists
+      hostPID: true
+      hostNetwork: true
+      serviceAccountName: metagpu-device-plugin
+      containers:
+      - name: dev-metagpu
+        imagePullPolicy: Always
+        image: cnvrg/golang-dvl:latest
+        ports:
+          - containerPort: 2345
+          - containerPort: 50052
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: device-plugin
+            mountPath: /var/lib/kubelet/device-plugins
+          - mountPath: /host/proc
+            mountPropagation: HostToContainer
+            name: proc
+            readOnly: true
+      volumes:
+        - name: device-plugin
+          hostPath:
+            path: /var/lib/kubelet/device-plugins
+        - hostPath:
+            path: /proc
+          name: proc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dev-metagpu
+  namespace: default
+spec:
+  ports:
+    - name: tcp
+      port: 2345
+  selector:
+    app: dev-metagpu
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: metagpu-device-plugin
+  namespace: default
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - list
+      - get
+      - create
+  - apiGroups:
+      - ""
+    resources:
+      - pods/exec
+    verbs:
+      - create
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    resourceNames:
+      - metagpu-device-plugin-config
+    verbs:
+      - get
+      - update
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: metagpu-device-plugin
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: metagpu-device-plugin
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metagpu-device-plugin
+subjects:
+  - kind: ServiceAccount
+    name: metagpu-device-plugin
+    namespace: default

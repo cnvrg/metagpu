@@ -13,6 +13,8 @@ spec:
         app: gpu-test-with-gpu
     spec:
       hostPID: true
+      tolerations:
+        - operator: "Exists"
       containers:
       - name: gpu-test-with-gpu
         image: tensorflow/tensorflow:latest-gpu
@@ -37,4 +39,4 @@ spec:
               print(tf.reduce_sum(tf.random.normal([1000, 1000])))
         resources:
           limits:
-            cnvrg.io/metagpu: "1"
+            nvidia.com/gpu: "1"
