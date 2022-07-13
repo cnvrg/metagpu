@@ -22,7 +22,7 @@ spec:
       containers:
       - name: dev-metagpu
         imagePullPolicy: Always
-        image: cnvrg/golang-dvl:latest
+        image: cnvrg/golang-cuda11-6-dvl:latest
         ports:
           - containerPort: 2345
           - containerPort: 50052
