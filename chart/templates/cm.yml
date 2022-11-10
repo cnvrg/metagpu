@@ -20,3 +20,11 @@ data:
         autoReshare: true
         metaGpus: 2
         uuid: [ "*" ]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: metagpu-presence
+  namespace: {{ .Release.Namespace }}
+data:
+  enabled: "true"
