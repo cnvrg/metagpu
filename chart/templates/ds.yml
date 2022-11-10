@@ -20,9 +20,6 @@ spec:
         - key: nvidia.com/gpu
           operator: Exists
           effect: NoSchedule
-      priorityClassName: "system-node-critical"
-      imagePullSecrets:
-        - name: regcred
       hostPID: true
       hostNetwork: true
       serviceAccountName: metagpu-device-plugin

@@ -38,6 +38,64 @@ Requesting for 50 metagpus, will give you 0.5 GPU, requesting 150 metagpus,
 will give you 1.5 metagpus.
 
 
+### Deployment 
+1. clone the repo 
+2. use helm chart to install or dump manifest and install manually 
+
+### Install with helm chart 
+```bash
+# cd into cloned directory and run
+# for openshift set ocp=true  
+helm install chart --set ocp=false -ncnvrg 
+```
+
+### Install with raw K8s manifests 
+```bash
+# cd into cloned directory and run
+# for openshift set ocp=true  
+helm template chart --set ocp=false -ncnvrg > meatgpu.yaml 
+kubectl apply -f meatgpu.yaml 
+```
+
+
+### Test the Metagpu 
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: metagpu-test
+  namespace: cnvrg
+spec:
+  tolerations:
+   - operator: "Exists"
+  containers:
+  - name: gpu-test-with-gpu
+    image: tensorflow/tensorflow:latest-gpu
+    command:
+      - /usr/local/bin/python
+      - -c
+      - |
+        import tensorflow as tf
+        tf.get_logger().setLevel('INFO')
+        gpus = tf.config.list_physical_devices('GPU')
+        if gpus:
+          # Restrict TensorFlow to only allocate 1GB of memory on the first GPU
+          try:
+            tf.config.set_logical_device_configuration(gpus[0],[tf.config.LogicalDeviceConfiguration(memory_limit=1024)])
+            logical_gpus = tf.config.list_logical_devices('GPU')
+            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+          except RuntimeError as e:
+            # Virtual devices must be set before GPUs have been initialized
+            print(e)
+        print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+        while True:
+          print(tf.reduce_sum(tf.random.normal([1000, 1000])))
+    resources:
+      limits:
+        cnvrg.io/metagpu: "30"
+EOF
+```
 
  
 
