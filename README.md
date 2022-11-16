@@ -17,9 +17,6 @@ and on [go-nvml](https://github.com/NVIDIA/go-nvml)
 One for the features the nvidia container runtime providers, is an ability 
 to specify the visible GPU devices Ids by using env vars `NVIDIA_VISIBLE_DEVICES`.
 
-
-### [MetaGPU demo from Cnvrg's MLCon 2.0](https://www.youtube.com/watch?v=hsP9GXUtNNs)
-
 The most short & simple explanation of the `mgdp` logic is:
 1. `mgdp` detects all the GPU devices Ids 
 2. From the real GPU deices Ids, it's generates a meta-devices Ids
@@ -37,6 +34,8 @@ For example, if you've a machine with 2 GPUs, `mgdp` will generate 200 metagpus.
 Requesting for 50 metagpus, will give you 0.5 GPU, requesting 150 metagpus, 
 will give you 1.5 metagpus.
 
+
+### [MetaGPU demo from Cnvrg's MLCon 2.0](https://www.youtube.com/watch?v=hsP9GXUtNNs)
 
 ### Deployment 
 1. clone the repo 
