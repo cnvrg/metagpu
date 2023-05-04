@@ -111,8 +111,12 @@ func (m *GpuMgr) discoverGpuContainers() {
 		for _, container := range p.Spec.Containers {
 			for _, config := range cfg.Configs {
 				resourceName := v1core.ResourceName(config.ResourceName)
-				if quantity, ok := container.Resources.Limits[resourceName]; ok {
-
+				requests, isreq := container.Resources.Requests[resourceName]
+				if limits, ok :=  container.Resources.Limits[resourceName]; ok {
+					// backward compatible logic: if no requests assue it is equal to limits
+					if !isreq {
+						requests = limits
+					}
 					if viper.GetString("nodename") == "" {
 						m.gpuContainersCollector = append(m.gpuContainersCollector,
 							NewGpuContainer(
@@ -122,7 +126,8 @@ func (m *GpuMgr) discoverGpuContainers() {
 								p.Namespace,
 								config.ResourceName,
 								p.Spec.NodeName,
-								quantity.Value(),
+								requests.Value(),
+								limits.Value(),
 								m.GpuDevices,
 							),
 						)
@@ -139,7 +144,8 @@ func (m *GpuMgr) discoverGpuContainers() {
 									p.Namespace,
 									config.ResourceName,
 									p.Spec.NodeName,
-									quantity.Value(),
+									requests.Value(),
+									limits.Value(),
 									m.GpuDevices,
 								),
 							)

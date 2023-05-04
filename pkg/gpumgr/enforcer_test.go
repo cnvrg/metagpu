@@ -32,6 +32,7 @@ var _ = Describe("enforcer", func() {
 			}
 			mgr.gpuContainers = []*GpuContainer{{
 				PodMetagpuRequest: 1,
+				PodMetagpuLimit: 1,
 				Processes: []*GpuProcess{{
 					Pid:            100,
 					DeviceUuid:     mgr.GpuDevices[0].UUID,
@@ -53,6 +54,7 @@ var _ = Describe("enforcer", func() {
 			}
 			mgr.gpuContainers = []*GpuContainer{{
 				PodMetagpuRequest: 1,
+				PodMetagpuLimit: 1,
 				Processes: []*GpuProcess{{
 					Pid:            100,
 					DeviceUuid:     mgr.GpuDevices[0].UUID,
@@ -74,6 +76,7 @@ var _ = Describe("enforcer", func() {
 			}
 			mgr.gpuContainers = []*GpuContainer{{
 				PodMetagpuRequest: 1,
+				PodMetagpuLimit: 1,
 				Processes: []*GpuProcess{{
 					Pid:        100,
 					DeviceUuid: mgr.GpuDevices[0].UUID,
