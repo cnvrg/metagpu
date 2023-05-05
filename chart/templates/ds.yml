@@ -1,34 +1,29 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: metagpu-device-plugin
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "metagpu.fullname" . }}
+  labels:
+    {{- include "metagpu.labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      name: metagpu-device-plugin
+      {{- include "metagpu.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+    {{- with .Values.podAnnotations }}
       annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ""
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
       labels:
-        name: metagpu-device-plugin
+        {{- include "metagpu.selectorLabels" . | nindent 8 }}
     spec:
-      tolerations:
-        - key: CriticalAddonsOnly
-          operator: Exists
-        - key: nvidia.com/gpu
-          operator: Exists
-          effect: NoSchedule
       hostPID: true
       hostNetwork: true
-      serviceAccountName: metagpu-device-plugin
-      nodeSelector:
-        accelerator: nvidia
+      serviceAccountName: {{ include "metagpu.serviceAccountName" . }}
       containers:
         - name: metagpu-device-plugin
-          image: "docker.io/cnvrg/metagpu-device-plugin:{{ .Values.tag }}"
-          imagePullPolicy: Always
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - /usr/bin/mgdp
             - start
@@ -36,8 +31,9 @@ spec:
             - /etc/metagpu-device-plugin
           ports:
             - containerPort: 50052
+              name: grpc
           securityContext:
-            privileged: true
+            {{- toYaml .Values.securityContext | nindent 12 }}
           env:
             - name: METAGPU_DEVICE_PLUGIN_NODENAME
               valueFrom:
@@ -48,33 +44,44 @@ spec:
                 fieldRef:
                   fieldPath: status.podIP
             - name: MG_CTL_TOKEN
-              value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1ldGFncHVAaW5zdGFuY2UiLCJ2aXNpYmlsaXR5TGV2ZWwiOiJsMCJ9.2rHykHFcHoIr-OCoPA5Am4ubf31-RJcayZnOTK6db94
+              value: {{ .Values.config.grpcSecurity.deviceToken | quote }}
           volumeMounts:
             - name: device-plugin
               mountPath: /var/lib/kubelet/device-plugins
             - name: config
               mountPath: /etc/metagpu-device-plugin
-            - mountPath: /host/proc
+            - name: proc
+              mountPath: /host/proc
               mountPropagation: HostToContainer
-              name: proc
               readOnly: true
         - name: metagpu-exporter
-          image: "docker.io/cnvrg/metagpu-device-plugin:{{ .Values.tag }}"
-          imagePullPolicy: Always
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
             - /usr/bin/mgex
             - start
             - -t
-            - eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1ldGFncHVAaW5zdGFuY2UiLCJ2aXNpYmlsaXR5TGV2ZWwiOiJsMCJ9.2rHykHFcHoIr-OCoPA5Am4ubf31-RJcayZnOTK6db94
+            - {{ .Values.config.grpcSecurity.deviceToken | quote }}
           ports:
-            - containerPort: 2112
+            - name: metrics
+              containerPort: 2112
       volumes:
         - name: device-plugin
           hostPath:
             path: /var/lib/kubelet/device-plugins
         - name: config
           configMap:
-            name: metagpu-device-plugin-config
-        - hostPath:
+            name: {{ include "metagpu.fullname" . }}-config
+        - name: proc
+          hostPath:
             path: /proc
-          name: proc
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      

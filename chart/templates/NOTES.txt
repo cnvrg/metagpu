@@ -1,0 +1,11 @@
+
+
+MetaGPU Device Plugin has been deployed.
+
+You can verify DaemonSet is up and running with:
+  kubectl get ds {{ include "metagpu.fullname" . }} --namespace {{ .Release.Namespace }}
+
+You are now ready to request MetaGPUs specifying requests for the following resource names:
+{{- range .Values.config.deviceSharing }}
+  - {{ .resourceName }}
+{{- end }}

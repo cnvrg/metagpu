@@ -1,8 +1,9 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: metagpu-device-plugin
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "metagpu.fullname" . }}
+  labels:
+    {{- include "metagpu.labels" . | nindent 4 }}
 rules:
   - apiGroups:
       - ""
@@ -23,27 +24,22 @@ rules:
     resources:
       - configmaps
     resourceNames:
-      - metagpu-device-plugin-config
+      - {{ include "metagpu.fullname" . }}
     verbs:
       - get
       - update
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: metagpu-device-plugin
-  namespace: {{ .Release.Namespace }}
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: metagpu-device-plugin
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "metagpu.fullname" . }}
+  labels:
+    {{- include "metagpu.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: metagpu-device-plugin
+  name: {{ include "metagpu.fullname" . }}
 subjects:
   - kind: ServiceAccount
-    name: metagpu-device-plugin
+    name: {{ include "metagpu.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}

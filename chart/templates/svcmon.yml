@@ -1,19 +1,22 @@
+{{- if .Values.serviceMonitor.enabled -}}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: metagpu-exporter
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "metagpu.fullname" . }}-exporter
   labels:
-    app: "metagpu-exporter"
-    cnvrg-infra-prometheus: cnvrg-infra-cnvrg
+    {{- include "metagpu.labels" . | nindent 4 }}
+    {{- if .Values.serviceMonitor.labels -}}
+    {{ toYaml .Values.serviceMonitor.labels | nindent 4 }}
+    {{- end }}
 spec:
   selector:
     matchLabels:
-      app: "metagpu-exporter"
+      {{- include "metagpu.selectorLabels" . | nindent 6 }}
   namespaceSelector:
     matchNames:
       - {{ .Release.Namespace }}
   endpoints:
     - port: "metrics"
       path: "/metrics"
-      interval: "15s"
+      interval: {{ .Values.serviceMonitor.interval | quote }}
+{{- end -}}

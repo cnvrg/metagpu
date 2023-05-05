@@ -1,2 +1,86 @@
-tag: latest
+config:
+  deviceSharing:
+  - resourceName: cnvrg.io/metagpu
+    # autoatically partition the GPU (currently always partition to 100 shares)
+    autoReshare: true
+    # filter devices by UUIDs, wildcard uses all GPUs
+    uuid: ["*"]
+  # if set to true kills the process going over resource.limits
+  memoryEnforcer: true
+  # mgctl tool
+  mgctl:
+    autoInject: true
+    path: /tmp/mgctl
+  grpcSecurity:
+    # Token with priviledge level 0 (access to all functions (e.g. for metrics extraction)
+    deviceToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1ldGFncHVAaW5zdGFuY2UiLCJ2aXNpYmlsaXR5TGV2ZWwiOiJsMCJ9.2rHykHFcHoIr-OCoPA5Am4ubf31-RJcayZnOTK6db94
+    # Token with priviledge level 1 (access from running GPU-enabled container)
+    containerToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1ldGFncHVAaW5zdGFuY2UiLCJ2aXNpYmlsaXR5TGV2ZWwiOiJsMSJ9.o5v6Zdi1FKXQevRjuSbABBX1vIRYgN3Daz9iXabuFFA
+    # JWT signing key 
+    jwtSecret: topSecret
+  # device manager fine tuning
+  deviceManager:
+    processesDiscoveryPeriod: 5
+    deviceCacheTTL: 3600
+
+image:
+  repository: docker.io/cnvrg/metagpu-device-plugin
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart version.
+  tag: ""
+imagePullSecrets: []
+
+# If you are running the single instance and want pretty short
+# name of deamonset use fullnameOverride: metagpu-device-plugin
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+# Define scheduler.alpha.kubernetes.io/critical-pod for k8s < 1.16
+
+# Device plugin needs priviledged container
+securityContext:
+  privileged: true
+  # readOnlyRootFilesystem: true
+
+# Enable if running on OpenShift (creates SCC)
 ocp: false
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# Use use nodeSelector to schedule only on subset of nodes
+# You have to Label GPU-enabled nodes with e.g.:
+#   kubectl label node gpu-worker-0 "accelerator=nvidia"
+nodeSelector: {}
+  # accelerator: nvidia
+
+# Toleration to schedule on nodes with taints
+tolerations: []
+  #- key: CriticalAddonsOnly
+  #  operator: Exists
+  #- key: nvidia.com/gpu
+  #  operator: Exists
+  #  effect: NoSchedule
+
+# Create service monitor
+serviceMonitor:
+  enabled: true
+  interval: "15s"
+  labels: {}
