@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 	v1core "k8s.io/api/core/v1"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -117,6 +118,22 @@ func (m *GpuMgr) discoverGpuContainers() {
 					if !isreq {
 						requests = limits
 					}
+					limitShares := limits.Value()
+					// as of now, kubernetes does not allow overcommit for custom resources
+					// it enforces requests must be equal to limits and refuse to schhedule
+					// the pod othervise
+					// to mitigate this issue and allow overcommit, the cutoff limit
+					// can be defined via Pod annotation
+					annotationKey := "gpu-mem-limit." + config.ResourceName
+					if annotationValue, ok := p.ObjectMeta.Annotations[annotationKey]; ok {
+						annotationLimit, err := strconv.ParseInt(annotationValue, 10, 64)
+						if err != nil {
+							log.Errorf("Failed to parse memory limit from %s annotation, err: %s", annotationKey, err)
+						} else {
+							limitShares = annotationLimit
+							log.Infof("Using memory enforcement limit from %s annotation: %d", annotationKey, limitShares)
+						}
+					}
 					if viper.GetString("nodename") == "" {
 						m.gpuContainersCollector = append(m.gpuContainersCollector,
 							NewGpuContainer(
@@ -127,7 +144,7 @@ func (m *GpuMgr) discoverGpuContainers() {
 								config.ResourceName,
 								p.Spec.NodeName,
 								requests.Value(),
-								limits.Value(),
+								limitShares,
 								m.GpuDevices,
 							),
 						)
@@ -145,7 +162,7 @@ func (m *GpuMgr) discoverGpuContainers() {
 									config.ResourceName,
 									p.Spec.NodeName,
 									requests.Value(),
-									limits.Value(),
+									limitShares,
 									m.GpuDevices,
 								),
 							)
