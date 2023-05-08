@@ -122,6 +122,7 @@ func (p *MetaGpuDevicePlugin) Allocate(ctx context.Context, request *pluginapi.A
 			mount := &pluginapi.Mount{
 				HostPath:      filepath.Join(mgctlHostPath, "mgctl"),
 				ContainerPath: filepath.Join(mgctlContainertPath, "mgctl"),
+				ReadOnly:      true,
 			}
 			mounts = append(mounts, mount)
 		}
