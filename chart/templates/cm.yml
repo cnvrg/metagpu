@@ -9,8 +9,11 @@ data:
     accelerator: nvidia
     processesDiscoveryPeriod: {{ .Values.config.deviceManager.processesDiscoveryPeriod | int }}
     deviceCacheTTL: {{ .Values.config.deviceManager.deviceCacheTTL | int }}
-    mgctlTar: {{ .Values.config.mgctl.path }}
-    mgctlAutoInject: {{ .Values.config.mgctl.autoInject }}
+    mgctlTar: {{ .Values.config.mgctl.sourcePath }}
+    mgctlAutoInject: {{ .Values.config.mgctl.podExecCopy.enabled }}
+    mgctlMount: {{ .Values.config.mgctl.hostMount.enabled }}
+    mgctlMountHostPath: {{ .Values.config.mgctl.hostMount.hostPath }}
+    mgctlMountContainertPath: {{ .Values.config.mgctl.hostMount.containerPath }}
     serverAddr: 0.0.0.0:50052
     memoryEnforcer: {{ .Values.config.memoryEnforcer }}
     jwtSecret: {{ .Values.config.grpcSecurity.jwtSecret }}

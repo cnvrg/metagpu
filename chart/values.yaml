@@ -7,16 +7,24 @@ config:
     uuid: ["*"]
   # if set to true kills the process going over resource.limits
   memoryEnforcer: true
-  # mgctl tool
+  # mgctl tool injection
   mgctl:
-    autoInject: true
-    path: /tmp/mgctl
+    sourcePath: /tmp/mgctl
+    # use kubectl cp to inject mgctl to the user container
+    podExecCopy:
+      enabled: false
+    # mount mgctl binary from hostPath to containerPath of user continer using DevicePlugin API
+    hostMount:
+      enabled: true
+      hostPath: /var/lib/metagpu/
+      containerPath: /usr/bin/
+
   grpcSecurity:
     # Token with priviledge level 0 (access to all functions (e.g. for metrics extraction)
     deviceToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1ldGFncHVAaW5zdGFuY2UiLCJ2aXNpYmlsaXR5TGV2ZWwiOiJsMCJ9.2rHykHFcHoIr-OCoPA5Am4ubf31-RJcayZnOTK6db94
     # Token with priviledge level 1 (access from running GPU-enabled container)
     containerToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1ldGFncHVAaW5zdGFuY2UiLCJ2aXNpYmlsaXR5TGV2ZWwiOiJsMSJ9.o5v6Zdi1FKXQevRjuSbABBX1vIRYgN3Daz9iXabuFFA
-    # JWT signing key 
+    # JWT signing key
     jwtSecret: topSecret
   # device manager fine tuning
   deviceManager:

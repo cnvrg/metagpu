@@ -25,10 +25,13 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
-            - /usr/bin/mgdp
-            - start
+            - /bin/sh
             - -c
-            - /etc/metagpu-device-plugin
+            - |
+              {{- if .Values.config.mgctl.hostMount.enabled }}
+              cp -f {{ .Values.config.mgctl.sourcePath }} /var/lib/metagpu/mgctl
+              {{- end }}
+              /usr/bin/mgdp start -c /etc/metagpu-device-plugin
           ports:
             - containerPort: 50052
               name: grpc
@@ -54,6 +57,10 @@ spec:
               mountPath: /host/proc
               mountPropagation: HostToContainer
               readOnly: true
+            {{- if .Values.config.mgctl.hostMount.enabled }}
+            - name: mgctl
+              mountPath: /var/lib/metagpu
+            {{- end }}
         - name: metagpu-exporter
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -75,6 +82,12 @@ spec:
         - name: proc
           hostPath:
             path: /proc
+        {{- if .Values.config.mgctl.hostMount.enabled }}
+        - name: mgctl
+          hostPath:
+            path: {{ .Values.config.mgctl.hostMount.hostPath }}
+            type: DirectoryOrCreate
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
