@@ -61,7 +61,7 @@ securityContext:
 # Enable if running on OpenShift (creates SCC)
 ocp: false
 
-# TODO: use
+# Resources for metagpu-device-plugin
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
@@ -69,10 +69,10 @@ resources: {}
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   # limits:
   #   cpu: 100m
-  #   memory: 128Mi
+  #   memory: 512Mi
   # requests:
   #   cpu: 100m
-  #   memory: 128Mi
+  #   memory: 256Mi
 
 # Use use nodeSelector to schedule only on subset of nodes
 # You have to Label GPU-enabled nodes with e.g.:

@@ -64,6 +64,8 @@ spec:
             - name: mgctl
               mountPath: /var/lib/metagpu
             {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
         - name: metagpu-exporter
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
