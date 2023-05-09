@@ -14,7 +14,7 @@ var enforceCmd = &cobra.Command{
 
 ////
 ////func enforceMemoryLimits() {
-////	conn := ctlutils.GetGrpcMetaGpuSrvClientConn(viper.GetString("addr"))
+////	conn := ctlutils.GetGrpcMetaGpuSrvClientConn(viper.GetString(flagAddr))
 ////	if conn == nil {
 ////		log.Fatalf("can't initiate connection to metagpu server")
 ////	}
