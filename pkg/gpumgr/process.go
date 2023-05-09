@@ -5,6 +5,7 @@ import (
 	"github.com/shirou/gopsutil/v3/process"
 	log "github.com/sirupsen/logrus"
 	"path/filepath"
+	"regexp"
 )
 
 type GpuProcess struct {
@@ -16,6 +17,8 @@ type GpuProcess struct {
 	User           string
 	ContainerId    string
 }
+
+var scopeContainerCgroupRe = regexp.MustCompile(`[^-]+-(.+)\.scope`)
 
 func (p *GpuProcess) SetProcessCmdline() {
 	if pr, err := process.NewProcess(int32(p.Pid)); err == nil {
@@ -66,6 +69,13 @@ func (p *GpuProcess) SetProcessContainerId() {
 				for _, c := range g.Controllers {
 					if c == "memory" {
 						p.ContainerId = filepath.Base(g.Path)
+						// Docker-based runtime container cgroup name is "docker-<ContainerId>.scope"
+						// CRIO runtime container cgroup name is "crio-<ContainerId>.scope"
+						// Containerd runtime container cgroup name is just "<ContainerId>"
+						scopeContainerMatch := scopeContainerCgroupRe.FindStringSubmatch(p.ContainerId)
+						for _, scopeContainerId := range scopeContainerMatch {
+							p.ContainerId = scopeContainerId
+						}
 						goto ExitContainerIdSet
 					}
 				}
