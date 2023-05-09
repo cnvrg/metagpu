@@ -93,8 +93,19 @@ extraEnv: []
   #- name: NVIDIA_VISIBLE_DEVICES
   #  value: "0:0"
 
-# Create service monitor
-serviceMonitor:
+# Prometheus exported to run alongside metagpu-device-plugin
+exporter:
   enabled: true
-  interval: "15s"
-  labels: {}
+  # Create service monitor
+  serviceMonitor:
+    enabled: true
+    interval: "15s"
+    labels: {}
+  # Resources for metagpu-exporter
+  resources: {}
+    # limits:
+    #   cpu: 50m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 10m
+    #   memory: 64Mi

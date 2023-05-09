@@ -1,12 +1,12 @@
-{{- if .Values.serviceMonitor.enabled -}}
+{{- if and .Values.exporter.enabled .Values.exporter.serviceMonitor.enabled -}}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ include "metagpu.fullname" . }}-exporter
   labels:
     {{- include "metagpu.labels" . | nindent 4 }}
-    {{- if .Values.serviceMonitor.labels -}}
-    {{ toYaml .Values.serviceMonitor.labels | nindent 4 }}
+    {{- if .Values.exporter.serviceMonitor.labels -}}
+    {{ toYaml .Values.exporter.serviceMonitor.labels | nindent 4 }}
     {{- end }}
 spec:
   selector:
@@ -18,5 +18,5 @@ spec:
   endpoints:
     - port: "metrics"
       path: "/metrics"
-      interval: {{ .Values.serviceMonitor.interval | quote }}
+      interval: {{ .Values.exporter.serviceMonitor.interval | quote }}
 {{- end -}}

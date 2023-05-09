@@ -11,9 +11,11 @@ spec:
       targetPort: grpc
       protocol: TCP
       name: grpc
+    {{- if .Values.exporter.enabled }}
     - port: 2112
       targetPort: metrics
       protocol: TCP
       name: metrics
+    {{- end }}
   selector:
     {{- include "metagpu.selectorLabels" . | nindent 4 }}

@@ -66,6 +66,7 @@ spec:
             {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+        {{- if .Values.exporter.enabled }}
         - name: metagpu-exporter
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -77,6 +78,9 @@ spec:
           ports:
             - name: metrics
               containerPort: 2112
+          resources:
+            {{- toYaml .Values.exporter.resources | nindent 12 }}
+        {{- end }}
       volumes:
         - name: device-plugin
           hostPath:
