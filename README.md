@@ -38,24 +38,30 @@ will give you 1.5 metagpus.
 ### [MetaGPU demo from Cnvrg's MLCon 2.0](https://www.youtube.com/watch?v=hsP9GXUtNNs)
 
 ### Deployment 
-1. clone the repo 
-2. use helm chart to install or dump manifest and install manually 
+1. Clone the repo
+2. Use Helm chart to install (or alternatively use static manifest)
 
 ### Install with helm chart 
+
+Helm chart is located in `chart` directory.
+
+Go through the `values.yaml` and adjust it to your setup following the comments.
+
+Install the chart:
 ```bash
-# cd into cloned directory and run
-# for openshift set ocp=true  
-helm install chart --set ocp=false -ncnvrg 
+cp chart/values.yaml myvalues.yaml
+# edit myvalues.yaml
+helm install metagpu ./chart --values myvalues.yaml -n cnvrg
 ```
 
 ### Install with raw K8s manifests 
-```bash
-# cd into cloned directory and run
-# for openshift set ocp=true  
-helm template chart --set ocp=false -ncnvrg > meatgpu.yaml 
-kubectl apply -f meatgpu.yaml 
-```
 
+Example of static all-in-one manifest file located in `deploy/static.yaml`.
+
+You can adjust it to your needs and install with:
+```bash
+kubectl apply -f deploy/static.yaml
+```
 
 ### Test the Metagpu 
 ```bash
@@ -72,7 +78,7 @@ spec:
   - name: gpu-test-with-gpu
     image: tensorflow/tensorflow:latest-gpu
     command:
-      - /usr/local/bin/python
+      - /usr/bin/python
       - -c
       - |
         import tensorflow as tf
