@@ -359,7 +359,7 @@ func (dpt *deviceProcessesPrinterTable) buildDeviceProcessesTableFooter(containe
 	// to problem is that package now includes the nvidia linux native stuff
 	// and some package re-org is required
 	//if vl == "l0" { // TODO: temporary disabled
-	metaGpuSummary = fmt.Sprintf("%d/%d/%d", getTotalShares(devices), getTotalRequests(containers), getTotalLimits(containers))
+	metaGpuSummary := fmt.Sprintf("%d/%d/%d", getTotalShares(devices), getTotalRequests(containers), getTotalLimits(containers))
 	//}
 	usedMem := fmt.Sprintf("%dMb", getTotalMemoryUsedByProcesses(containers))
 	return table.Row{len(containers), "", "", "", "", usedMem, "", "", metaGpuSummary}
