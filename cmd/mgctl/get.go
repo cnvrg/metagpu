@@ -16,6 +16,13 @@ import (
 	"time"
 )
 
+const (
+	ColorCritical = "\u001B[31m"
+	ColorGood = "\u001B[32m"
+	ColorWarning = "\u001B[33m"
+	ColorNeutral = 	"\u001B[0m"
+)
+
 var getCmd = &cobra.Command{
 	Use:     "get",
 	Aliases: []string{"g"},
@@ -77,7 +84,7 @@ func getDevicesProcesses() {
 	}
 
 	to := &TableOutput{}
-	to.header = table.Row{"Pod", "NS", "Device", "Node", "GPU", "Memory", "Pid", "Cmd", "Req"}
+	to.header = table.Row{"Pod", "NS", "Device", "Node", "GPU", "Memory", "Pid", "Cmd", "Req/Limit"}
 
 	if viper.GetBool("watch") {
 		request := &pbdevice.StreamGpuContainersRequest{PodId: hostname}
@@ -162,18 +169,28 @@ func buildDeviceProcessesTableBody(containers []*pbdevice.GpuContainer) (body []
 
 	for _, c := range containers {
 		if len(c.ContainerDevices) > 0 {
-			maxMem := int64(c.ContainerDevices[0].Device.MemoryShareSize * uint64(c.MetagpuRequests))
+			maxMem := int64(c.ContainerDevices[0].Device.MemoryShareSize * uint64(c.MetagpuLimits))
+			reqMem := int64(c.ContainerDevices[0].Device.MemoryShareSize * uint64(c.MetagpuRequests))
 			if len(c.DeviceProcesses) > 0 {
 				for _, p := range c.DeviceProcesses {
-					relativeGpuUsage := (p.GpuUtilization * 100) / (100 / c.ContainerDevices[0].Device.Shares * uint32(c.MetagpuRequests))
-					gpuUsage := fmt.Sprintf("\u001B[32m%d%%\u001B[0m", relativeGpuUsage)
+					gpuUsageColor := ColorGood
+					relativeGpuUsage := (p.GpuUtilization * 100) / (100 / c.ContainerDevices[0].Device.Shares * uint32(c.MetagpuLimits))
+					requestGpuUsageTreshold := 100 * uint32(c.MetagpuRequests) / uint32(c.MetagpuLimits)
+					if relativeGpuUsage > requestGpuUsageTreshold {
+						gpuUsageColor = ColorWarning
+					}
 					if relativeGpuUsage > 100 {
-						gpuUsage = fmt.Sprintf("\u001B[31m%d%%\u001B[0m", relativeGpuUsage)
+						gpuUsageColor = ColorCritical
 					}
-					memUsage := fmt.Sprintf("\u001B[32m%d\u001B[0m/%d", p.Memory, maxMem)
+					gpuUsage := fmt.Sprintf("%s%d%%%s", gpuUsageColor, relativeGpuUsage, ColorNeutral)
+					memUsageColor := ColorGood
+					if int64(p.Memory) > reqMem {
+						memUsageColor = ColorWarning
+					}
 					if int64(p.Memory) > maxMem {
-						memUsage = fmt.Sprintf("\u001B[31m%d\u001B[0m/%d", p.Memory, maxMem)
+						memUsageColor = ColorCritical
 					}
+					memUsage := fmt.Sprintf("%s%d%s/%d/%d", memUsageColor, p.Memory, ColorNeutral, reqMem, maxMem)
 					body = append(body, table.Row{
 						c.PodId,
 						c.PodNamespace,
@@ -183,11 +200,11 @@ func buildDeviceProcessesTableBody(containers []*pbdevice.GpuContainer) (body []
 						memUsage,
 						p.Pid,
 						p.Cmdline,
-						c.MetagpuRequests,
+						fmt.Sprintf("%d/%d", c.MetagpuRequests, c.MetagpuLimits),
 					})
 				}
 			} else {
-				memUsage := fmt.Sprintf("\u001B[32m%d\u001B[0m/%d", 0, maxMem)
+				memUsage := fmt.Sprintf("%s%d%s/%d/%d", ColorGood, 0, ColorNeutral, reqMem, maxMem)
 				body = append(body, table.Row{
 					c.PodId,
 					c.PodNamespace,
@@ -197,7 +214,7 @@ func buildDeviceProcessesTableBody(containers []*pbdevice.GpuContainer) (body []
 					memUsage,
 					"-",
 					"-",
-					c.MetagpuRequests,
+					fmt.Sprintf("%d/%d", c.MetagpuRequests, c.MetagpuLimits),
 				})
 			}
 		} else {
@@ -210,7 +227,7 @@ func buildDeviceProcessesTableBody(containers []*pbdevice.GpuContainer) (body []
 				"-",
 				"-",
 				"-",
-				c.MetagpuRequests,
+				fmt.Sprintf("%d/%d", c.MetagpuRequests, c.MetagpuLimits),
 			})
 		}
 
@@ -220,12 +237,12 @@ func buildDeviceProcessesTableBody(containers []*pbdevice.GpuContainer) (body []
 }
 
 func buildDeviceProcessesTableFooter(containers []*pbdevice.GpuContainer, devices map[string]*pbdevice.Device, vl string) (footer table.Row) {
-	metaGpuSummary := fmt.Sprintf("%d", getTotalRequests(containers))
+	metaGpuSummary := fmt.Sprintf("%d/%d", getTotalRequests(containers), getTotalLimits(containers))
 	// TODO: fix this, the vl should be taken from directly form the  package
 	// to problem is that package now includes the nvidia linux native stuff
 	// and some package re-org is required
 	//if vl == "l0" { // TODO: temporary disabled
-	metaGpuSummary = fmt.Sprintf("%d/%d", getTotalShares(devices), getTotalRequests(containers))
+	metaGpuSummary = fmt.Sprintf("%d/%d/%d", getTotalShares(devices), getTotalRequests(containers), getTotalLimits(containers))
 	//}
 	usedMem := fmt.Sprintf("%dMb", getTotalMemoryUsedByProcesses(containers))
 	return table.Row{len(containers), "", "", "", "", usedMem, "", "", metaGpuSummary}

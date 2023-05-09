@@ -52,6 +52,13 @@ func getTotalRequests(containers []*pbdevice.GpuContainer) (totalRequest int) {
 	return
 }
 
+func getTotalLimits(containers []*pbdevice.GpuContainer) (totalLimits int) {
+	for _, c := range containers {
+		totalLimits += int(c.MetagpuLimits)
+	}
+	return
+}
+
 func getTotalShares(devices map[string]*pbdevice.Device) (totalShares int) {
 	for _, d := range devices {
 		totalShares += int(d.Shares)
