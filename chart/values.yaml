@@ -19,10 +19,12 @@ config:
       enabled: true
       hostPath: /var/lib/metagpu/
       containerPath: /usr/bin/
+  # JWT security with priviledge level separation
+  # You can find bash script example to generate own tokens in config/genjwt.sh
   grpcSecurity:
-    # Token with priviledge level 0 (access to all functions (e.g. for metrics extraction)
+    # Token with priviledge level 0 - access to device functions (e.g. for metrics extraction)
     deviceToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1ldGFncHVAaW5zdGFuY2UiLCJ2aXNpYmlsaXR5TGV2ZWwiOiJsMCJ9.2rHykHFcHoIr-OCoPA5Am4ubf31-RJcayZnOTK6db94
-    # Token with priviledge level 1 (access from running GPU-enabled container)
+    # Token with priviledge level 1 - access to processes (e.g. from running GPU-enabled container)
     containerToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1ldGFncHVAaW5zdGFuY2UiLCJ2aXNpYmlsaXR5TGV2ZWwiOiJsMSJ9.o5v6Zdi1FKXQevRjuSbABBX1vIRYgN3Daz9iXabuFFA
     # JWT signing key
     jwtSecret: topSecret
