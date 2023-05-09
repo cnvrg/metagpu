@@ -61,6 +61,7 @@ securityContext:
 # Enable if running on OpenShift (creates SCC)
 ocp: false
 
+# TODO: use
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
@@ -86,6 +87,11 @@ tolerations: []
   #- key: nvidia.com/gpu
   #  operator: Exists
   #  effect: NoSchedule
+
+# Extra environment variable for metagpu-device-plugin container
+extraEnv: []
+  #- name: NVIDIA_VISIBLE_DEVICES
+  #  value: "0:0"
 
 # Create service monitor
 serviceMonitor:

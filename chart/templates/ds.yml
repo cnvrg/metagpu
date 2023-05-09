@@ -48,6 +48,9 @@ spec:
                   fieldPath: status.podIP
             - name: MG_CTL_TOKEN
               value: {{ .Values.config.grpcSecurity.deviceToken | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           volumeMounts:
             - name: device-plugin
               mountPath: /var/lib/kubelet/device-plugins
