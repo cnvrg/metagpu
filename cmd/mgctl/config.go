@@ -27,7 +27,7 @@ func patchConfigs() {
 	if viper.GetInt32("metagpu") != 0 {
 		metaGpus := viper.GetInt32("metagpu")
 		log.Info(metaGpus)
-		conn := ctlutils.GetGrpcMetaGpuSrvClientConn(viper.GetString("addr"))
+		conn := ctlutils.GetGrpcMetaGpuSrvClientConn(viper.GetString(flagAddr))
 		if conn == nil {
 			log.Fatalf("can't initiate connection to metagpu server")
 		}
