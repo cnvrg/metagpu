@@ -9,8 +9,9 @@ config:
   memoryEnforcer: true
   # mgctl tool injection
   mgctl:
+    # mgctl location inside metagpu-device-plugin image
     sourcePath: /tmp/mgctl
-    # use kubectl cp to inject mgctl to the user container
+    # copy mgctl to the user container (similar to "kubectl cp")
     podExecCopy:
       enabled: false
     # mount mgctl binary from hostPath to containerPath of user continer using DevicePlugin API
@@ -18,7 +19,6 @@ config:
       enabled: true
       hostPath: /var/lib/metagpu/
       containerPath: /usr/bin/
-
   grpcSecurity:
     # Token with priviledge level 0 (access to all functions (e.g. for metrics extraction)
     deviceToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1ldGFncHVAaW5zdGFuY2UiLCJ2aXNpYmlsaXR5TGV2ZWwiOiJsMCJ9.2rHykHFcHoIr-OCoPA5Am4ubf31-RJcayZnOTK6db94
