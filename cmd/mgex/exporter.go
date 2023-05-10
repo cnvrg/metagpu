@@ -75,6 +75,20 @@ var (
 		Help:      "total metagpu requests in deployment spec",
 	}, []string{"pod_name", "pod_namespace", "resource_name", "node_name"})
 
+	deviceProcessMetagpuLimits = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "metagpu",
+		Subsystem: "process",
+		Name:      "metagpu_limits",
+		Help:      "total metagpu limits in deployment spec",
+	}, []string{"pod_name", "pod_namespace", "resource_name", "node_name"})
+
+	deviceProcessRequestedMetagpuGPUUtilization = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "metagpu",
+		Subsystem: "process",
+		Name:      "requested_metagpu_gpu_utilization",
+		Help:      "requested metagpu gpu utilization",
+	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name", "node_name"})
+
 	deviceProcessMaxAllowedMetagpuGPUUtilization = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "metagpu",
 		Subsystem: "process",
@@ -86,7 +100,14 @@ var (
 		Namespace: "metagpu",
 		Subsystem: "process",
 		Name:      "metagpu_relative_gpu_utilization",
-		Help:      "relative to metagpu request gpu utilization",
+		Help:      "relative to metagpu limits gpu utilization",
+	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name", "node_name"})
+
+	deviceProcessRequestedMetaGpuMemory = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "metagpu",
+		Subsystem: "process",
+		Name:      "requested_metagpu_memory",
+		Help:      "requested metagpu memory usage",
 	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name", "node_name"})
 
 	deviceProcessMaxAllowedMetaGpuMemory = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -100,7 +121,7 @@ var (
 		Namespace: "metagpu",
 		Subsystem: "process",
 		Name:      "metagpu_relative_memory_utilization",
-		Help:      "relative to metagpus request memory utilization",
+		Help:      "relative to metagpus limits memory utilization",
 	}, []string{"uuid", "pid", "cmdline", "user", "pod_name", "pod_namespace", "resource_name", "node_name"})
 )
 
@@ -165,8 +186,11 @@ func resetProcessLevelMetrics() {
 	deviceProcessAbsoluteGpuUtilization.Reset()
 	deviceProcessMemoryUsage.Reset()
 	deviceProcessMetagpuRequests.Reset()
+	deviceProcessMetagpuLimits.Reset()
+	deviceProcessRequestedMetagpuGPUUtilization.Reset()
 	deviceProcessMaxAllowedMetagpuGPUUtilization.Reset()
 	deviceProcessMetagpuRelativeGPUUtilization.Reset()
+	deviceProcessRequestedMetaGpuMemory.Reset()
 	deviceProcessMaxAllowedMetaGpuMemory.Reset()
 	deviceProcessMetagpuRelativeMemoryUtilization.Reset()
 }
@@ -179,6 +203,9 @@ func setProcessesMetrics() {
 		// metagpu requests
 		deviceProcessMetagpuRequests.WithLabelValues(
 			c.PodId, c.PodNamespace, c.ResourceName, c.NodeName).Set(float64(c.MetagpuRequests))
+		// metagpu limits
+		deviceProcessMetagpuLimits.WithLabelValues(
+			c.PodId, c.PodNamespace, c.ResourceName, c.NodeName).Set(float64(c.MetagpuLimits))
 		// if pod has processes expose process metrics
 		if len(c.DeviceProcesses) > 0 {
 			for _, p := range c.DeviceProcesses {
@@ -188,10 +215,13 @@ func setProcessesMetrics() {
 				// absolute memory and gpu usage
 				deviceProcessAbsoluteGpuUtilization.WithLabelValues(labels...).Set(float64(p.GpuUtilization))
 				deviceProcessMemoryUsage.WithLabelValues(labels...).Set(float64(p.Memory))
-				// max (relative to metagpus request) allowed gpu and memory utilization
+				// requested (relavive to metagpu requests) gpu and memory utilization
+				deviceProcessRequestedMetagpuGPUUtilization.WithLabelValues(labels...).Set(getRequestedMetagpuGPUUtilization(c))
+				deviceProcessRequestedMetaGpuMemory.WithLabelValues(labels...).Set(getRequestedMetaGpuMemory(c))
+				// max allowed (relative to metagpus limits) gpu and memory utilization
 				deviceProcessMaxAllowedMetagpuGPUUtilization.WithLabelValues(labels...).Set(getMaxAllowedMetagpuGPUUtilization(c))
 				deviceProcessMaxAllowedMetaGpuMemory.WithLabelValues(labels...).Set(getMaxAllowedMetaGpuMemory(c))
-				// relative gpu and memory utilization
+				// relative to limits gpu and memory utilization
 				deviceProcessMetagpuRelativeGPUUtilization.WithLabelValues(labels...).Set(getRelativeGPUUtilization(c, p))
 				deviceProcessMetagpuRelativeMemoryUtilization.WithLabelValues(labels...).Set(getRelativeMemoryUtilization(c, p))
 			}
@@ -218,10 +248,31 @@ func getMaxAllowedMetagpuGPUUtilization(c *pbdevice.GpuContainer) float64 {
 		l.Error(err)
 		return 0
 	}
-	return float64((100 / d.Device.Shares) * uint32(c.MetagpuRequests))
+	return float64((100 / d.Device.Shares) * uint32(c.MetagpuLimits))
 }
 
 func getMaxAllowedMetaGpuMemory(c *pbdevice.GpuContainer) float64 {
+	l := log.WithField("pod", c.PodId)
+	d, err := getFirstContainerDevice(c)
+	if err != nil {
+		l.Error(err)
+		return 0
+	}
+	return float64(uint64(c.MetagpuLimits) * d.Device.MemoryShareSize)
+
+}
+
+func getRequestedMetagpuGPUUtilization(c *pbdevice.GpuContainer) float64 {
+	l := log.WithField("pod", c.PodId)
+	d, err := getFirstContainerDevice(c)
+	if err != nil {
+		l.Error(err)
+		return 0
+	}
+	return float64((100 / d.Device.Shares) * uint32(c.MetagpuRequests))
+}
+
+func getRequestedMetaGpuMemory(c *pbdevice.GpuContainer) float64 {
 	l := log.WithField("pod", c.PodId)
 	d, err := getFirstContainerDevice(c)
 	if err != nil {
@@ -246,7 +297,7 @@ func getRelativeGPUUtilization(c *pbdevice.GpuContainer, p *pbdevice.DeviceProce
 		l.Error(err)
 		return 0
 	}
-	maxMetaGpuUtilization := (100 / d.Device.Shares) * uint32(c.MetagpuRequests)
+	maxMetaGpuUtilization := (100 / d.Device.Shares) * uint32(c.MetagpuLimits)
 	metaGpuUtilization := 0
 	if p.GpuUtilization > 0 && maxMetaGpuUtilization > 0 {
 		metaGpuUtilization = int((p.GpuUtilization * 100) / maxMetaGpuUtilization)
@@ -261,7 +312,7 @@ func getRelativeMemoryUtilization(c *pbdevice.GpuContainer, p *pbdevice.DevicePr
 		l.Error(err)
 		return 0
 	}
-	maxMetaMemory := int(uint64(c.MetagpuRequests) * d.Device.MemoryShareSize)
+	maxMetaMemory := int(uint64(c.MetagpuLimits) * d.Device.MemoryShareSize)
 	metaMemUtilization := 0
 	if maxMetaMemory > 0 {
 		metaMemUtilization = (int(p.Memory) * 100) / maxMetaMemory
@@ -303,8 +354,11 @@ func startExporter() {
 	prometheus.MustRegister(deviceProcessAbsoluteGpuUtilization)
 	prometheus.MustRegister(deviceProcessMemoryUsage)
 	prometheus.MustRegister(deviceProcessMetagpuRequests)
+	prometheus.MustRegister(deviceProcessMetagpuLimits)
+	prometheus.MustRegister(deviceProcessRequestedMetagpuGPUUtilization)
 	prometheus.MustRegister(deviceProcessMaxAllowedMetagpuGPUUtilization)
 	prometheus.MustRegister(deviceProcessMetagpuRelativeGPUUtilization)
+	prometheus.MustRegister(deviceProcessRequestedMetaGpuMemory)
 	prometheus.MustRegister(deviceProcessMaxAllowedMetaGpuMemory)
 	prometheus.MustRegister(deviceProcessMetagpuRelativeMemoryUtilization)
 	recordMetrics()

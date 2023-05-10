@@ -20,6 +20,7 @@ type GpuContainer struct {
 	PodId             string
 	PodNamespace      string
 	PodMetagpuRequest int64
+	PodMetagpuLimit	  int64
 	ResourceName      string
 	Nodename          string
 	Processes         []*GpuProcess
@@ -75,13 +76,14 @@ func (c *GpuContainer) setAllocatedGpus(gpuDevices []*GpuDevice) {
 	}
 }
 
-func NewGpuContainer(containerId, containerName, podId, ns, resourceName, nodename string, metagpuRequests int64, gpuDevices []*GpuDevice) *GpuContainer {
+func NewGpuContainer(containerId, containerName, podId, ns, resourceName, nodename string, metagpuRequests int64, metagpuLimits int64, gpuDevices []*GpuDevice) *GpuContainer {
 	p := &GpuContainer{
 		ContainerId:       containerId,
 		PodId:             podId,
 		ContainerName:     containerName,
 		PodNamespace:      ns,
 		PodMetagpuRequest: metagpuRequests,
+		PodMetagpuLimit:   metagpuLimits,
 		ResourceName:      resourceName,
 		Nodename:          nodename,
 	}

@@ -46,6 +46,7 @@ func listDeviceProcesses(podId string, gpuMgr *gpumgr.GpuMgr) (containers []*pb.
 			PodId:            container.PodId,
 			PodNamespace:     container.PodNamespace,
 			MetagpuRequests:  container.PodMetagpuRequest,
+			MetagpuLimits:    container.PodMetagpuLimit,
 			ResourceName:     container.ResourceName,
 			NodeName:         container.Nodename,
 			ContainerDevices: gpuDevices,

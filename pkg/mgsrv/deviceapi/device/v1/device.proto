@@ -38,10 +38,11 @@ message GpuContainer{
   string pod_id = 3;
   string pod_namespace = 4;
   int64  metagpu_requests = 5;
-  string resource_name = 6;
-  string node_name = 7;
-  repeated DeviceProcess device_processes = 8;
-  repeated ContainerDevice container_devices = 9;
+  int64  metagpu_limits = 6;
+  string resource_name = 7;
+  string node_name = 8;
+  repeated DeviceProcess device_processes = 9;
+  repeated ContainerDevice container_devices = 10;
 }
 
 message Device{

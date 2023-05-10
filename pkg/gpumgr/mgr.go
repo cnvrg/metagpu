@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 	v1core "k8s.io/api/core/v1"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -111,8 +112,26 @@ func (m *GpuMgr) discoverGpuContainers() {
 		for _, container := range p.Spec.Containers {
 			for _, config := range cfg.Configs {
 				resourceName := v1core.ResourceName(config.ResourceName)
-				if quantity, ok := container.Resources.Limits[resourceName]; ok {
-
+				requests, isreq := container.Resources.Requests[resourceName]
+				if limits, ok :=  container.Resources.Limits[resourceName]; ok {
+					// backward compatible logic: if no requests set it equal to limits
+					if !isreq {
+						requests = limits
+					}
+					limitShares := limits.Value()
+					// Kubernetes currently does not allow specifying overcommit for custom resources.
+					// It enforces requests must be equal to limits and refuse to run the pod otherwise.
+					// To allow metagpus overcommit, the enforcement limit can be redefined via Pod annotation.
+					annotationKey := "gpu-mem-limit." + config.ResourceName
+					if annotationValue, ok := p.ObjectMeta.Annotations[annotationKey]; ok {
+						annotationLimit, err := strconv.ParseInt(annotationValue, 10, 64)
+						if err != nil {
+							log.Errorf("Failed to parse memory limit from %s annotation, err: %s", annotationKey, err)
+						} else {
+							limitShares = annotationLimit
+							log.Infof("Using memory enforcement limit from %s annotation: %d", annotationKey, limitShares)
+						}
+					}
 					if viper.GetString("nodename") == "" {
 						m.gpuContainersCollector = append(m.gpuContainersCollector,
 							NewGpuContainer(
@@ -122,7 +141,8 @@ func (m *GpuMgr) discoverGpuContainers() {
 								p.Namespace,
 								config.ResourceName,
 								p.Spec.NodeName,
-								quantity.Value(),
+								requests.Value(),
+								limitShares,
 								m.GpuDevices,
 							),
 						)
@@ -139,7 +159,8 @@ func (m *GpuMgr) discoverGpuContainers() {
 									p.Namespace,
 									config.ResourceName,
 									p.Spec.NodeName,
-									quantity.Value(),
+									requests.Value(),
+									limitShares,
 									m.GpuDevices,
 								),
 							)

@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"os"
 	"path"
 	"runtime"
 	"strconv"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 type param struct {
@@ -20,15 +21,43 @@ type param struct {
 	required  bool
 }
 
+const (
+	outJSON  = "json"
+	outTable = "table"
+	outRaw   = "raw"
+)
+
+const (
+	// flagAddr defines output format.
+	flagOutput = "output"
+	// flagOutputS short form of flagOutput.
+	flagOutputS = "o"
+	// flagJSONLog enables log json.
+	flagJSONLog = "json-log"
+	// flagVerbose enables verbose logging.
+	flagVerbose = "verbose"
+	// flagAddr MetaGPU server address, port.
+	flagAddr = "addr"
+	// flagAddrS short form of flagAddr.
+	flagAddrS = "s"
+	// flagToken authentication token.
+	flagToken = "token"
+	// flagTokenS short form of flagToken.
+	flagTokenS = "t"
+	// flagPrettyOut enables indented JSON output for humans.
+	flagPrettyOut = "pretty"
+)
+
 var (
 	Version    string
 	Build      string
 	rootParams = []param{
-		{name: "json-log", shorthand: "", value: false, usage: "output logs in json format"},
-		{name: "verbose", shorthand: "", value: false, usage: "enable verbose logs"},
-		{name: "addr", shorthand: "s", value: "localhost:50052", usage: "address to access the metagpu server"},
-		{name: "token", shorthand: "t", value: "", usage: "authentication token"},
-		{name: "output", shorthand: "o", value: "table", usage: "output format, one of: table|json|raw"},
+		{name: flagJSONLog, shorthand: "", value: false, usage: "output logs in json format"},
+		{name: flagVerbose, shorthand: "", value: false, usage: "enable verbose logs"},
+		{name: flagAddr, shorthand: flagAddrS, value: "localhost:50052", usage: "address to access the metagpu server"},
+		{name: flagToken, shorthand: flagTokenS, value: "", usage: "authentication token"},
+		{name: flagOutput, shorthand: flagOutputS, value: outTable, usage: "output format, one of: table|json|raw"},
+		{name: flagPrettyOut, shorthand: "", value: false, usage: "pretty output for JSON"},
 	}
 )
 
@@ -89,7 +118,7 @@ func setParams(params []param, command *cobra.Command) {
 func setupLogging() {
 
 	// Set log verbosity
-	if viper.GetBool("verbose") {
+	if viper.GetBool(flagVerbose) {
 		log.SetLevel(log.DebugLevel)
 		log.SetFormatter(&log.TextFormatter{
 			FullTimestamp: true,
@@ -104,7 +133,7 @@ func setupLogging() {
 	}
 
 	// Set log format
-	if viper.GetBool("json-log") {
+	if viper.GetBool(flagJSONLog) {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
 
