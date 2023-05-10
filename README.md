@@ -56,6 +56,35 @@ helm template chart --set ocp=false -ncnvrg > meatgpu.yaml
 kubectl apply -f meatgpu.yaml 
 ```
 
+### GPU Memory enforcement and overcommit
+
+The metagpu device plugin can be deployed with memory enforcement turned on (`memoryEnforcer: true`).
+
+In this case, if the GPU process use more memory than defined by metagpu resource limit, `mgdp` will act as an Out-Of-Memory (OOM) killer, terminating the workload.
+
+Overcommit is the case, when you specify limits higher than requests. For generic `memory` k8s resource, it is quite common that requests used for Pod scheduling are lower, but limits (OOM line) are higher to allow bursts in memory consumption.
+
+Kubernetes currently does not allow overcommit for custom resources (like `cnvrg.io/metagpu`), enforcing requests must be equal to limits in the container spec.
+If you want to achive overcommit with metagpu, you have to use `gpu-mem-limit.<resourceName>` annotation that re-defines limits value.
+
+Following snippet represents the case, when 33 metagpus are requested (3 pods can be scheduled on the GPU), but enforcement kill happenes after the process reaches half of GPU memory (50 metagpus).
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: metagpu-overcommit
+  annotations:
+    gpu-mem-limit.cnvrg.io/metagpu: "50"
+spec:
+  containers:
+  - name: workload
+    resources:
+      requests:
+        cnvrg.io/metagpu: "33"
+      limits:
+        cnvrg.io/metagpu: "33"
+```
 
 ### Test the Metagpu 
 ```bash

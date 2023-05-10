@@ -114,16 +114,14 @@ func (m *GpuMgr) discoverGpuContainers() {
 				resourceName := v1core.ResourceName(config.ResourceName)
 				requests, isreq := container.Resources.Requests[resourceName]
 				if limits, ok :=  container.Resources.Limits[resourceName]; ok {
-					// backward compatible logic: if no requests assue it is equal to limits
+					// backward compatible logic: if no requests set it equal to limits
 					if !isreq {
 						requests = limits
 					}
 					limitShares := limits.Value()
-					// as of now, kubernetes does not allow overcommit for custom resources
-					// it enforces requests must be equal to limits and refuse to schhedule
-					// the pod othervise
-					// to mitigate this issue and allow overcommit, the cutoff limit
-					// can be defined via Pod annotation
+					// Kubernetes currently does not allow specifying overcommit for custom resources.
+					// It enforces requests must be equal to limits and refuse to run the pod otherwise.
+					// To allow metagpus overcommit, the enforcement limit can be redefined via Pod annotation.
 					annotationKey := "gpu-mem-limit." + config.ResourceName
 					if annotationValue, ok := p.ObjectMeta.Annotations[annotationKey]; ok {
 						annotationLimit, err := strconv.ParseInt(annotationValue, 10, 64)
