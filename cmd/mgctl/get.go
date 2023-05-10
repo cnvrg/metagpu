@@ -393,7 +393,7 @@ func (dpt *deviceProcessesPrinterJSON) print(containers []*pbdevice.GpuContainer
 
 		for _, p := range c.DeviceProcesses {
 			if len(c.ContainerDevices) > 0 {
-				relativeGpuUsage := (p.GpuUtilization * 100) / (100 / c.ContainerDevices[0].Device.Shares * uint32(c.MetagpuRequests))
+				relativeGpuUsage := (p.GpuUtilization * 100) / (100 / c.ContainerDevices[0].Device.Shares * uint32(c.MetagpuLimits))
 
 				enrCnt.DeviceProcesses = append(enrCnt.DeviceProcesses, &enrichedProcess{
 					DeviceProcess:           p,
