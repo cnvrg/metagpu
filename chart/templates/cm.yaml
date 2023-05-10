@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "metagpu.fullname" . }}-config
+  labels:
+    {{- include "metagpu.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    accelerator: nvidia
+    processesDiscoveryPeriod: {{ .Values.config.deviceManager.processesDiscoveryPeriod | int }}
+    deviceCacheTTL: {{ .Values.config.deviceManager.deviceCacheTTL | int }}
+    mgctlTar: {{ .Values.config.mgctl.sourcePath }}
+    mgctlAutoInject: {{ .Values.config.mgctl.podExecCopy.enabled }}
+    mgctlMount: {{ .Values.config.mgctl.hostMount.enabled }}
+    mgctlMountHostPath: {{ .Values.config.mgctl.hostMount.hostPath }}
+    mgctlMountContainertPath: {{ .Values.config.mgctl.hostMount.containerPath }}
+    serverAddr: 0.0.0.0:50052
+    memoryEnforcer: {{ .Values.config.memoryEnforcer }}
+    jwtSecret: {{ .Values.config.grpcSecurity.jwtSecret }}
+    deviceToken: {{ .Values.config.grpcSecurity.deviceToken }}
+    containerToken: {{ .Values.config.grpcSecurity.containerToken }}
+    {{- with .Values.config.deviceSharing }}
+    deviceSharing:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}

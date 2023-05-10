@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -93,6 +94,7 @@ func (p *MetaGpuDevicePlugin) Allocate(ctx context.Context, request *pluginapi.A
 	allocResponse := &pluginapi.AllocateResponse{}
 	for _, req := range request.ContainerRequests {
 		response := pluginapi.ContainerAllocateResponse{}
+		// set GPU container env variables
 		sort.Strings(req.DevicesIDs)
 		log.Info("requested devices ids:")
 		for _, dev := range req.DevicesIDs {
@@ -106,6 +108,25 @@ func (p *MetaGpuDevicePlugin) Allocate(ctx context.Context, request *pluginapi.A
 			"MG_CTL_ADDR":            fmt.Sprintf("%s:50052", os.Getenv("POD_IP")),
 			"MG_CTL_TOKEN":           viper.GetString("containerToken"),
 		}
+		// use DevicePlugin hostpath mount to provide mgctl to container
+		var mounts []*pluginapi.Mount
+		if viper.GetBool("mgctlMount") {
+			mgctlHostPath := viper.GetString("mgctlMountHostPath")
+			if mgctlHostPath == "" {
+				mgctlHostPath = "/var/lib/metagpu"
+			}
+			mgctlContainertPath := viper.GetString("mgctlMountContainertPath")
+			if mgctlContainertPath == "" {
+				mgctlContainertPath = "/usr/bin"
+			}
+			mount := &pluginapi.Mount{
+				HostPath:      filepath.Join(mgctlHostPath, "mgctl"),
+				ContainerPath: filepath.Join(mgctlContainertPath, "mgctl"),
+				ReadOnly:      true,
+			}
+			mounts = append(mounts, mount)
+		}
+		response.Mounts = mounts
 		allocResponse.ContainerResponses = append(allocResponse.ContainerResponses, &response)
 	}
 	return allocResponse, nil

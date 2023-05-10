@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "metagpu.fullname" . }}
+  labels:
+    {{- include "metagpu.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "metagpu.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "metagpu.selectorLabels" . | nindent 8 }}
+    spec:
+      hostPID: true
+      hostNetwork: true
+      serviceAccountName: {{ include "metagpu.serviceAccountName" . }}
+      containers:
+        - name: metagpu-device-plugin
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              {{- if .Values.config.mgctl.hostMount.enabled }}
+              cp -f {{ .Values.config.mgctl.sourcePath }} /var/lib/metagpu/mgctl
+              {{- end }}
+              /usr/bin/mgdp start -c /etc/metagpu-device-plugin
+          ports:
+            - containerPort: 50052
+              name: grpc
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          env:
+            - name: METAGPU_DEVICE_PLUGIN_NODENAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: MG_CTL_TOKEN
+              value: {{ .Values.config.grpcSecurity.deviceToken | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /var/lib/kubelet/device-plugins
+            - name: config
+              mountPath: /etc/metagpu-device-plugin
+            - name: proc
+              mountPath: /host/proc
+              mountPropagation: HostToContainer
+              readOnly: true
+            {{- if .Values.config.mgctl.hostMount.enabled }}
+            - name: mgctl
+              mountPath: /var/lib/metagpu
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        {{- if .Values.exporter.enabled }}
+        - name: metagpu-exporter
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /usr/bin/mgex
+            - start
+            - -t
+            - {{ .Values.config.grpcSecurity.deviceToken | quote }}
+          ports:
+            - name: metrics
+              containerPort: 2112
+          resources:
+            {{- toYaml .Values.exporter.resources | nindent 12 }}
+        {{- end }}
+      volumes:
+        - name: device-plugin
+          hostPath:
+            path: /var/lib/kubelet/device-plugins
+        - name: config
+          configMap:
+            name: {{ include "metagpu.fullname" . }}-config
+        - name: proc
+          hostPath:
+            path: /proc
+        {{- if .Values.config.mgctl.hostMount.enabled }}
+        - name: mgctl
+          hostPath:
+            path: {{ .Values.config.mgctl.hostMount.hostPath }}
+            type: DirectoryOrCreate
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      
